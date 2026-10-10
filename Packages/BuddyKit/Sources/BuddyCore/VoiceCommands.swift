@@ -9,6 +9,8 @@ public enum VoiceIntent: Equatable, Sendable {
     case pause
     case resume
     case stop
+    /// "What should I work on next?"
+    case whatsNext
     /// Tasks to show for review before anything is added.
     case addTasks([QuickAddParser.Result])
     case nothing
@@ -33,6 +35,9 @@ public enum VoiceCommandParser {
         }
         if s.wholeMatch(of: /(?:resume|continue|unpause)(?: the)?(?: timer| focus| session)?/) != nil {
             return .resume
+        }
+        if s.wholeMatch(of: /(?:so )?(?:what(?:'s| is)? (?:next|up next)|what (?:should|do) i (?:do|work on|focus on)(?: next| now)?|what now|what's the plan|whats next)/) != nil {
+            return .whatsNext
         }
         if s.wholeMatch(of: /stop|(?:stop|end|cancel|finish)(?: the| my)? (?:timer|focus|session|focus session)/) != nil {
             return .stop

@@ -17,7 +17,7 @@ enum Theme {
     static let phosphor = Color(hex: 0xFFE6B0)
 
     static let panelWidth: CGFloat = 340
-    static let panelHeight: CGFloat = 480
+    static let panelHeight: CGFloat = 540
     static let corner: CGFloat = 12
 
     static func mono(_ size: CGFloat, _ weight: Font.Weight = .medium) -> Font {
@@ -72,26 +72,31 @@ struct KeyButtonStyle: ButtonStyle {
     enum Kind { case primary, secondary, quiet }
     var kind: Kind = .secondary
     var fillWidth = false
+    /// Smaller key for inline actions inside cards and banners.
+    var compact = false
 
     func makeBody(configuration: Configuration) -> some View {
-        KeyButton(configuration: configuration, kind: kind, fillWidth: fillWidth)
+        KeyButton(configuration: configuration, kind: kind, fillWidth: fillWidth, compact: compact)
     }
 
     private struct KeyButton: View {
         let configuration: Configuration
         let kind: Kind
         let fillWidth: Bool
+        let compact: Bool
         @Environment(\.isEnabled) private var isEnabled
         @State private var hovering = false
 
         var body: some View {
             configuration.label
-                .font(Theme.mono(11, .semibold))
+                .font(Theme.mono(compact ? 10 : 11, .semibold))
                 .tracking(0.6)
                 .textCase(.uppercase)
+                .lineLimit(1)
+                .fixedSize(horizontal: !fillWidth, vertical: false)
                 .foregroundStyle(foreground)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: fillWidth ? .infinity : nil, minHeight: 30)
+                .padding(.horizontal, compact ? 8 : 12)
+                .frame(maxWidth: fillWidth ? .infinity : nil, minHeight: compact ? 24 : 30)
                 .background(background, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
                 .overlay {
                     if kind == .secondary {

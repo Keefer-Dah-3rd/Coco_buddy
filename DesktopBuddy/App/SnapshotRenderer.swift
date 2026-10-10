@@ -39,6 +39,10 @@ enum SnapshotRenderer {
         }
         write(glyph, to: folder.appendingPathComponent("menubar-glyph.png"))
 
+        let editing = demoModel()
+        editing.editingTaskID = editing.tasks.today().first(where: { $0.title.hasPrefix("Take Coco") })?.id
+        write(view(PanelRootView(model: editing), appearance: .aqua), to: folder.appendingPathComponent("panel-editor.png"))
+
         let empty = AppModel(preview: true)
         write(view(PanelRootView(model: empty), appearance: .aqua), to: folder.appendingPathComponent("panel-empty.png"))
         print("Snapshots written to \(folder.path)")
@@ -162,6 +166,19 @@ enum SnapshotRenderer {
         if let hero = model.tasks.today().first {
             model.focus.selectTask(hero.id)
         }
+        let today = Calendar.current.startOfDay(for: .now)
+        if let review = model.tasks.today().first(where: { $0.title.hasPrefix("Review") }) {
+            model.tasks.update(review.id) { $0.deadline = today }
+        }
+        if let park = model.tasks.today().first(where: { $0.title.hasPrefix("Take Coco") }) {
+            model.tasks.update(park.id) {
+                $0.deadline = Calendar.current.date(byAdding: .day, value: 3, to: today)
+                $0.notes = "The big field, not the small one."
+            }
+        }
+        model.tasks.restore(BuddyTask(title: "Water the plants", scope: .today, createdAt: .now.addingTimeInterval(-86_400)))
+        model.focusLog.record(taskID: nil, seconds: 25 * 60, finished: true)
+        model.focusLog.record(taskID: nil, seconds: 20 * 60, finished: false)
         model.speak("Good morning. Tail's wagging — what are we working on?", .ambient)
         return model
     }

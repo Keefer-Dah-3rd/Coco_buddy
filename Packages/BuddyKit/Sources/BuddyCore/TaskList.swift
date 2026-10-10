@@ -57,7 +57,7 @@ public struct TaskList: Codable, Equatable, Sendable {
 
     /// What belongs on today's list: every open personal task (unfinished work rolls
     /// over — it is never auto-completed), today-only items created today, and
-    /// anything completed today. Open work first, by priority then age.
+    /// anything completed today. Open work first, by priority, then deadline, then age.
     public func today(now: Date, calendar: Calendar = .current) -> [BuddyTask] {
         let visible = tasks.filter { task in
             if let completedAt = task.completedAt {
@@ -65,17 +65,35 @@ public struct TaskList: Codable, Equatable, Sendable {
             }
             switch task.scope {
             case .personal: return true
-            case .today: return calendar.isDate(task.createdAt, inSameDayAs: now)
+            case .today: return calendar.isDate(task.plannedDay ?? task.createdAt, inSameDayAs: now)
             }
         }
         let open = visible.filter { !$0.isCompleted }.sorted {
             if $0.priority != $1.priority { return $0.priority > $1.priority }
+            if $0.deadline != $1.deadline { return ($0.deadline ?? .distantFuture) < ($1.deadline ?? .distantFuture) }
             return $0.createdAt < $1.createdAt
         }
         let done = visible.filter(\.isCompleted).sorted {
             ($0.completedAt ?? .distantPast) < ($1.completedAt ?? .distantPast)
         }
         return open + done
+    }
+
+    /// Unfinished "today only" tasks from earlier days — waiting for the user to carry
+    /// them over or let them go. Never dropped silently.
+    public func leftovers(now: Date, calendar: Calendar = .current) -> [BuddyTask] {
+        let today = calendar.startOfDay(for: now)
+        return tasks.filter {
+            !$0.isCompleted && $0.scope == .today && calendar.startOfDay(for: $0.plannedDay ?? $0.createdAt) < today
+        }
+    }
+
+    /// Moves today-only tasks onto the given day.
+    public mutating func carryOver(_ ids: [BuddyTask.ID], to day: Date, calendar: Calendar = .current) {
+        let start = calendar.startOfDay(for: day)
+        for id in ids {
+            update(id) { $0.plannedDay = start }
+        }
     }
 
     public static func normalized(_ title: String) -> String {

@@ -4,14 +4,15 @@ A native macOS desktop companion. **Coco** — a black-and-white corgi with a wh
 
 ![Coco's states](docs/images/character-light.png)
 
-| Today | Voice: review what Coco heard | Focus (dark mode) |
-| --- | --- | --- |
-| ![Today panel](docs/images/panel-today-light.png) | ![Voice review](docs/images/panel-voice-review.png) | ![Focus panel](docs/images/panel-focus-dark.png) |
+| Today | Editing a task | Voice: review what Coco heard | Focus (dark mode) |
+| --- | --- | --- | --- |
+| ![Today panel](docs/images/panel-today-light.png) | ![Task editor](docs/images/panel-editor.png) | ![Voice review](docs/images/panel-voice-review.png) | ![Focus panel](docs/images/panel-focus-dark.png) |
 
 ## Status
 
-**Phase 1 — native desktop prototype: done**, plus Coco and voice. Floating character, drag & position memory, panel, tasks (persisted), focus timer with notifications, spoken lines, and voice input for tasks and timer commands.
-Next: Phase 2 (daily planning), Phase 3 (Google Calendar + Notion), Phase 4 (assistant). See [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
+- **Phase 1 — native desktop prototype: done.** Floating character, drag & position memory, panel, focus timer with notifications — plus Coco and voice.
+- **Phase 2 — daily planning: done.** Personal task list with notes, priority, estimate, deadline and "my list / today only"; local persistence; daily overview (done/remaining, focused today, time left, *Up next* with its reason); focus sessions linked to tasks and logged.
+- Next: Phase 3 (Google Calendar + Notion), then Phase 4 (assistant). See [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
 
 ## Build & run
 
@@ -37,6 +38,10 @@ cd Packages/BuddyKit && swift test
 | Drag her | Legs dangle and ears flop while carried; squashes on landing; snaps back if dropped off-screen |
 | Click her | Panel opens beside her; type a task — e.g. `Draft homepage ~45m !!` |
 | Tick a task | She celebrates — hops, tongue out, tail going |
+| Click a task's title | Inline editor: title, notes, priority, estimate, due date, *My list* vs *Today only*. Edits save as you go |
+| Add `Water plants @today` | A today-only item; if it's unfinished tomorrow, Coco offers *Carry over* or *Let go* — it never just disappears |
+| Look at *Up next* | One suggestion and why: overdue → due today → due tomorrow → high priority → quick win → waiting longest. ▶ starts focus on it |
+| Ask *"what should I work on next?"* | She answers with the same suggestion |
 | Speaker icon in the panel header | Coco speaks her lines aloud (and her mouth moves with the voice) |
 | Mic button or **⌘L**, then say *"I need to finish the homepage, review three portfolio projects for about an hour, and send two emails today"* | Ears up, head cocked, collar tag glowing while she listens; then three editable tasks to review — nothing is added until you press **Add** |
 | Say *"start focus on the homepage"* / *"pause"* / *"resume"* / *"stop"* / *"take a break"* | Runs the timer command directly |
@@ -59,7 +64,7 @@ DesktopBuddy/                    App target — AppKit windows + SwiftUI views o
   Panel/      Today (+ voice review), Focus, design tokens
   Services/   TaskStore, FocusController, VoiceInput, VoiceOutput, notifications, sounds, presence
 Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
-  BuddyCore        Tasks, quick-add parser, voice command parser + task splitter, focus timer, persistence
+  BuddyCore        Tasks, quick-add parser, day planner (Up next), focus log, voice parsing, focus timer, persistence
   BuddyCharacter   States, pose model, animator (blinks, idle life, reactions, frame scheduling)
 ```
 

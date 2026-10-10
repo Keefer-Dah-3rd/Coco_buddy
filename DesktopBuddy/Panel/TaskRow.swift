@@ -7,49 +7,63 @@ struct TaskRow: View {
     let model: AppModel
     @State private var hovering = false
 
+    private var isEditing: Bool { model.editingTaskID == task.id }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Button { model.toggleTask(task.id) } label: {
-                CheckSquare(checked: task.isCompleted)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 1)
-            .accessibilityLabel(task.isCompleted ? "Mark “\(task.title)” not done" : "Mark “\(task.title)” done")
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(task.title)
-                    .font(.system(size: 13))
-                    .foregroundStyle(task.isCompleted ? Theme.inkTertiary : Theme.ink)
-                    .strikethrough(task.isCompleted, color: Theme.inkTertiary)
-                    .lineLimit(2)
-                meta
-            }
-
-            Spacer(minLength: 4)
-
-            if hovering {
-                HStack(spacing: 2) {
-                    if !task.isCompleted {
-                        RowIconButton(symbol: "play.fill", help: "Focus on this") { model.focus(on: task.id) }
-                    }
-                    RowIconButton(symbol: "xmark", help: "Remove") { model.removeTask(task.id) }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 10) {
+                Button { model.toggleTask(task.id) } label: {
+                    CheckSquare(checked: task.isCompleted)
                 }
-                .transition(.opacity)
+                .buttonStyle(.plain)
+                .padding(.top, 1)
+                .accessibilityLabel(task.isCompleted ? "Mark “\(task.title)” not done" : "Mark “\(task.title)” done")
+
+                if isEditing {
+                    // The editor takes the title's place, so nothing appears twice.
+                    TaskEditor(task: task, model: model)
+                        .transition(.opacity)
+                } else {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(task.title)
+                            .font(.system(size: 13))
+                            .foregroundStyle(task.isCompleted ? Theme.inkTertiary : Theme.ink)
+                            .strikethrough(task.isCompleted, color: Theme.inkTertiary)
+                            .lineLimit(2)
+                        meta
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.toggleEditing(task.id) }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityHint("Opens the editor")
+                }
+
+                if hovering && !isEditing {
+                    HStack(spacing: 2) {
+                        if !task.isCompleted {
+                            RowIconButton(symbol: "play.fill", help: "Focus on this") { model.focus(on: task.id) }
+                        }
+                        RowIconButton(symbol: "xmark", help: "Remove") { model.removeTask(task.id) }
+                    }
+                    .transition(.opacity)
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, isEditing ? 10 : 8)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(hovering ? Theme.well.opacity(0.7) : .clear)
-        .contentShape(Rectangle())
+        .background(isEditing ? Theme.well : hovering ? Theme.well.opacity(0.7) : .clear)
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
+        .animation(.snappy(duration: 0.22), value: isEditing)
         .contextMenu { contextMenu }
     }
 
     @ViewBuilder
     private var meta: some View {
         let parts = metaParts
-        if !parts.isEmpty || isInFocus {
+        let due = TaskLabels.due(task)
+        if !parts.isEmpty || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty {
             HStack(spacing: 8) {
                 if isInFocus {
                     HStack(spacing: 4) {
@@ -63,7 +77,19 @@ struct TaskRow: View {
                         .foregroundStyle(Theme.accent)
                         .accessibilityLabel("\(task.priority.label) priority")
                 }
+                if let due, !task.isCompleted {
+                    MonoLabel(due.text, color: due.urgent ? Theme.accent : Theme.inkSecondary)
+                }
+                if task.scope == .today {
+                    MonoLabel("Today only", color: Theme.inkTertiary)
+                }
                 ForEach(parts, id: \.self) { MonoLabel($0, color: Theme.inkTertiary) }
+                if !task.notes.isEmpty {
+                    Image(systemName: "text.alignleft")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Theme.inkTertiary)
+                        .accessibilityLabel("Has notes")
+                }
             }
         }
     }
@@ -77,6 +103,7 @@ struct TaskRow: View {
 
     @ViewBuilder
     private var contextMenu: some View {
+        Button("Edit…") { model.editingTaskID = task.id }
         Button(task.isCompleted ? "Mark Not Done" : "Mark Done") { model.toggleTask(task.id) }
         if !task.isCompleted {
             Button("Focus on This") { model.focus(on: task.id) }
@@ -92,6 +119,37 @@ struct TaskRow: View {
         }
         Divider()
         Button("Remove", role: .destructive) { model.removeTask(task.id) }
+    }
+}
+
+/// Small shared formatting for task metadata.
+enum TaskLabels {
+    struct Due {
+        var text: String
+        var urgent: Bool
+    }
+
+    static func due(_ task: BuddyTask, now: Date = .now) -> Due? {
+        guard let deadline = task.deadline,
+              let days = DayPlanner.daysUntilDeadline(task, now: now) else { return nil }
+        switch days {
+        case ..<0: return Due(text: "Overdue", urgent: true)
+        case 0: return Due(text: "Due today", urgent: true)
+        case 1: return Due(text: "Due tomorrow", urgent: false)
+        case 2...6: return Due(text: "Due " + deadline.formatted(.dateTime.weekday(.abbreviated)), urgent: false)
+        default: return Due(text: "Due " + deadline.formatted(.dateTime.month(.abbreviated).day()), urgent: false)
+        }
+    }
+
+    static func reason(_ reason: DayPlanner.Reason) -> String {
+        switch reason {
+        case .overdue: "Overdue"
+        case .dueToday: "Due today"
+        case .dueTomorrow: "Due tomorrow"
+        case .highPriority: "High priority"
+        case .quickWin: "Quick win"
+        case .nextInLine: "Waiting longest"
+        }
     }
 }
 
@@ -117,7 +175,7 @@ private struct CheckSquare: View {
     }
 }
 
-private struct RowIconButton: View {
+struct RowIconButton: View {
     let symbol: String
     let help: String
     let action: () -> Void

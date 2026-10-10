@@ -1,4 +1,5 @@
 import Foundation
+import BuddyCore
 
 /// Coco's lines. Warm, a little playful, never more than a sentence or two — and
 /// written to sound right when spoken aloud as well as read.
@@ -72,6 +73,22 @@ enum BuddyVoice {
     static func endedWhileAway(_ phase: String) -> String {
         "Your \(phase.lowercased()) ended while I was napping."
     }
+
+    // MARK: Planning
+
+    static func upNext(_ title: String, reason: DayPlanner.Reason) -> String {
+        let t = short(title)
+        return switch reason {
+        case .overdue: "“\(t)” is overdue — want to knock it out first?"
+        case .dueToday: "“\(t)” is due today. That's my pick."
+        case .dueTomorrow: "“\(t)” is due tomorrow — a good one to start now."
+        case .highPriority: "I'd go with “\(t)”. You marked it high priority."
+        case .quickWin: "Try “\(t)” — it's a quick win."
+        case .nextInLine: "“\(t)” has been waiting the longest. Start there?"
+        }
+    }
+
+    static let nothingNext = "Nothing on the list yet. Want to add something?"
 
     // MARK: Voice
 

@@ -26,22 +26,38 @@ struct TodayView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            if tasks.isEmpty {
+            let leftovers = model.tasks.leftovers
+            if tasks.isEmpty && leftovers.isEmpty {
                 EmptyTodayView()
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(tasks) { task in
-                            TaskRow(
-                                task: task,
-                                isInFocus: model.focus.timer.isActive && model.focus.timer.taskID == task.id,
-                                model: model
-                            )
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            if !leftovers.isEmpty {
+                                LeftoversBanner(count: leftovers.count, model: model)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 8)
+                            }
+                            if model.voiceDrafts.isEmpty, !model.focus.timer.isActive, let next = model.upNext {
+                                UpNextCard(task: next.task, reason: next.reason, model: model)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 4)
+                            }
+                            ForEach(tasks) { task in
+                                TaskRow(
+                                    task: task,
+                                    isInFocus: model.focus.timer.isActive && model.focus.timer.taskID == task.id,
+                                    model: model
+                                )
+                                .id(task.id)
+                            }
                         }
+                        .padding(.bottom, 8)
                     }
-                    .padding(.bottom, 8)
+                    .scrollIndicators(.never)
+                    .onAppear { reveal(model.editingTaskID, with: proxy, animated: false) }
+                    .onChange(of: model.editingTaskID) { _, id in reveal(id, with: proxy, animated: true) }
                 }
-                .scrollIndicators(.never)
             }
 
             if let removed = model.recentlyRemoved {
@@ -55,6 +71,7 @@ struct TodayView: View {
             }
         }
         .animation(.snappy(duration: 0.25), value: model.voiceDrafts.isEmpty)
+        .animation(.snappy(duration: 0.25), value: model.tasks.leftovers.isEmpty)
         .onAppear { fieldFocused = true }
         .onChange(of: model.panelOpenCount) { fieldFocused = true }
     }
@@ -63,6 +80,7 @@ struct TodayView: View {
 
     private func summary(done: Int, tasks: [BuddyTask]) -> some View {
         let remainingMinutes = tasks.filter { !$0.isCompleted }.compactMap(\.estimateMinutes).reduce(0, +)
+        let focused = model.focusLog.today
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .lastTextBaseline, spacing: 0) {
                 Text("\(done)")
@@ -71,18 +89,27 @@ struct TodayView: View {
                     .foregroundStyle(Theme.inkTertiary)
                 MonoLabel("done").padding(.leading, 8)
                 Spacer()
-                if remainingMinutes > 0 {
-                    MonoLabel("≈ \(Self.duration(remainingMinutes)) left")
-                }
             }
             .font(.system(size: 30, weight: .semibold).monospacedDigit())
             .contentTransition(.numericText())
             .animation(.snappy, value: done)
 
             SegmentMeter(done: done, total: tasks.count)
+
+            if focused.minutes > 0 || remainingMinutes > 0 {
+                HStack {
+                    if focused.minutes > 0 {
+                        MonoLabel("Focused \(Self.duration(focused.minutes)) today", color: Theme.ink)
+                    }
+                    Spacer()
+                    if remainingMinutes > 0 {
+                        MonoLabel("≈ \(Self.duration(remainingMinutes)) left")
+                    }
+                }
+            }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(done) of \(tasks.count) tasks done")
+        .accessibilityLabel("\(done) of \(tasks.count) tasks done. \(focused.minutes) minutes focused today.")
     }
 
     private var quickAdd: some View {
@@ -163,6 +190,16 @@ struct TodayView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
+    /// Keeps an open editor in view.
+    private func reveal(_ id: BuddyTask.ID?, with proxy: ScrollViewProxy, animated: Bool) {
+        guard let id else { return }
+        if animated {
+            withAnimation(.snappy) { proxy.scrollTo(id, anchor: .top) }
+        } else {
+            proxy.scrollTo(id, anchor: .top)
+        }
+    }
+
     private func submit() {
         if model.addTask(draft) { draft = "" }
     }
@@ -214,7 +251,7 @@ private struct EmptyTodayView: View {
                 Text("Nothing on the list yet.")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.ink)
-                Text("Type above and press Return.\nAdd ~25m for an estimate, ! to !!! for priority.")
+                Text("Type above and press Return.\nAdd ~25m for an estimate, ! to !!! for priority,\n@today for a one-day item.")
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.inkSecondary)
                     .multilineTextAlignment(.center)
@@ -337,6 +374,61 @@ private struct VoiceReviewCard: View {
             }
         }
         .padding(10)
+        .background(Theme.well, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+// MARK: - Planning
+
+/// One suggestion, with the rule that picked it — never more than one, so it helps
+/// you decide instead of adding another list to read.
+private struct UpNextCard: View {
+    let task: BuddyTask
+    let reason: DayPlanner.Reason
+    let model: AppModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                MonoLabel("Up next · " + TaskLabels.reason(reason), color: Theme.accent)
+                Text(task.title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            Button { model.focus(on: task.id) } label: { Label("Focus", systemImage: "play.fill") }
+                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                .help("Start a focus session on this task")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.hairline))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Up next: \(task.title). \(TaskLabels.reason(reason)).")
+    }
+}
+
+/// Unfinished "today only" items from earlier days: the user decides, nothing vanishes silently.
+private struct LeftoversBanner: View {
+    let count: Int
+    let model: AppModel
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("\(count) left over")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.inkSecondary)
+                .lineLimit(1)
+                .help("Unfinished “today only” items from an earlier day")
+            Spacer(minLength: 4)
+            Button("Carry over") { model.carryOverLeftovers() }
+                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+            Button("Let go") { model.letGoOfLeftovers() }
+                .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .background(Theme.well, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }

@@ -35,6 +35,8 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
     public var completedAt: Date?
     /// Total minutes of finished focus sessions linked to this task.
     public var focusMinutes: Int
+    /// For `.today` tasks: the day they belong to (start of day). Nil means the day they were created.
+    public var plannedDay: Date?
 
     public var isCompleted: Bool { completedAt != nil }
 
@@ -48,7 +50,8 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
         scope: TaskScope = .personal,
         createdAt: Date = Date(),
         completedAt: Date? = nil,
-        focusMinutes: Int = 0
+        focusMinutes: Int = 0,
+        plannedDay: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -60,5 +63,6 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
         self.createdAt = createdAt
         self.completedAt = completedAt
         self.focusMinutes = focusMinutes
+        self.plannedDay = plannedDay
     }
 }

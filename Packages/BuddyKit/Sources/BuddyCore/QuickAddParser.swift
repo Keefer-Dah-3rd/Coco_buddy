@@ -5,24 +5,27 @@ import Foundation
 ///     "Draft homepage copy ~45m !!"  → title, 45 min estimate, medium priority
 ///
 /// `~25m`, `~25`, `~1h`, `~1.5h`, `~1h30m` set an estimate. `!` / `!!` / `!!!` set
-/// low / medium / high priority. Tokens are only recognised as whole words, so a
+/// low / medium / high priority. `@today` makes it a temporary item for today only. Tokens are only recognised as whole words, so a
 /// title like "Fix ~/.zshrc" or "Wow!" is left alone.
 public enum QuickAddParser {
     public struct Result: Equatable, Sendable {
         public var title: String
         public var priority: TaskPriority
         public var estimateMinutes: Int?
+        public var scope: TaskScope
 
-        public init(title: String, priority: TaskPriority = .none, estimateMinutes: Int? = nil) {
+        public init(title: String, priority: TaskPriority = .none, estimateMinutes: Int? = nil, scope: TaskScope = .personal) {
             self.title = title
             self.priority = priority
             self.estimateMinutes = estimateMinutes
+            self.scope = scope
         }
     }
 
     public static func parse(_ input: String) -> Result? {
         var priority = TaskPriority.none
         var estimate: Int?
+        var scope = TaskScope.personal
         var titleWords: [Substring] = []
 
         for word in input.split(whereSeparator: \.isWhitespace) {
@@ -30,6 +33,8 @@ public enum QuickAddParser {
                 priority = parsed
             } else if let minutes = durationToken(word) {
                 estimate = minutes
+            } else if word.lowercased() == "@today" {
+                scope = .today
             } else {
                 titleWords.append(word)
             }
@@ -37,7 +42,7 @@ public enum QuickAddParser {
 
         let title = titleWords.joined(separator: " ")
         guard !title.isEmpty else { return nil }
-        return Result(title: title, priority: priority, estimateMinutes: estimate)
+        return Result(title: title, priority: priority, estimateMinutes: estimate, scope: scope)
     }
 
     private static func priorityToken(_ word: Substring) -> TaskPriority? {

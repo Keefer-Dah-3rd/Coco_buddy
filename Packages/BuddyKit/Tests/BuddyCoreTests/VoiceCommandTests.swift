@@ -12,6 +12,9 @@ import Testing
         ("Resume", .resume),
         ("Stop", .stop),
         ("end the session please", .stop),
+        ("What should I work on next?", .whatsNext),
+        ("Coco, what's next", .whatsNext),
+        ("What now?", .whatsNext),
     ])
     func recognisesCommands(transcript: String, intent: VoiceIntent) {
         #expect(VoiceCommandParser.parse(transcript) == intent)

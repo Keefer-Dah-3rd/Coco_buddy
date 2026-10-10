@@ -48,7 +48,8 @@ final class TaskStore {
     @discardableResult
     func add(text: String) -> Bool {
         guard let parsed = QuickAddParser.parse(text) else { return false }
-        let task = BuddyTask(title: parsed.title, priority: parsed.priority, estimateMinutes: parsed.estimateMinutes)
+        let task = BuddyTask(title: parsed.title, priority: parsed.priority,
+                             estimateMinutes: parsed.estimateMinutes, scope: parsed.scope)
         switch list.add(task) {
         case .added(let added):
             save()
@@ -65,7 +66,7 @@ final class TaskStore {
         var added = 0
         for draft in drafts where !draft.title.trimmingCharacters(in: .whitespaces).isEmpty {
             let task = BuddyTask(title: draft.title.trimmingCharacters(in: .whitespaces),
-                                 priority: draft.priority, estimateMinutes: draft.estimateMinutes)
+                                 priority: draft.priority, estimateMinutes: draft.estimateMinutes, scope: draft.scope)
             if case .added = list.add(task) { added += 1 }
         }
         if added > 0 {
@@ -95,6 +96,32 @@ final class TaskStore {
     /// Puts back a task that was just removed (undo).
     func restore(_ task: BuddyTask) {
         if case .added = list.add(task) { save() }
+    }
+
+    /// Applies an edit from the task editor. Empty titles are ignored rather than saved.
+    func update(_ id: BuddyTask.ID, _ transform: (inout BuddyTask) -> Void) {
+        guard let before = list.task(id) else { return }
+        list.update(id, transform)
+        if list.task(id)?.title.isEmpty == true {
+            list.update(id) { $0.title = before.title }
+        }
+        if list.task(id) != before { save() }
+    }
+
+    var leftovers: [BuddyTask] {
+        list.leftovers(now: .now)
+    }
+
+    /// Brings unfinished today-only tasks from earlier days onto today's list.
+    func carryOverLeftovers() {
+        list.carryOver(leftovers.map(\.id), to: .now)
+        save()
+    }
+
+    /// The user chose to let yesterday's scratch items go.
+    func letGoOfLeftovers() {
+        for task in leftovers { list.remove(task.id) }
+        save()
     }
 
     func setPriority(_ priority: TaskPriority, for id: BuddyTask.ID) {

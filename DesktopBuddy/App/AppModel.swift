@@ -33,6 +33,7 @@ final class AppModel {
     let notifications: NotificationService
     let tasks: TaskStore
     let focus: FocusController
+    let focusLog: FocusLogStore
     let character = CharacterModel()
     let voiceOut = VoiceOutput()
     let voiceIn = VoiceInput()
@@ -47,6 +48,8 @@ final class AppModel {
     private(set) var completionPrompt: BuddyTask.ID?
     private(set) var recentlyRemoved: BuddyTask?
     private(set) var isUserAway = false
+    /// The task whose editor is open in the Today list.
+    var editingTaskID: BuddyTask.ID?
     /// Tasks heard by voice, waiting for review. Nothing is added until the user confirms.
     var voiceDrafts: [VoiceDraft] = []
 
@@ -74,6 +77,7 @@ final class AppModel {
         notifications = NotificationService()
         tasks = TaskStore(persistent: !preview)
         focus = FocusController(preferences: preferences, notifications: notifications, persistent: !preview)
+        focusLog = FocusLogStore(persistent: !preview)
         sounds = SoundPlayer(preferences: preferences)
         buddyLine = BuddyVoice.greeting()
     }
@@ -133,6 +137,30 @@ final class AppModel {
 
     func removeTask(_ id: BuddyTask.ID) {
         tasks.remove(id)
+    }
+
+    /// The one task Coco would suggest right now, and why.
+    var upNext: (task: BuddyTask, reason: DayPlanner.Reason)? {
+        let today = tasks.today()
+        guard let pick = DayPlanner.suggestion(from: today, now: .now),
+              let task = today.first(where: { $0.id == pick.taskID }) else { return nil }
+        return (task, pick.reason)
+    }
+
+    func toggleEditing(_ id: BuddyTask.ID) {
+        editingTaskID = editingTaskID == id ? nil : id
+    }
+
+    func carryOverLeftovers() {
+        let count = tasks.leftovers.count
+        tasks.carryOverLeftovers()
+        character.react(.nod)
+        speak(count == 1 ? "Brought it over to today." : "Brought \(count) over to today.", .acknowledge)
+    }
+
+    func letGoOfLeftovers() {
+        tasks.letGoOfLeftovers()
+        speak("Let them go. Fresh start.", .acknowledge)
     }
 
     func undoRemove() {
@@ -259,6 +287,12 @@ final class AppModel {
         case .resume:
             if focus.timer.isPaused { focus.resume(); speak(BuddyVoice.resumed, .acknowledge) }
             else { speak(BuddyVoice.nothingToControl, .acknowledge) }
+        case .whatsNext:
+            if let next = upNext {
+                speak(BuddyVoice.upNext(next.task.title, reason: next.reason), .acknowledge)
+            } else {
+                speak(BuddyVoice.nothingNext, .acknowledge)
+            }
         case .stop:
             if focus.timer.isActive { focus.stop(); speak(BuddyVoice.stopped, .acknowledge) }
             else { speak(BuddyVoice.nothingToControl, .acknowledge) }
@@ -347,6 +381,7 @@ final class AppModel {
             character.react(.nod)
 
         case .removed(let task):
+            if editingTaskID == task.id { editingTaskID = nil }
             if focus.timer.taskID == task.id { focus.selectTask(nil) }
             if completionPrompt == task.id { completionPrompt = nil }
             recentlyRemoved = task
@@ -382,13 +417,17 @@ final class AppModel {
             character.react(.nod)
 
         case .stopped(let phase, let elapsed, let taskID):
-            if phase == .focus, let taskID {
-                tasks.logFocus(minutes: Int(elapsed / 60), for: taskID)
+            if phase == .focus {
+                focusLog.record(taskID: taskID, seconds: elapsed, finished: false)
+                if let taskID { tasks.logFocus(minutes: Int(elapsed / 60), for: taskID) }
             }
 
         case .finished(let phase, let duration, let taskID, let whileAway):
             let minutes = Int((duration / 60).rounded())
             let task = tasks.task(taskID)
+            if phase == .focus {
+                focusLog.record(taskID: taskID, seconds: duration, finished: true)
+            }
             if phase == .focus, let task {
                 tasks.logFocus(minutes: minutes, for: task.id)
                 if !task.isCompleted { completionPrompt = task.id }

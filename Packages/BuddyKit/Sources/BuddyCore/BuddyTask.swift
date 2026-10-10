@@ -1,0 +1,64 @@
+import Foundation
+
+public enum TaskPriority: Int, Codable, CaseIterable, Comparable, Sendable {
+    case none, low, medium, high
+
+    public static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
+
+    public var label: String {
+        switch self {
+        case .none: "None"
+        case .low: "Low"
+        case .medium: "Medium"
+        case .high: "High"
+        }
+    }
+}
+
+/// Where a task lives. `.personal` tasks persist until done or removed;
+/// `.today` tasks are scratch items that belong to a single day.
+public enum TaskScope: String, Codable, Sendable {
+    case personal
+    case today
+}
+
+public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var title: String
+    public var notes: String
+    public var priority: TaskPriority
+    public var estimateMinutes: Int?
+    public var deadline: Date?
+    public var scope: TaskScope
+    public var createdAt: Date
+    /// Set only when the user confirms completion. Never inferred from elapsed time.
+    public var completedAt: Date?
+    /// Total minutes of finished focus sessions linked to this task.
+    public var focusMinutes: Int
+
+    public var isCompleted: Bool { completedAt != nil }
+
+    public init(
+        id: UUID = UUID(),
+        title: String,
+        notes: String = "",
+        priority: TaskPriority = .none,
+        estimateMinutes: Int? = nil,
+        deadline: Date? = nil,
+        scope: TaskScope = .personal,
+        createdAt: Date = Date(),
+        completedAt: Date? = nil,
+        focusMinutes: Int = 0
+    ) {
+        self.id = id
+        self.title = title
+        self.notes = notes
+        self.priority = priority
+        self.estimateMinutes = estimateMinutes
+        self.deadline = deadline
+        self.scope = scope
+        self.createdAt = createdAt
+        self.completedAt = completedAt
+        self.focusMinutes = focusMinutes
+    }
+}

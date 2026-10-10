@@ -1,0 +1,15 @@
+# Xcode / SwiftPM
+build/
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+xcuserdata/
+Packages/BuddyKit/.build/
+
+# Secrets — never commit credentials
+Secrets.xcconfig
+*.secrets.json
+.env
+
+.DS_Store

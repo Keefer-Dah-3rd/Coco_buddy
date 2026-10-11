@@ -298,6 +298,15 @@ extension CharacterAnimator {
             p.headDip += 3 * bump
             p.squash += 0.03 * bump
             p.eyeSmile = min(1, p.eyeSmile + 0.5 * bump)
+        case .bark:
+            // Matches the ~0.2 s sound: open fast, close a touch slower.
+            let open = dt < 0.06 ? dt / 0.06 : max(0, 1 - (dt - 0.06) / 0.16)
+            p.mouthOpen = max(p.mouthOpen, 0.95 * open)
+            p.earPerk = min(1, p.earPerk + 0.3 * open)
+            p.squash -= 0.04 * open
+            p.lift += 2 * open
+            p.eyeScale += 0.08 * open
+            p.tail += 0.3 * exp(-dt * 4) * sin(dt * 20)
         case .perk:
             p.earPerk = min(1, p.earPerk + 0.3 * exp(-dt * 4))
             p.earLeft -= 0.12 * exp(-dt * 5)

@@ -89,6 +89,7 @@ final class AppModel {
     @ObservationIgnored private let sounds: SoundPlayer
     @ObservationIgnored private let presence = PresenceMonitor()
     @ObservationIgnored private var undoExpiry: Task<Void, Never>?
+    @ObservationIgnored private var lastBarkAt = Date.distantPast
     @ObservationIgnored private var reminderTimer: Timer?
     @ObservationIgnored private var remindedEventIDs: Set<String> = []
 
@@ -226,7 +227,7 @@ final class AppModel {
     private func remind(_ event: CalendarEvent) {
         remindedEventIDs.insert(event.id)
         let minutes = max(0, Int((event.start.timeIntervalSinceNow / 60).rounded()))
-        character.react(.perk)
+        bark()
         // A clear reason to speak up, even during focus.
         speak(BuddyVoice.meetingSoon(event.title, minutes: minutes), .important)
         scheduleMeetingReminder()
@@ -237,7 +238,19 @@ final class AppModel {
     func buddyClicked() {
         character.react(.poke)
         if isUserAway { userAwayChanged(false) }
+        // A hello when you open her panel — not when closing it, not during focus.
+        if !isPanelOpen, !focus.isFocusing { bark(minimumGap: 10) }
         setPanelOpen(!isPanelOpen)
+    }
+
+    /// One bark, with Coco's mouth in sync. Rate-limited so she's never yappy;
+    /// silent when sounds are muted (the mouth still moves).
+    func bark(minimumGap: TimeInterval = 1.5) {
+        let now = Date.now
+        guard now.timeIntervalSince(lastBarkAt) >= minimumGap else { return }
+        lastBarkAt = now
+        character.react(.bark)
+        sounds.play(.bark)
     }
 
     func setPanelOpen(_ open: Bool) {
@@ -556,6 +569,7 @@ final class AppModel {
         preferences.lastGreetingDay = today
         Task {
             try? await Task.sleep(for: .seconds(1.2))
+            if preferences.presence == .interactive { bark() }
             speak(BuddyVoice.greeting(), .ambient)
         }
     }
@@ -577,12 +591,14 @@ final class AppModel {
 
         case .completed(let task):
             pendingCompletions.removeAll { $0 == task.id }
-            sounds.play(.taskDone)
             let remaining = tasks.openToday.count
-            if focus.isFocusing, preferences.focusPresentation == .quiet {
-                character.react(.nod)
+            if focus.isFocusing {
+                // Mid-focus: a quiet pop, no barking.
+                sounds.play(.taskDone)
+                if preferences.focusPresentation == .quiet { character.react(.nod) } else { character.play(.celebrating, for: 1.6) }
             } else {
                 character.play(.celebrating, for: remaining == 0 ? 2.6 : 1.6)
+                bark()
             }
             if completionPrompt == task.id { completionPrompt = nil }
             if Features.notion, task.external?.source == .notion, let mapping = notion.mapping,
@@ -658,11 +674,13 @@ final class AppModel {
                 buddyLine = BuddyVoice.endedWhileAway(phase.label)
                 return
             }
-            sounds.play(.sessionEnd)
             if phase == .focus {
+                // Time's up — Coco tells you herself.
+                bark()
                 character.play(.celebrating, for: 2.6)
                 speak(BuddyVoice.focusFinished(minutes: minutes, task: task?.title), .important)
             } else {
+                sounds.play(.sessionEnd)
                 character.react(.perk)
                 speak(BuddyVoice.breakFinished(), .important)
             }

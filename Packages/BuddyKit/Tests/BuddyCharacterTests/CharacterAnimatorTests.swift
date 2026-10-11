@@ -98,4 +98,12 @@ import Testing
         #expect(pose.headTilt > 0.1)
         #expect(pose.led > 0.1)
     }
+
+    @Test func barkOpensTheMouthWithTheSound() {
+        var animator = CharacterAnimator()
+        animator.react(.bark, at: t0)
+        #expect(animator.pose(at: t0 + 0.06).mouthOpen > 0.9)
+        #expect(animator.pose(at: t0 + 0.5).mouthOpen < 0.05)
+        #expect(animator.isMovingQuickly(at: t0 + 0.1))
+    }
 }

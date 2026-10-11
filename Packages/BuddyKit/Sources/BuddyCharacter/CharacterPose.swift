@@ -17,6 +17,8 @@ public enum CharacterReaction: Sendable, Equatable {
     case nod
     /// Something interesting: ears up, little hop, tail wag.
     case perk
+    /// A single bark: mouth snaps open with the sound, ears up, a little bounce.
+    case bark
 
     var duration: TimeInterval {
         switch self {
@@ -24,6 +26,7 @@ public enum CharacterReaction: Sendable, Equatable {
         case .land: 0.9
         case .nod: 0.5
         case .perk: 0.9
+        case .bark: 0.4
         }
     }
 }

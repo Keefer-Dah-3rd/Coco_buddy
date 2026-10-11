@@ -93,6 +93,13 @@ final class TaskStore {
         onEvent?(.removed(removed))
     }
 
+    /// Deletes every task and the saved file (part of "Delete all my data").
+    func eraseAll() {
+        list = TaskList()
+        try? file?.delete()
+        storageProblem = nil
+    }
+
     /// Puts back a task that was just removed (undo).
     func restore(_ task: BuddyTask) {
         if case .added = list.add(task) { save() }

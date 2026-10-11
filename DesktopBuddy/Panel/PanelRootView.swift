@@ -161,6 +161,7 @@ struct KeySegment<Value: Hashable>: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(item.trailing.map { "\(item.title), \($0)" } ?? item.title)
         .accessibilityAddTraits(selected ? .isSelected : [])
 
         if let shortcut = item.shortcut {

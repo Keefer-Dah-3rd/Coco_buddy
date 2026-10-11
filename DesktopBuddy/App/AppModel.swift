@@ -20,6 +20,8 @@ final class AppModel {
         var setPanelOpen: (Bool) -> Void
         var resetPosition: () -> Void
         var openConnections: () -> Void
+        var openSettings: () -> Void
+        var showOnboarding: () -> Void
     }
 
     /// How much a line is allowed to interrupt.
@@ -54,6 +56,10 @@ final class AppModel {
     private(set) var completionPrompt: BuddyTask.ID?
     private(set) var recentlyRemoved: BuddyTask?
     private(set) var isUserAway = false
+    /// Bumped when the calendar day changes, so "today" views recompute.
+    private(set) var dayToken = 0
+    /// True when the global shortcut is switched on but another app already owns it.
+    var shortcutUnavailable = false
     /// Tasks the assistant asked about — not marked done unless the user confirms here.
     private(set) var pendingCompletions: [BuddyTask.ID] = []
     @ObservationIgnored private var focusStartedFromChat = false
@@ -146,12 +152,68 @@ final class AppModel {
         windows?.openConnections()
     }
 
+    func openSettings() {
+        setPanelOpen(false)
+        windows?.openSettings()
+    }
+
+    func showOnboarding() {
+        setPanelOpen(false)
+        windows?.showOnboarding()
+    }
+
+    /// Wipes everything this app has stored — tasks, focus history, timer, calendar sign-in
+    /// and cache, the Claude key and chat, preferences — and starts over from the welcome.
+    func eraseAllData() async {
+        assistant.disconnect()
+        notion.disconnect()
+        await calendar.eraseAll()
+        focus.eraseAll()
+        focusLog.eraseAll()
+        tasks.eraseAll()
+        taskDrafts = []
+        pendingCompletions = []
+        recentlyRemoved = nil
+        editingTaskID = nil
+        completionPrompt = nil
+        remindedEventIDs = []
+        reminderTimer?.invalidate()
+        notifications.cancelAll()
+        preferences.reset()
+        windows?.resetPosition()
+        buddyLine = BuddyVoice.greeting()
+        panelTab = .today
+        windows?.showOnboarding()
+    }
+
+    /// Called when the onboarding finishes.
+    func finishOnboarding() {
+        preferences.onboardingCompleted = true
+        bark()
+        speak(BuddyVoice.welcomeDone, .important)
+    }
+
     private func startConnections() {
         calendar.onScheduleChanged = { [weak self] in self?.scheduleMeetingReminder() }
         calendar.startAutoRefresh()
         scheduleMeetingReminder()
+        // Never leave the mic open across sleep; what was heard so far is discarded.
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.voiceIn.cancel() }
+        }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshConnections() }
+            MainActor.assumeIsolated {
+                self?.dayToken += 1
+                self?.refreshConnections()
+            }
+        }
+        // Midnight while the app is open: "today" moves on, and so does the calendar.
+        NotificationCenter.default.addObserver(forName: .NSCalendarDayChanged, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.dayToken += 1
+                self?.remindedEventIDs = []
+                self?.refreshConnections()
+            }
         }
         refreshConnections()
     }
@@ -486,7 +548,8 @@ final class AppModel {
             let text = AssistantPrompt.today(
                 tasks: tasks.today(), focus: .init(focusState), focusedMinutesToday: focusLog.today.minutes,
                 calendarConnected: calendar.isConnected,
-                events: calendar.schedule.events + calendar.schedule.allDayEvents, now: .now)
+                events: calendar.schedule.events + calendar.schedule.allDayEvents, now: .now,
+                workdayEndHour: preferences.workdayEndHour)
             return .init(result: text, activity: calendar.isConnected ? "Looked at your tasks and calendar" : "Looked at your tasks")
 
         case .proposeTasks(let proposals):

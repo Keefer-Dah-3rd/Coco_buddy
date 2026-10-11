@@ -103,6 +103,11 @@ final class NotificationService: NSObject {
         }
     }
 
+    func cancelAll() {
+        center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
+    }
+
     func cancelSessionEnd() {
         center.removePendingNotificationRequests(withIdentifiers: [Self.sessionEndID])
     }

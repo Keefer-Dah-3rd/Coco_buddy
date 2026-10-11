@@ -52,12 +52,41 @@ final class Preferences {
     }
     /// "yyyy-MM-dd" of the last launch greeting, so the buddy says hello once a day.
     var lastGreetingDay: String? { didSet { defaults.set(lastGreetingDay, forKey: Key.greeting) } }
+    /// Coco barks at big moments (still silenced by Mute Sounds).
+    var barksEnabled: Bool { didSet { defaults.set(barksEnabled, forKey: Key.barks) } }
+    /// Hour the working day ends, for free-time maths (0–23).
+    var workdayEndHour: Int { didSet { defaults.set(workdayEndHour, forKey: Key.workdayEnd) } }
+    /// ⌃⌥C opens Coco's panel from any app.
+    var globalShortcutEnabled: Bool { didSet { defaults.set(globalShortcutEnabled, forKey: Key.shortcut) } }
+    var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
 
     @ObservationIgnored private let defaults: UserDefaults
 
+    /// Back to first-launch defaults (part of "Delete all my data").
+    func reset() {
+        for key in defaults.dictionaryRepresentation().keys
+        where key.hasPrefix("buddy.") || key.hasPrefix("focus.") || key.hasPrefix("calendar.") || key.hasPrefix("notion.") {
+            defaults.removeObject(forKey: key)
+        }
+        isBuddyVisible = true
+        alwaysOnTop = true
+        soundsMuted = false
+        voiceEnabled = false
+        presence = .interactive
+        focusPresentation = .smaller
+        focusSettings = FocusSettings()
+        buddyOrigin = nil
+        lastGreetingDay = nil
+        barksEnabled = true
+        workdayEndHour = 18
+        globalShortcutEnabled = true
+        onboardingCompleted = false
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Key.visible: true, Key.onTop: true, Key.muted: false])
+        defaults.register(defaults: [Key.visible: true, Key.onTop: true, Key.muted: false,
+                                     Key.barks: true, Key.workdayEnd: 18, Key.shortcut: true])
 
         isBuddyVisible = defaults.bool(forKey: Key.visible)
         alwaysOnTop = defaults.bool(forKey: Key.onTop)
@@ -72,6 +101,10 @@ final class Preferences {
             buddyOrigin = CGPoint(x: xy[0], y: xy[1])
         }
         lastGreetingDay = defaults.string(forKey: Key.greeting)
+        barksEnabled = defaults.bool(forKey: Key.barks)
+        workdayEndHour = min(23, max(1, defaults.integer(forKey: Key.workdayEnd)))
+        globalShortcutEnabled = defaults.bool(forKey: Key.shortcut)
+        onboardingCompleted = defaults.bool(forKey: Key.onboarding)
     }
 
     private enum Key {
@@ -84,6 +117,10 @@ final class Preferences {
         static let focusSettings = "focus.settings"
         static let origin = "buddy.origin"
         static let greeting = "buddy.lastGreetingDay"
+        static let barks = "buddy.barksEnabled"
+        static let workdayEnd = "calendar.workdayEndHour"
+        static let shortcut = "buddy.globalShortcut"
+        static let onboarding = "buddy.onboardingCompleted"
     }
 }
 

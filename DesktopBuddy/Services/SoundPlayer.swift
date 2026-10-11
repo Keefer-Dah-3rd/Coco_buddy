@@ -35,7 +35,7 @@ final class SoundPlayer {
     func play(_ cue: Cue) {
         guard !preferences.soundsMuted else { return }
         if cue == .bark {
-            guard !barks.isEmpty else { return }
+            guard preferences.barksEnabled, !barks.isEmpty else { return }
             var index = Int.random(in: 0..<barks.count)
             if index == lastBark, barks.count > 1 { index = (index + 1) % barks.count }
             lastBark = index

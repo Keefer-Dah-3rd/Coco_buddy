@@ -89,6 +89,7 @@ enum BuddyVoice {
     }
 
     static let nothingNext = "Nothing on the list yet. Want to add something?"
+    static let welcomeDone = "All set! Click me whenever you want to plan."
 
     // MARK: Connections
 

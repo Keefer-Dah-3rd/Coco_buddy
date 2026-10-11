@@ -70,7 +70,8 @@ final class CharacterRenderLoop: NSObject {
     private func reschedule() {
         restTimer?.invalidate()
         restTimer = nil
-        guard !isPaused else {
+        // Stop for good once the view is gone (e.g. the welcome window closed).
+        guard !isPaused, view != nil else {
             displayLink?.isPaused = true
             return
         }

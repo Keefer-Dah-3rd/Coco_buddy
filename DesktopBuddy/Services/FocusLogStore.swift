@@ -19,6 +19,11 @@ final class FocusLogStore {
         try? file?.save(log)
     }
 
+    func eraseAll() {
+        log = FocusLog()
+        try? file?.delete()
+    }
+
     var today: FocusLog.DaySummary {
         log.summary(on: .now)
     }

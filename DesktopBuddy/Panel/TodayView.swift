@@ -6,8 +6,12 @@ struct TodayView: View {
     let model: AppModel
     @State private var draft = ""
     @FocusState private var fieldFocused: Bool
+    /// Keyboard selection in the list (↑/↓ to move, Space to tick, Return to edit).
+    @State private var selectedID: BuddyTask.ID?
+    @FocusState private var listFocused: Bool
 
     var body: some View {
+        let _ = model.dayToken  // recompute "today" when the date changes
         let tasks = model.tasks.today()
         let done = tasks.filter(\.isCompleted).count
 
@@ -63,6 +67,7 @@ struct TodayView: View {
                                 TaskRow(
                                     task: task,
                                     isInFocus: model.focus.timer.isActive && model.focus.timer.taskID == task.id,
+                                    isSelected: listFocused && selectedID == task.id,
                                     model: model
                                 )
                                 .id(task.id)
@@ -71,6 +76,13 @@ struct TodayView: View {
                         .padding(.bottom, 8)
                     }
                     .scrollIndicators(.never)
+                    .focusable()
+                    .focused($listFocused)
+                    .focusEffectDisabled()
+                    .onKeyPress(keys: [.upArrow, .downArrow, .space, .return, .delete, "f"]) { press in
+                        handleListKey(press.key, tasks: tasks, proxy: proxy)
+                    }
+                    .accessibilityHint("Use the arrow keys to move between tasks, Space to tick, Return to edit")
                     .onAppear { reveal(model.editingTaskID, with: proxy, animated: false) }
                     .onChange(of: model.editingTaskID) { _, id in reveal(id, with: proxy, animated: true) }
                 }
@@ -149,6 +161,12 @@ struct TodayView: View {
                         .foregroundStyle(Theme.ink)
                         .focused($fieldFocused)
                         .onSubmit(submit)
+                        .onKeyPress(.downArrow) {
+                            guard let first = model.tasks.today().first else { return .ignored }
+                            selectedID = selectedID ?? first.id
+                            listFocused = true
+                            return .handled
+                        }
                     if !draft.isEmpty {
                         Text("↵").font(Theme.mono(11)).foregroundStyle(Theme.inkTertiary)
                     }
@@ -204,6 +222,35 @@ struct TodayView: View {
         .padding(.vertical, 8)
         .background(Theme.well)
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    /// Keyboard control of the list. ↑ from the top goes back to the add field.
+    private func handleListKey(_ key: KeyEquivalent, tasks: [BuddyTask], proxy: ScrollViewProxy) -> KeyPress.Result {
+        guard model.editingTaskID == nil, !tasks.isEmpty else { return .ignored }
+        let index = tasks.firstIndex { $0.id == selectedID } ?? 0
+        func select(_ i: Int) {
+            selectedID = tasks[i].id
+            withAnimation(.snappy(duration: 0.15)) { proxy.scrollTo(tasks[i].id) }
+        }
+        switch key {
+        case .downArrow:
+            select(min(tasks.count - 1, index + 1))
+        case .upArrow:
+            if index == 0 { listFocused = false; fieldFocused = true } else { select(index - 1) }
+        case .space:
+            model.toggleTask(tasks[index].id)
+        case .return:
+            model.editingTaskID = tasks[index].id
+        case .delete:
+            model.removeTask(tasks[index].id)
+            let remaining = tasks.filter { $0.id != tasks[index].id }
+            selectedID = remaining.isEmpty ? nil : remaining[min(index, remaining.count - 1)].id
+        case "f":
+            if !tasks[index].isCompleted { model.focus(on: tasks[index].id) }
+        default:
+            return .ignored
+        }
+        return .handled
     }
 
     /// Keeps an open editor in view.

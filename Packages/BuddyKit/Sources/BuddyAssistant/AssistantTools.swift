@@ -194,7 +194,7 @@ public enum AssistantPrompt {
     /// What get_today returns — exactly what the model is told about the user's day.
     public static func today(tasks: [BuddyTask], focus: FocusSnapshot, focusedMinutesToday: Int,
                              calendarConnected: Bool, events: [CalendarEvent], now: Date,
-                             calendar: Calendar = .current) -> String {
+                             workdayEndHour: Int = 18, calendar: Calendar = .current) -> String {
         let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
         var lines: [String] = []
         let open = tasks.filter { !$0.isCompleted }
@@ -234,7 +234,7 @@ public enum AssistantPrompt {
                              + (event.location.map { " @ \($0)" } ?? "") + (event.meetingLink != nil ? " [video call]" : ""))
             }
         }
-        let free = schedule.freeBlocks(from: now, until: DaySchedule.workdayEnd(after: now, calendar: calendar), minimum: 20 * 60)
+        let free = schedule.freeBlocks(from: now, until: DaySchedule.workdayEnd(after: now, hour: workdayEndHour, calendar: calendar), minimum: 20 * 60)
         if !free.isEmpty {
             lines.append("Free stretches (20+ min) before end of day: "
                          + free.map { "\(time($0.start))–\(time($0.end))" }.joined(separator: ", "))

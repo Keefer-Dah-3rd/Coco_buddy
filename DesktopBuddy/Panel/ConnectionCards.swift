@@ -34,7 +34,7 @@ struct ScheduleStrip: View {
                     MonoLabel(TodayView.duration(Int(free.duration / 60)))
                     Spacer()
                 }
-                .help("Longest stretch without meetings before 6 pm — good for deep work")
+                .help("Longest stretch without meetings before your workday ends — good for deep work")
             }
             if service.problem != nil || service.status == .needsReconnect {
                 Button { model.openConnections() } label: {
@@ -71,7 +71,7 @@ struct ScheduleStrip: View {
     private func longestFreeBlock(now: Date) -> DateInterval? {
         let schedule = model.calendar.schedule
         let start = schedule.current(at: now)?.end ?? now
-        return schedule.freeBlocks(from: start, until: DaySchedule.workdayEnd(after: now), minimum: 25 * 60)
+        return schedule.freeBlocks(from: start, until: DaySchedule.workdayEnd(after: now, hour: model.preferences.workdayEndHour), minimum: 25 * 60)
             .max { $0.duration < $1.duration }
     }
 }

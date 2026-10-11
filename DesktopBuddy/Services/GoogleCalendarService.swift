@@ -114,6 +114,16 @@ final class GoogleCalendarService {
         }
     }
 
+    /// Disconnects and forgets the client ID too (part of "Delete all my data").
+    func eraseAll() async {
+        await disconnect()
+        clientID = ""
+        defaults.removeObject(forKey: Key.clientID)
+        defaults.removeObject(forKey: Key.reminder)
+        reminderMinutes = 5
+        status = .needsClientID
+    }
+
     /// Revokes access at Google (best effort) and deletes every token and cached event.
     func disconnect() async {
         if let token = tokens?.refreshToken ?? tokens?.accessToken {

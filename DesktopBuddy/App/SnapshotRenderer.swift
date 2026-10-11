@@ -14,6 +14,7 @@ import BuddyIntegrations
 enum SnapshotRenderer {
     static func run(into folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        renderIcon(to: folder.appendingPathComponent("icon-1024.png"))
         for (name, background) in [("light", NSColor(hex: 0xD9E0E6)), ("dark", NSColor(hex: 0x1E252D))] {
             write(characterSheet(background: background), to: folder.appendingPathComponent("character-\(name).png"))
         }
@@ -88,6 +89,13 @@ enum SnapshotRenderer {
         starters.assistant.loadPreview([], cost: 0)
         write(view(PanelRootView(model: starters), appearance: .aqua), to: folder.appendingPathComponent("panel-chat-starters.png"))
 
+        let fresh = demoModel()
+        write(view(SettingsView(model: fresh, height: 1240), appearance: .aqua), to: folder.appendingPathComponent("settings.png"))
+        for step in 0..<4 {
+            write(view(OnboardingView(model: fresh, finish: {}, step: step), appearance: step == 2 ? .darkAqua : .aqua),
+                  to: folder.appendingPathComponent("welcome-\(step + 1).png"))
+        }
+
         let editing = demoModel()
         editing.editingTaskID = editing.tasks.today().first(where: { $0.title.hasPrefix("Take Coco") })?.id
         write(view(PanelRootView(model: editing), appearance: .aqua), to: folder.appendingPathComponent("panel-editor.png"))
@@ -95,6 +103,67 @@ enum SnapshotRenderer {
         let empty = AppModel(preview: true)
         write(view(PanelRootView(model: empty), appearance: .aqua), to: folder.appendingPathComponent("panel-empty.png"))
         print("Snapshots written to \(folder.path)")
+    }
+
+    // MARK: - App icon
+
+    /// Renders the 1024 px app icon: Coco on a warm paper tile in the macOS icon shape.
+    static func renderIcon(to url: URL) {
+        let art = CocoLayerView(frame: NSRect(x: 0, y: 0, width: 330, height: 392))
+        let window = NSWindow(contentRect: NSRect(x: -20_000, y: -20_000, width: 330, height: 392),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.contentView = art
+        window.orderFrontRegardless()
+        var animator = CharacterAnimator()
+        animator.setState(.idle, at: 0)
+        var pose = animator.pose(at: 1000.25)
+        pose.eyeOpen = 1
+        pose.headTilt = 0.1
+        pose.mouthOpen = 0.32
+        pose.tongue = 0.75
+        pose.earPerk = 0.95
+        art.layoutSubtreeIfNeeded()
+        art.render(pose, focusProgress: nil)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+        art.render(pose, focusProgress: nil)
+        // Draw Coco's layer tree into a transparent, top-left-origin image (her layers are y-down).
+        let coco = NSImage(size: art.bounds.size, flipped: true) { _ in
+            guard let context = NSGraphicsContext.current?.cgContext,
+                  let root = art.layer?.sublayers?.first else { return false }
+            root.render(in: context)
+            return true
+        }
+        window.orderOut(nil)
+
+        let size = NSSize(width: 1024, height: 1024)
+        let icon = NSImage(size: size, flipped: false) { _ in
+            let tile = NSRect(x: 100, y: 100, width: 824, height: 824)
+            let shape = NSBezierPath(roundedRect: tile, xRadius: 185, yRadius: 185)
+            NSGraphicsContext.saveGraphicsState()
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.28)
+            shadow.shadowBlurRadius = 24
+            shadow.shadowOffset = NSSize(width: 0, height: -10)
+            shadow.set()
+            NSColor(hex: 0xF3F1EC).setFill()
+            shape.fill()
+            NSGraphicsContext.restoreGraphicsState()
+            // A darker floor band gives the tile a little physical depth.
+            NSGraphicsContext.saveGraphicsState()
+            shape.addClip()
+            NSColor(hex: 0xE6E1D7).setFill()
+            NSRect(x: 100, y: 100, width: 824, height: 210).fill()
+            NSGraphicsContext.restoreGraphicsState()
+            NSColor(hex: 0xD3CDC1).setStroke()
+            shape.lineWidth = 3
+            shape.stroke()
+            // Coco, feet on the floor band.
+            coco.draw(in: NSRect(x: 512 - 330, y: 150, width: 660, height: 784))
+            return true
+        }
+        write(icon, to: url)
     }
 
     // MARK: - Character

@@ -4,6 +4,7 @@ import BuddyCore
 struct TaskRow: View {
     let task: BuddyTask
     let isInFocus: Bool
+    var isSelected = false
     let model: AppModel
     @State private var hovering = false
 
@@ -53,6 +54,11 @@ struct TaskRow: View {
             .padding(.vertical, isEditing ? 10 : 8)
         }
         .background(isEditing ? Theme.well : hovering ? Theme.well.opacity(0.7) : .clear)
+        .overlay(alignment: .leading) {
+            // Keyboard selection: a thin accent bar, like a cursor in the margin.
+            if isSelected { Rectangle().fill(Theme.accent).frame(width: 3) }
+        }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
         .animation(.snappy(duration: 0.22), value: isEditing)

@@ -113,6 +113,16 @@ final class FocusController {
         prepare(timer.phase)
     }
 
+    /// Clears any session and its saved state (part of "Delete all my data").
+    func eraseAll() {
+        timer = FocusTimer()
+        try? store?.delete()
+        tick?.invalidate()
+        completion?.invalidate()
+        notifications.cancelSessionEnd()
+        now = Date()
+    }
+
     var suggestedNextPhase: FocusPhase {
         timer.suggestedNextPhase(settings: preferences.focusSettings)
     }

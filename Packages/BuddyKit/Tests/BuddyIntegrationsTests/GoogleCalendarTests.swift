@@ -128,4 +128,13 @@ import Testing
         let end = DaySchedule.workdayEnd(after: evening, hour: 18, calendar: calendar)
         #expect(calendar.component(.day, from: end) == 13 && calendar.component(.hour, from: end) == 0)
     }
+
+    @Test func customWorkdayEndBoundsFreeTime() {
+        let two = calendar.date(from: DateComponents(year: 2026, month: 10, day: 12, hour: 14))!
+        let schedule = DaySchedule(events: [])
+        let early = schedule.freeBlocks(from: two, until: DaySchedule.workdayEnd(after: two, hour: 16, calendar: calendar))
+        let late = schedule.freeBlocks(from: two, until: DaySchedule.workdayEnd(after: two, hour: 21, calendar: calendar))
+        #expect(early.map(\.duration) == [2 * 3600])
+        #expect(late.map(\.duration) == [7 * 3600])
+    }
 }

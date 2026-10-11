@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// Creates the windows and connects them to the model. The only place that knows
 /// about both AppKit window controllers and app state.
@@ -10,6 +11,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var bubble: BubbleWindowController!
     private var panel: PanelWindowController!
     private var connections: ConnectionsWindowController!
+    private var settings: HostedWindowController!
+    private var onboarding: HostedWindowController!
+    private let shortcut = GlobalShortcut()
     private var isOccluded = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -30,6 +34,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         bubble = BubbleWindowController(parent: character.window)
         panel = PanelWindowController(model: model)
         connections = ConnectionsWindowController(model: model)
+        let model = model
+        settings = HostedWindowController(title: "Settings", size: NSSize(width: 540, height: 680)) {
+            AnyView(SettingsView(model: model))
+        }
+        onboarding = HostedWindowController(title: "Welcome", size: NSSize(width: 460, height: 610)) { [weak self] in
+            AnyView(OnboardingView(model: model) {
+                self?.onboarding.close()
+                model.finishOnboarding()
+            })
+        }
+        // Closing the welcome early counts as done — it never nags; Settings can show it again.
+        onboarding.onUserClose = { model.preferences.onboardingCompleted = true }
+        shortcut.onPress = { [weak self] in
+            guard let self else { return }
+            if !self.model.preferences.isBuddyVisible { self.model.preferences.isBuddyVisible = true }
+            self.model.setPanelOpen(!self.model.isPanelOpen)
+        }
 
         connectCharacterWindow()
         connectPanel()
@@ -38,6 +59,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.start()
         character.place(at: model.preferences.buddyOrigin)
         observeModel()
+        if !model.preferences.onboardingCompleted {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.onboarding.show() }
+        }
     }
 
     private func connectCharacterWindow() {
@@ -75,7 +99,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             },
             resetPosition: { [weak self] in self?.character.resetPosition() },
-            openConnections: { [weak self] in self?.connections.show() }
+            openConnections: { [weak self] in self?.connections.show() },
+            openSettings: { [weak self] in self?.settings.show() },
+            showOnboarding: { [weak self] in self?.onboarding.show() }
         )
     }
 
@@ -86,6 +112,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.character.setVisible(visible)
             if !visible { self.bubble.hide() }
             self.updateRenderingPause()
+        }
+        track({ model.preferences.globalShortcutEnabled }) { [weak self] enabled in
+            guard let self else { return }
+            self.model.shortcutUnavailable = !self.shortcut.setEnabled(enabled)
         }
         track({ model.preferences.alwaysOnTop }) { [weak self] onTop in
             self?.character.setAlwaysOnTop(onTop)

@@ -93,6 +93,21 @@ final class CharacterModel {
         }
     }
 
+    /// Holds a state with no time limit (e.g. thinking while the assistant works) until released.
+    func hold(_ state: CharacterState) {
+        guard transient == nil || transient == .thinking || transient == .talking else { return }
+        transientTask?.cancel()
+        transient = state
+        apply()
+    }
+
+    func release() {
+        guard transient == .thinking || transient == .talking else { return }
+        transientTask?.cancel()
+        transient = nil
+        apply()
+    }
+
     /// Keeps the mouth moving for as long as the voice is actually speaking.
     func setVoiceActive(_ active: Bool) {
         if active, transient == nil || transient == .talking {

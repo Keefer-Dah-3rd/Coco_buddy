@@ -9,10 +9,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var character: CharacterWindowController!
     private var bubble: BubbleWindowController!
     private var panel: PanelWindowController!
+    private var connections: ConnectionsWindowController!
     private var isOccluded = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
+        if CommandLine.arguments.contains("--keychain-selftest") {
+            let saved = Keychain.set(Data("selftest".utf8), for: "selftest")
+            let read = Keychain.string(for: "selftest")
+            Keychain.remove("selftest")
+            print("keychain selftest: saved=\(saved) readBack=\(read == "selftest") status=\(Keychain.lastStatus)")
+            exit(0)
+        }
         if let index = CommandLine.arguments.firstIndex(of: "--snapshots"), index + 1 < CommandLine.arguments.count {
             SnapshotRenderer.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
             exit(0)
@@ -21,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         character = CharacterWindowController(model: model.character)
         bubble = BubbleWindowController(parent: character.window)
         panel = PanelWindowController(model: model)
+        connections = ConnectionsWindowController(model: model)
 
         connectCharacterWindow()
         connectPanel()
@@ -65,7 +74,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.panel.close()
                 }
             },
-            resetPosition: { [weak self] in self?.character.resetPosition() }
+            resetPosition: { [weak self] in self?.character.resetPosition() },
+            openConnections: { [weak self] in self?.connections.show() }
         )
     }
 

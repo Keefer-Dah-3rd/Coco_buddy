@@ -19,26 +19,42 @@ struct TodayView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
 
-            if !model.voiceDrafts.isEmpty {
-                VoiceReviewCard(model: model)
+            if !model.taskDrafts.isEmpty {
+                TaskDraftReviewCard(model: model)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             let leftovers = model.tasks.leftovers
-            if tasks.isEmpty && leftovers.isEmpty {
+            let hasConnections = model.calendar.isConnected || (Features.notion && model.notion.isReady)
+            if tasks.isEmpty && leftovers.isEmpty && !hasConnections {
                 EmptyTodayView()
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
+                            if let pending = model.pendingNotionCompletion {
+                                NotionCompletionCard(model: model, task: pending)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 8)
+                            }
+                            if model.calendar.isConnected {
+                                ScheduleStrip(model: model)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 8)
+                            }
+                            if Features.notion, model.notion.isReady, !model.notionCandidates.isEmpty {
+                                NotionPickerCard(model: model)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 8)
+                            }
                             if !leftovers.isEmpty {
                                 LeftoversBanner(count: leftovers.count, model: model)
                                     .padding(.horizontal, 16)
                                     .padding(.bottom, 8)
                             }
-                            if model.voiceDrafts.isEmpty, !model.focus.timer.isActive, let next = model.upNext {
+                            if model.taskDrafts.isEmpty, !model.focus.timer.isActive, let next = model.upNext {
                                 UpNextCard(task: next.task, reason: next.reason, model: model)
                                     .padding(.horizontal, 16)
                                     .padding(.bottom, 4)
@@ -70,7 +86,7 @@ struct TodayView: View {
                     .padding(.vertical, 8)
             }
         }
-        .animation(.snappy(duration: 0.25), value: model.voiceDrafts.isEmpty)
+        .animation(.snappy(duration: 0.25), value: model.taskDrafts.isEmpty)
         .animation(.snappy(duration: 0.25), value: model.tasks.leftovers.isEmpty)
         .onAppear { fieldFocused = true }
         .onChange(of: model.panelOpenCount) { fieldFocused = true }
@@ -328,16 +344,17 @@ private struct VoiceProblem: View {
 }
 
 /// What Coco heard, as editable rows. Nothing is added until "Add".
-private struct VoiceReviewCard: View {
+struct TaskDraftReviewCard: View {
     @Bindable var model: AppModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                MonoLabel("Heard — review before adding", color: Theme.accent)
+                MonoLabel((model.draftOrigin == .chat ? "Suggested by \(Buddy.name)" : "Heard") + " — review before adding",
+                          color: Theme.accent)
                 Spacer()
             }
-            ForEach($model.voiceDrafts) { $draft in
+            ForEach($model.taskDrafts) { $draft in
                 HStack(spacing: 8) {
                     TextField("Task", text: $draft.title)
                         .textFieldStyle(.plain)
@@ -352,7 +369,7 @@ private struct VoiceReviewCard: View {
                         MonoLabel(TodayView.duration(minutes), color: Theme.inkTertiary)
                     }
                     Button {
-                        model.voiceDrafts.removeAll { $0.id == draft.id }
+                        model.taskDrafts.removeAll { $0.id == draft.id }
                     } label: {
                         Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
                     }
@@ -365,11 +382,11 @@ private struct VoiceReviewCard: View {
                 .background(Theme.paper, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             }
             HStack(spacing: 8) {
-                let count = model.voiceDrafts.count
-                Button(count == 1 ? "Add task" : "Add \(count) tasks") { model.addVoiceDrafts() }
+                let count = model.taskDrafts.count
+                Button(count == 1 ? "Add task" : "Add \(count) tasks") { model.addTaskDrafts() }
                     .buttonStyle(KeyButtonStyle(kind: .primary, fillWidth: true))
                     .keyboardShortcut(.return, modifiers: .command)
-                Button("Discard") { model.discardVoiceDrafts() }
+                Button("Discard") { model.discardTaskDrafts() }
                     .buttonStyle(KeyButtonStyle(kind: .secondary))
             }
         }

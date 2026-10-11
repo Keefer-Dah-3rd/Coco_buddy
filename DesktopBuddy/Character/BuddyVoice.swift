@@ -90,6 +90,23 @@ enum BuddyVoice {
 
     static let nothingNext = "Nothing on the list yet. Want to add something?"
 
+    // MARK: Connections
+
+    static func meetingSoon(_ title: String, minutes: Int) -> String {
+        minutes <= 1 ? "“\(short(title))” is starting now." : "“\(short(title))” starts in \(minutes) minutes."
+    }
+
+    static func addedFromNotion(_ count: Int) -> String {
+        count == 1 ? "Brought it over from Notion." : "Brought \(count) over from Notion."
+    }
+
+    static let askNotionCompletion = "Want me to mark it done in Notion too?"
+    static let notionUpdated = "Marked done in Notion."
+
+    static func notionUpdateFailed(_ reason: String) -> String {
+        "I couldn't update Notion — \(reason) It's still done here."
+    }
+
     // MARK: Voice
 
     static let listening = "I'm listening."

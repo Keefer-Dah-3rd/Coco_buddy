@@ -3,6 +3,7 @@ import AppKit
 import SwiftUI
 import BuddyCharacter
 import BuddyCore
+import BuddyIntegrations
 
 /// Renders the character in every state, plus the panel, to PNG files — a visual
 /// regression sheet and design QA tool. Debug builds only:
@@ -26,9 +27,9 @@ enum SnapshotRenderer {
                 .padding(8), appearance: appearance), to: folder.appendingPathComponent("bubble-\(name).png"))
         }
         let review = demoModel()
-        review.voiceDrafts = TaskSplitter.split("I need to finish the homepage, review three portfolio projects for about an hour, and send two emails today")
-            .map(AppModel.VoiceDraft.init)
-        review.speak(BuddyVoice.heardTasks(review.voiceDrafts.count), .acknowledge)
+        review.taskDrafts = TaskSplitter.split("I need to finish the homepage, review three portfolio projects for about an hour, and send two emails today")
+            .map(AppModel.TaskDraft.init)
+        review.speak(BuddyVoice.heardTasks(review.taskDrafts.count), .acknowledge)
         write(view(PanelRootView(model: review), appearance: .aqua), to: folder.appendingPathComponent("panel-voice-review.png"))
 
         let glyph = NSImage(size: NSSize(width: 144, height: 128), flipped: false) { rect in
@@ -38,6 +39,54 @@ enum SnapshotRenderer {
             return true
         }
         write(glyph, to: folder.appendingPathComponent("menubar-glyph.png"))
+
+        let connected = demoModel()
+        let day = Calendar.current.startOfDay(for: .now)
+        func at(_ hour: Double) -> Date { day.addingTimeInterval(hour * 3600) }
+        connected.calendar.loadPreview(events: [
+            CalendarEvent(id: "1", title: "Design review", start: Date.now.addingTimeInterval(18 * 60),
+                          end: Date.now.addingTimeInterval(48 * 60), meetingLink: URL(string: "https://meet.google.com/abc")),
+            CalendarEvent(id: "2", title: "1:1 with Sam", start: Date.now.addingTimeInterval(5 * 3600),
+                          end: Date.now.addingTimeInterval(5.5 * 3600)),
+        ], account: "keefer@example.com")
+        connected.notion.loadPreview(
+            mapping: NotionMapping(dataSourceID: "ds", dataSourceTitle: "Portfolio tasks", titleProperty: "Name"),
+            tasks: [
+                NotionTask(id: "n1", title: "Write case study intro", isDone: false, due: at(12), priority: .high),
+                NotionTask(id: "n2", title: "Export hero renders", isDone: false, due: nil, priority: .none),
+                NotionTask(id: "n3", title: "Email the printer", isDone: false, due: at(24 * 3), priority: .low),
+            ],
+            workspace: "Keefer's Notion")
+        write(view(PanelRootView(model: connected), appearance: .aqua), to: folder.appendingPathComponent("panel-connected.png"))
+        write(view(ConnectionsView(model: connected), appearance: .aqua), to: folder.appendingPathComponent("connections-connected.png"))
+        write(view(ConnectionsView(model: AppModel(preview: true)), appearance: .darkAqua),
+              to: folder.appendingPathComponent("connections-setup-dark.png"))
+
+        let chatting = demoModel()
+        chatting.panelTab = .chat
+        var reply = AssistantService.Turn(role: .coco, text: "Your 1:1 with Sam is at 2. Before then you've got a clean 90 minutes — I'd spend it on the homepage hero, since it's your only high-priority task. Want me to start a focus session on it?")
+        reply.activities = ["Looked at your tasks and calendar"]
+        var proposal = AssistantService.Turn(role: .coco, text: "Here's a first pass at breaking it down. Tweak anything before adding.")
+        proposal.activities = ["Suggested 3 tasks — review below"]
+        chatting.assistant.loadPreview([
+            AssistantService.Turn(role: .user, text: "What should I do before my 1:1?"),
+            reply,
+            AssistantService.Turn(role: .user, text: "Break the hero into steps"),
+            proposal,
+        ], cost: 0.018)
+        chatting.taskDrafts = [
+            QuickAddParser.Result(title: "Sketch three hero layouts", estimateMinutes: 30),
+            QuickAddParser.Result(title: "Write headline options", estimateMinutes: 20),
+            QuickAddParser.Result(title: "Build the chosen layout", priority: .high, estimateMinutes: 45),
+        ].map(AppModel.TaskDraft.init)
+        chatting.setDraftOriginForPreview(.chat)
+        write(view(PanelRootView(model: chatting), appearance: .aqua), to: folder.appendingPathComponent("panel-chat.png"))
+        write(view(PanelRootView(model: { let m = AppModel(preview: true); m.panelTab = .chat; return m }()), appearance: .darkAqua),
+              to: folder.appendingPathComponent("panel-chat-empty-dark.png"))
+        let starters = demoModel()
+        starters.panelTab = .chat
+        starters.assistant.loadPreview([], cost: 0)
+        write(view(PanelRootView(model: starters), appearance: .aqua), to: folder.appendingPathComponent("panel-chat-starters.png"))
 
         let editing = demoModel()
         editing.editingTaskID = editing.tasks.today().first(where: { $0.title.hasPrefix("Take Coco") })?.id

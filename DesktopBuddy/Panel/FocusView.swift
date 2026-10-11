@@ -1,5 +1,6 @@
 import SwiftUI
 import BuddyCore
+import BuddyIntegrations
 
 /// Focus timer: pick a phase and task, start, and see the countdown.
 struct FocusView: View {
@@ -27,6 +28,7 @@ struct FocusView: View {
             if timer.isFinished {
                 CompletionCard(model: model)
             } else {
+                meetingHeadsUp
                 controls
             }
 
@@ -121,6 +123,23 @@ struct FocusView: View {
             }
             .buttonStyle(KeyButtonStyle(kind: .primary, fillWidth: true))
             .keyboardShortcut(.space, modifiers: [])
+        }
+    }
+
+    /// If a meeting would interrupt the session, say so before it starts.
+    @ViewBuilder
+    private var meetingHeadsUp: some View {
+        if model.calendar.isConnected, !timer.isActive,
+           let next = model.calendar.schedule.next(after: .now),
+           next.start.timeIntervalSinceNow < focus.remaining {
+            let minutes = max(1, Int(next.start.timeIntervalSinceNow / 60))
+            HStack(spacing: 6) {
+                Image(systemName: "calendar").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.accent)
+                Text("“\(BuddyVoice.short(next.title))” starts in \(minutes)m — before this session would end.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

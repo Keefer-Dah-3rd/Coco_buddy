@@ -12,7 +12,10 @@ A native macOS desktop companion. **Coco** — a black-and-white corgi with a wh
 
 - **Phase 1 — native desktop prototype: done.** Floating character, drag & position memory, panel, focus timer with notifications — plus Coco and voice.
 - **Phase 2 — daily planning: done.** Personal task list with notes, priority, estimate, deadline and "my list / today only"; local persistence; daily overview (done/remaining, focused today, time left, *Up next* with its reason); focus sessions linked to tasks and logged.
-- Next: Phase 3 (Google Calendar + Notion), then Phase 4 (assistant). See [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
+- **Phase 3 — Google Calendar: built, connecting.** Schedule strip (meeting now/next with Join, longest free block), meeting reminders, focus-length heads-up. Setup: [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
+- **Notion: paused** (out of the plan for now). The integration code and tests remain in `BuddyIntegrations`, switched off by `Features.notion` — nothing in the app shows or runs it.
+- **Phase 4 — conversational assistant: built.** Chat tab with Claude (Opus 5.5, low effort, streamed replies), voice in/out, tools to read your day, propose tasks, start focus and ask to complete tasks — all confirmed in the panel. Needs your Anthropic API key (Connections).
+- Next: Phase 5 (polish). See [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
 
 ## Build & run
 
@@ -50,7 +53,10 @@ cd Packages/BuddyKit && swift test
 | Right-click her | Talk, presence, focus behaviour, always-on-top, mute, voice, hide, reset position |
 | Menu bar › Animation Preview | Plays any state on demand |
 | Leave the Mac idle 5 min | She dozes off (airplane ears, Zs); wakes when you return |
-| `Esc` / `⌘1` `⌘2` / `Space` / `⌘L` | Close panel / switch tabs / start-pause on Focus / talk |
+| Chat tab › *"What should I work on next?"* | Coco looks at your tasks (the chat says so), answers briefly; Coco thinks while waiting and talks while the reply streams |
+| Chat › *"Break my top task into steps"* | Draft tasks appear for review — nothing is added until you press Add |
+| Chat › *"I finished the intro"* | A "Mark done?" card — only your click marks it |
+| `Esc` / `⌘1` `⌘2` `⌘3` / `Space` / `⌘L` / `⌘.` | Close panel / switch tabs / start-pause on Focus / talk / stop a reply |
 
 Permissions are asked only on first use: notifications when you first start a session, microphone and speech recognition when you first press the mic. If you decline, everything else keeps working and the panel shows where to turn them on.
 
@@ -66,6 +72,8 @@ DesktopBuddy/                    App target — AppKit windows + SwiftUI views o
 Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
   BuddyCore        Tasks, quick-add parser, day planner (Up next), focus log, voice parsing, focus timer, persistence
   BuddyCharacter   States, pose model, animator (blinks, idle life, reactions, frame scheduling)
+  BuddyIntegrations Google OAuth (PKCE) + Calendar parsing + free-time maths; Notion API, schema mapping, task parsing
+  BuddyAssistant   Claude Messages API (raw HTTP + SSE), stream accumulation, tool schemas + validation, prompts
 ```
 
 **The character is three layers.** `CharacterState` (idle, listening, talking, thinking, celebrating, focused, sleeping) → `CharacterAnimator` turns state + time + events into a `CharacterPose` (plain numbers: eye openness, gaze, ear perk, tail angle, tongue, head tilt…) → `CocoLayerView` draws the pose. Animation is a pure function of time, so it's testable, and Coco replaced the original placeholder robot without touching the animation system.
@@ -73,6 +81,8 @@ Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
 **Energy.** The animator predicts when anything will next move. Quick motion (blinks, ear flicks, reactions, hops) renders at 60 fps from a display link; slow rhythmic motion (wagging, panting, listening) at 30 fps; at rest a single timer wakes ~10×/s (6×/s asleep), and nothing renders while she's hidden or covered. She's drawn with Core Animation layers — each frame only sets transforms and opacity; the window server rasterises. Measured idle cost (Release build, Intel Mac): **~0.9% CPU, 45 MB**, including her idle life. (The same approach measured 0.5% for the simpler placeholder; a SwiftUI `Canvas` renderer measured 4.4%.) Reduce Motion and Low Power Mode are respected.
 
 **Voice.** Input uses Apple's Speech framework with on-device recognition whenever the language supports it (the panel says so when it doesn't). The mic is open only while you're talking to her — it closes after a pause, after 30 s, or when you click again, and Coco's voice is stopped first so she never hears herself. Transcripts are understood by a small, tested rule-based parser (`VoiceCommandParser`, `TaskSplitter`): timer commands run directly; anything else becomes tasks to review. Splitting on "and" uses Apple's on-device NaturalLanguage tagger, so "finish the homepage and send emails" splits but "buy salt and pepper" doesn't. Output uses the system speech synthesizer — offline, best installed voice, pitched up a touch. When the Phase 4 assistant arrives, the same pipeline feeds the chat.
+
+**Assistant.** Swift has no official Anthropic SDK, so the chat speaks the Messages API over HTTP with server-sent events. `claude-opus-5-5` at low effort keeps replies quick; a server-side refusal fallback (`fallbacks: "default"`) retries a wrongly declined message on another Claude model. Coco learns about your day only by calling a `get_today` tool, which the chat shows each time — tasks and calendar aren't attached to every message. Her four tools are deliberately narrow: read today, *propose* tasks (drafts you review), start focus, and *ask* to mark a task done (you confirm in the panel); results report exactly what happened, so she can't claim an action that didn't occur. History is append-only and in memory only (the format the newest Claude models need so earlier reasoning stays valid; it also keeps the prompt cache warm). Estimated cost per chat is shown.
 
 **Time.** The focus timer stores an end date (or remaining time when paused), never counts ticks. The 1 Hz tick only refreshes the display; completion is decided by comparing dates on tick, wake and launch, with a system notification scheduled at the end date as a backstop.
 
@@ -83,7 +93,9 @@ Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
 ## Privacy
 
 - Everything is local: tasks and timer state are JSON files in the app's sandbox container; preferences in UserDefaults.
-- App Sandbox entitlements: **microphone only**. No network access — not even for voice (on-device recognition, offline speech synthesis).
+- App Sandbox entitlements: microphone and **outgoing** network (Google Calendar and the Claude API). Voice needs no network (on-device recognition, offline speech synthesis).
+- Integrations ask for the least access: Calendar is read-only (events only, a minimal field list); Notion sees only databases you share. Tokens are in the Keychain; *Disconnect* revokes/forgets them and deletes cached data.
+- Calendar and task data go to Anthropic only when you ask the chat something that needs them, and the chat marks it; chats are kept in memory only.
 - Audio is never recorded or stored; the transcript is used once and discarded.
 - Permissions are requested on first use, each with an explanation of what it's for.
 

@@ -13,3 +13,9 @@ Secrets.xcconfig
 .env
 
 .DS_Store
+
+# Personal OAuth client files downloaded from Google Cloud
+client_*.apps.googleusercontent.com.plist
+GoogleService-Info.plist
+client_secret_*.json
+*.apps.googleusercontent.com.json

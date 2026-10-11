@@ -48,6 +48,8 @@ struct MenuBarMenu: View {
             }
         }
         Button("Reset Position") { model.resetPosition() }
+        Button("Connections…") { model.openConnections() }
+            .keyboardShortcut(",")
 
         Divider()
 
@@ -162,6 +164,7 @@ enum BuddyContextMenu {
         menu.addItem(.separator())
         menu.addItem(NSMenuItem.action("Hide \(Buddy.name)") { preferences.isBuddyVisible = false })
         menu.addItem(NSMenuItem.action("Reset Position") { model.resetPosition() })
+        menu.addItem(NSMenuItem.action("Connections…") { model.openConnections() })
         menu.addItem(.separator())
         menu.addItem(NSMenuItem.action("Quit Desktop Buddy") { NSApp.terminate(nil) })
         return menu

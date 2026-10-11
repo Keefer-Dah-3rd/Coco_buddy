@@ -78,6 +78,31 @@ final class NotificationService: NSObject {
         }
     }
 
+    /// A one-off notification at a given time (meeting reminders).
+    func schedule(id: String, title: String, body: String, at date: Date) {
+        let interval = date.timeIntervalSinceNow
+        guard interval > 1 else { return }
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = nil
+        content.interruptionLevel = .timeSensitive
+        let request = UNNotificationRequest(identifier: id, content: content,
+                                            trigger: UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false))
+        Task {
+            await requestAuthorizationIfNeeded()
+            guard authorization == .allowed else { return }
+            try? await center.add(request)
+        }
+    }
+
+    func cancel(prefix: String) {
+        Task {
+            let pending = await center.pendingNotificationRequests()
+            center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(prefix) })
+        }
+    }
+
     func cancelSessionEnd() {
         center.removePendingNotificationRequests(withIdentifiers: [Self.sessionEndID])
     }

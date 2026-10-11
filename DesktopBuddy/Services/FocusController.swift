@@ -54,8 +54,9 @@ final class FocusController {
 
     // MARK: - Intents
 
-    func start(_ phase: FocusPhase = .focus, taskID: UUID? = nil) {
-        let minutes = preferences.focusSettings.minutes(for: phase)
+    func start(_ phase: FocusPhase = .focus, taskID: UUID? = nil, minutes override: Int? = nil) {
+        let minutes = override.map { min(max($0, FocusSettings.minuteRange.lowerBound), FocusSettings.minuteRange.upperBound) }
+            ?? preferences.focusSettings.minutes(for: phase)
         now = Date()
         timer.start(phase, duration: TimeInterval(minutes * 60), taskID: taskID, now: now)
         commit()

@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		DB0000000000000000000B01 /* BuddyCore in Frameworks */ = {isa = PBXBuildFile; productRef = DB0000000000000000000D01 /* BuddyCore */; };
 		DB0000000000000000000B02 /* BuddyCharacter in Frameworks */ = {isa = PBXBuildFile; productRef = DB0000000000000000000D02 /* BuddyCharacter */; };
+		DB0000000000000000000B03 /* BuddyIntegrations in Frameworks */ = {isa = PBXBuildFile; productRef = DB0000000000000000000D03 /* BuddyIntegrations */; };
+		DB0000000000000000000B04 /* BuddyAssistant in Frameworks */ = {isa = PBXBuildFile; productRef = DB0000000000000000000D04 /* BuddyAssistant */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +32,8 @@
 			files = (
 				DB0000000000000000000B01 /* BuddyCore in Frameworks */,
 				DB0000000000000000000B02 /* BuddyCharacter in Frameworks */,
+				DB0000000000000000000B03 /* BuddyIntegrations in Frameworks */,
+				DB0000000000000000000B04 /* BuddyAssistant in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +78,8 @@
 			packageProductDependencies = (
 				DB0000000000000000000D01 /* BuddyCore */,
 				DB0000000000000000000D02 /* BuddyCharacter */,
+				DB0000000000000000000D03 /* BuddyIntegrations */,
+				DB0000000000000000000D04 /* BuddyAssistant */,
 			);
 			productName = DesktopBuddy;
 			productReference = DB0000000000000000000A01 /* DesktopBuddy.app */;
@@ -199,6 +205,7 @@
 				DEVELOPMENT_TEAM = 7VXB4ZWKC7;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
@@ -231,6 +238,7 @@
 				DEVELOPMENT_TEAM = 7VXB4ZWKC7;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
@@ -291,6 +299,14 @@
 		DB0000000000000000000D02 /* BuddyCharacter */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = BuddyCharacter;
+		};
+		DB0000000000000000000D03 /* BuddyIntegrations */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BuddyIntegrations;
+		};
+		DB0000000000000000000D04 /* BuddyAssistant */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BuddyAssistant;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

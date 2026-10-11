@@ -22,6 +22,21 @@ public enum TaskScope: String, Codable, Sendable {
     case today
 }
 
+/// Where a task came from when it isn't purely local, e.g. a Notion page.
+public struct ExternalTaskRef: Codable, Hashable, Sendable {
+    public enum Source: String, Codable, Sendable { case notion }
+
+    public var source: Source
+    public var id: String
+    public var url: URL?
+
+    public init(source: Source, id: String, url: URL? = nil) {
+        self.source = source
+        self.id = id
+        self.url = url
+    }
+}
+
 public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
     public var id: UUID
     public var title: String
@@ -37,6 +52,8 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
     public var focusMinutes: Int
     /// For `.today` tasks: the day they belong to (start of day). Nil means the day they were created.
     public var plannedDay: Date?
+    /// Set for tasks imported from (and linked to) an external service.
+    public var external: ExternalTaskRef?
 
     public var isCompleted: Bool { completedAt != nil }
 
@@ -51,7 +68,8 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
         createdAt: Date = Date(),
         completedAt: Date? = nil,
         focusMinutes: Int = 0,
-        plannedDay: Date? = nil
+        plannedDay: Date? = nil,
+        external: ExternalTaskRef? = nil
     ) {
         self.id = id
         self.title = title
@@ -64,5 +82,6 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
         self.completedAt = completedAt
         self.focusMinutes = focusMinutes
         self.plannedDay = plannedDay
+        self.external = external
     }
 }

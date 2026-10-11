@@ -108,6 +108,37 @@ final class TaskStore {
         if list.task(id) != before { save() }
     }
 
+    /// Adds tasks picked from an external service, linking rather than duplicating.
+    /// Returns (added, linked to an existing local task).
+    @discardableResult
+    func addLinked(_ incoming: [BuddyTask]) -> (added: Int, linked: Int) {
+        var added = 0, linked = 0
+        for task in incoming {
+            switch list.addLinked(task) {
+            case .added: added += 1
+            case .linkedExisting: linked += 1
+            case .alreadyLinked: break
+            }
+        }
+        if added + linked > 0 {
+            save()
+            onEvent?(.addedBatch(count: added + linked))
+        }
+        return (added, linked)
+    }
+
+    /// Open tasks that mirror an external item.
+    var openLinkedRefs: [ExternalTaskRef] {
+        list.tasks.filter { !$0.isCompleted }.compactMap(\.external)
+    }
+
+    func applyExternalUpdates(_ updates: [ExternalTaskRef: (title: String, deadline: Date?, isDone: Bool)]) {
+        guard !updates.isEmpty else { return }
+        let before = list
+        list.refreshLinked(updates, at: .now)
+        if list != before { save() }
+    }
+
     var leftovers: [BuddyTask] {
         list.leftovers(now: .now)
     }

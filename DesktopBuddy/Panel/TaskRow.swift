@@ -63,7 +63,7 @@ struct TaskRow: View {
     private var meta: some View {
         let parts = metaParts
         let due = TaskLabels.due(task)
-        if !parts.isEmpty || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty {
+        if !parts.isEmpty || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty || task.external != nil {
             HStack(spacing: 8) {
                 if isInFocus {
                     HStack(spacing: 4) {
@@ -82,6 +82,10 @@ struct TaskRow: View {
                 }
                 if task.scope == .today {
                     MonoLabel("Today only", color: Theme.inkTertiary)
+                }
+                if task.external?.source == .notion {
+                    MonoLabel("Notion", color: Theme.inkSecondary)
+                        .help("Linked to a Notion page — title and due date come from Notion")
                 }
                 ForEach(parts, id: \.self) { MonoLabel($0, color: Theme.inkTertiary) }
                 if !task.notes.isEmpty {
@@ -104,6 +108,9 @@ struct TaskRow: View {
     @ViewBuilder
     private var contextMenu: some View {
         Button("Edit…") { model.editingTaskID = task.id }
+        if let url = task.external?.url {
+            Button("Open in Notion") { NSWorkspace.shared.open(url) }
+        }
         Button(task.isCompleted ? "Mark Not Done" : "Mark Done") { model.toggleTask(task.id) }
         if !task.isCompleted {
             Button("Focus on This") { model.focus(on: task.id) }

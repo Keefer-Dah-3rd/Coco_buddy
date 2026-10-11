@@ -92,3 +92,35 @@ import Testing
         #expect(list.task(task.id)?.completedAt == nil)
     }
 }
+
+@Suite struct LinkedTaskTests {
+    let ref = ExternalTaskRef(source: .notion, id: "page-1")
+
+    @Test func sameExternalItemIsNeverAddedTwice() {
+        var list = TaskList()
+        list.addLinked(BuddyTask(title: "Write brief", external: ref))
+        let again = list.addLinked(BuddyTask(title: "Write brief (renamed)", external: ref))
+        guard case .alreadyLinked = again else { Issue.record("expected alreadyLinked"); return }
+        #expect(list.tasks.count == 1)
+    }
+
+    @Test func matchingLocalTaskIsLinkedNotDuplicated() {
+        var list = TaskList()
+        let local = BuddyTask(title: "Write  the brief")
+        list.add(local)
+        let result = list.addLinked(BuddyTask(title: "write the brief", external: ref))
+        #expect(result == .linkedExisting(list.tasks[0]))
+        #expect(list.tasks.count == 1)
+        #expect(list.tasks[0].id == local.id && list.tasks[0].external == ref)
+    }
+
+    @Test func refreshUpdatesSourceFieldsAndKeepsLocalOnes() {
+        var list = TaskList()
+        list.addLinked(BuddyTask(title: "Old", notes: "mine", estimateMinutes: 30, external: ref))
+        let now = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        list.refreshLinked([ref: (title: "New", deadline: now, isDone: true)], at: now)
+        let task = list.tasks[0]
+        #expect(task.title == "New" && task.deadline == now && task.completedAt == now)
+        #expect(task.notes == "mine" && task.estimateMinutes == 30)
+    }
+}

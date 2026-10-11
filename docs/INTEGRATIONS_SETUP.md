@@ -1,4 +1,4 @@
-# Integration setup checklist (Phases 3–4)
+# Integration setup (Phases 3–4)
 
 Nothing here is needed for Phase 1 or 2. Each integration stays **disconnected** until it's genuinely configured — the app never shows a connection it doesn't have.
 
@@ -7,42 +7,42 @@ Nothing here is needed for Phase 1 or 2. Each integration stays **disconnected**
 The target signs automatically with **John Keefe (Personal Team)** (`DEVELOPMENT_TEAM = 7VXB4ZWKC7`). Stable signing keeps microphone/speech permissions and Keychain items attached to the app across rebuilds.
 
 - [ ] Xcode › Settings › Accounts → select the Apple ID → sign in again if prompted (the command line couldn't reuse the saved session). The first ⌘R then creates the "Apple Development" certificate.
-- [ ] When Phase 3 starts: add the **Outgoing Connections (Client)** capability (`ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES`). Today the app deliberately has no network access.
+- Outgoing network access is enabled (Phase 3); incoming connections are not.
 
-## Google Calendar (read-only)
+## Google Calendar (read-only) — built, needs your client ID
 
-Approach: OAuth 2.0 Authorization Code + PKCE through `ASWebAuthenticationSession` (the system sign-in sheet). No client secret is involved, so nothing secret ships in the app.
+How it works: Google's guidance for macOS apps is an **iOS-type** OAuth client. Sign-in runs in the system sheet (`ASWebAuthenticationSession`) with PKCE and the reversed client ID as the redirect — **no client secret exists**, so there's nothing secret to protect. The only scope requested is `calendar.events.readonly`. Tokens live in the Keychain; today's events are cached locally so the schedule still shows (with its age) when offline. *Disconnect* revokes the token at Google and deletes the cache.
 
-- [ ] Create a project at <https://console.cloud.google.com/>.
-- [ ] Enable the **Google Calendar API**.
-- [ ] OAuth consent screen: External, Testing mode, add your Google account as a test user.
-- [ ] Credentials → Create OAuth client ID → type **iOS** (Google's recommended type for native Apple apps; it uses a custom-scheme redirect and needs no secret). Bundle ID: `com.keefer.DesktopBuddy` (or your own, matching the target).
-- [ ] Copy the client ID into `Secrets.xcconfig` (git-ignored) as `GOOGLE_CLIENT_ID = …`. The redirect scheme is the reversed client ID.
-- Scope requested: `https://www.googleapis.com/auth/calendar.events.readonly` (+ `calendar.calendarlist.readonly` if choosing calendars). Nothing that can write.
-- Tokens: refresh token in the Keychain; access tokens in memory only.
-- Handled cases: expired/revoked token (prompt to reconnect), offline (show last-fetched state with its timestamp), empty calendar, API errors.
-- In Testing mode Google shows an "unverified app" screen and refresh tokens expire after 7 days. Fine for personal use; publishing would require Google's verification.
+- [ ] [Create a Google Cloud project](https://console.cloud.google.com/projectcreate).
+- [ ] [Enable the Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com).
+- [ ] [OAuth consent screen / Audience](https://console.cloud.google.com/auth/audience): External, **Testing** (don't publish), and add **the exact Google account you'll sign in with** under *Test users* — otherwise Google shows "Access blocked … has not completed the verification process" (403 access_denied).
+- [ ] [Create an OAuth client ID](https://console.cloud.google.com/auth/clients) → Application type **iOS** → Bundle ID `com.keefer.DesktopBuddy`.
+- [ ] In the app: menu bar › **Connections…** › paste the client ID › **Sign in with Google**.
 
-**Alternative worth knowing:** if your Google account is already added to macOS Calendar, EventKit can read it locally with one system permission and no Google Cloud setup. It could be offered as a second source later.
+Notes: in Testing mode Google shows an "unverified app" screen (expected — it's your own app) and may ask you to sign in again after 7 days. The client ID is an identifier, not a secret; it's kept in the app's preferences, not in the repo.
 
-## Notion
+## Notion — paused
 
-To my knowledge, Notion's public-integration OAuth exchanges the code with a **client secret**, which can't be kept secret inside a desktop app. I'll re-check Notion's current docs at the start of Phase 3.
+> Out of the plan until further notice. The code is kept but switched off (`Features.notion = false` in `DesktopBuddy/App/Buddy.swift`). Notes below are for when it returns.
 
-Recommended path:
+How it works: Notion's public OAuth requires a client secret (verified against Notion's docs), which a desktop app can't keep private — so the app uses a token you paste: an **internal integration** secret (sees only databases you share with it — least access) or a **personal access token** (sees what you can see). It's verified with Notion before being saved to the Keychain. Uses Notion API version `2025-09-03` (data sources).
 
-- [ ] Create an **internal integration** at <https://www.notion.so/profile/integrations>; capabilities: Read content, and Update content only if you want completion sync.
-- [ ] In Notion, share the task database(s) with the integration (••• → Connections).
-- [ ] Paste the integration token into the app's Notion setup. It's stored in the Keychain, never in files or logs.
-- In-app setup will let you pick a database and map its properties (title, status, done value, due date, priority, URL). No schema is assumed.
-- Writing completion back to Notion happens only when you've mapped a status property, turned sync on, and confirmed.
+- [ ] [Create an internal integration](https://www.notion.so/profile/integrations): capabilities *Read content*, plus *Update content* if you want Coco to be able to mark tasks done.
+- [ ] Copy its **Internal Integration Secret**.
+- [ ] In Notion, open your task database › **•••** › **Connections** › add the integration.
+- [ ] In the app: **Connections…** › paste the secret › **Connect** › choose the database › confirm the column mapping (task name, done status, due date, priority) — Coco suggests one, you can change it.
 
-A public OAuth integration would need a small token-exchange backend; we can add that later if you want one-click connection.
+Behaviour: open tasks are offered in the panel under *Notion › Pick*; nothing joins today's plan until you pick it. Picked tasks stay linked (titles, due dates and done state follow Notion; a matching local task is linked rather than duplicated). Marking one done asks, every time, whether to update Notion too — and only if you turned that on in the mapping. *Disconnect* forgets the token and mapping; tasks already on your list stay as local tasks.
 
-## AI provider (Phase 4)
+## Claude chat (Phase 4) — built, needs your API key
 
-- [ ] An API key for your chosen provider (the provider layer is pluggable; Claude is the planned default).
-- Key entered in Settings, stored in the Keychain; never logged.
-- Calendar or task data is only included in a request when you ask for something that needs it, and the panel shows when it was shared.
-- Voice already works without it (on-device transcription + a rule-based command parser); the assistant will plug into the same transcript pipeline.
-- The assistant can only act through explicit, typed operations (add task, mark done with confirmation, start focus). It never executes generated shell commands, and only reports an action as done after it actually succeeded.
+- [ ] Create a key at the [Anthropic Console](https://console.anthropic.com/settings/keys).
+- [ ] In the app: **Connections…** › **Claude (chat)** › paste the key › **Connect**. It's checked with a free request (`GET /v1/models`) and saved to the Keychain — never to files, logs or the repo.
+
+How it works:
+- Model `claude-opus-5-5` at `low` effort (thinking is always on for this model; effort is the control), streamed over raw HTTP (no official Swift SDK).
+- Server-side refusal fallback is **on** (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`): if a safety classifier wrongly declines a benign message, Anthropic re-runs it on another Claude model. Remove it in `ClaudeAPI.messagesRequest` if you'd rather not.
+- Your day is shared only through the `get_today` tool, when the model needs it for your request; the chat marks each time.
+- Four tools, validated strictly before running: `get_today`, `propose_tasks` (drafts you review), `start_focus`, `request_task_completion` (you confirm). No shell, no web, nothing outside the app.
+- History is append-only and in memory only; **New chat** forgets it. Costs are estimated at list prices and shown under the input.
+- Provider is behind `AssistantService`/`ClaudeAPI`; another provider would be a sibling of `ClaudeAPI` with the same tools.

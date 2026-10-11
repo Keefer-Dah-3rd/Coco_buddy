@@ -79,6 +79,51 @@ public struct TaskList: Codable, Equatable, Sendable {
         return open + done
     }
 
+    public enum LinkResult: Equatable, Sendable {
+        /// A new task was added for the external item.
+        case added(BuddyTask)
+        /// An existing local task with the same title was linked instead of duplicated.
+        case linkedExisting(BuddyTask)
+        /// This external item is already on the list.
+        case alreadyLinked(BuddyTask)
+    }
+
+    /// Adds a task that mirrors an external item, without creating duplicates:
+    /// the same external item is never added twice, and an open local task with
+    /// the same title is linked rather than copied.
+    @discardableResult
+    public mutating func addLinked(_ task: BuddyTask) -> LinkResult {
+        guard let ref = task.external else {
+            return add(task) == .added(task) ? .added(task) : .alreadyLinked(task)
+        }
+        if let existing = tasks.first(where: { $0.external == ref || ($0.external?.source == ref.source && $0.external?.id == ref.id) }) {
+            return .alreadyLinked(existing)
+        }
+        let key = Self.normalized(task.title)
+        if let index = tasks.firstIndex(where: { !$0.isCompleted && $0.external == nil && Self.normalized($0.title) == key }) {
+            tasks[index].external = ref
+            return .linkedExisting(tasks[index])
+        }
+        tasks.append(task)
+        return .added(task)
+    }
+
+    /// Updates linked tasks from fresh external data (titles, due dates, completion).
+    /// The external service is the source of truth for those fields; local-only
+    /// fields (notes, estimate, focus time) are left alone.
+    public mutating func refreshLinked(_ updates: [ExternalTaskRef: (title: String, deadline: Date?, isDone: Bool)], at date: Date) {
+        for index in tasks.indices {
+            guard let ref = tasks[index].external, let update = updates[ref] else { continue }
+            tasks[index].title = update.title
+            tasks[index].deadline = update.deadline
+            if update.isDone, tasks[index].completedAt == nil { tasks[index].completedAt = date }
+        }
+    }
+
+    public func linkedTask(_ ref: ExternalTaskRef) -> BuddyTask? {
+        tasks.first { $0.external?.source == ref.source && $0.external?.id == ref.id }
+    }
+
     /// Unfinished "today only" tasks from earlier days — waiting for the user to carry
     /// them over or let them go. Never dropped silently.
     public func leftovers(now: Date, calendar: Calendar = .current) -> [BuddyTask] {

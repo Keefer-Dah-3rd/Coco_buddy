@@ -12,6 +12,7 @@ struct PanelRootView: View {
                 switch model.panelTab {
                 case .today: TodayView(model: model)
                 case .focus: FocusView(model: model)
+                case .chat: ChatView(model: model)
                 }
             }
             .frame(maxHeight: .infinity, alignment: .top)
@@ -32,6 +33,16 @@ struct PanelRootView: View {
                 MonoLabel(Buddy.name, color: Theme.ink)
                 MonoLabel("· " + Date.now.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
                 Spacer()
+                Button { model.openConnections() } label: {
+                    Image(systemName: "link")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(model.calendar.isConnected ? Theme.ink : Theme.inkTertiary)
+                        .frame(width: 22, height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Connections — Claude and Google Calendar")
+                .accessibilityLabel("Connections")
                 Button { model.preferences.voiceEnabled.toggle() } label: {
                     Image(systemName: model.preferences.voiceEnabled ? "speaker.wave.2.fill" : "speaker.slash")
                         .font(.system(size: 10, weight: .semibold))
@@ -52,6 +63,8 @@ struct PanelRootView: View {
                 .help("Close (Esc)")
             }
 
+            // In Chat the conversation itself is Coco's voice, so the header line steps aside.
+            if model.panelTab != .chat {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text("›").font(Theme.mono(14, .bold)).foregroundStyle(Theme.accent)
                 Text(model.buddyLine)
@@ -66,10 +79,12 @@ struct PanelRootView: View {
             .animation(.easeOut(duration: 0.2), value: model.buddyLine)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(Buddy.name) says: \(model.buddyLine)")
+            }
 
             KeySegment(selection: $model.panelTab, items: [
                 .init(.today, "Today", trailing: todayBadge, shortcut: "1"),
                 .init(.focus, "Focus", trailing: focusBadge, shortcut: "2"),
+                .init(.chat, "Chat", shortcut: "3"),
             ])
         }
         .padding(.horizontal, 16)

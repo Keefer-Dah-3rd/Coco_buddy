@@ -2,9 +2,11 @@ import AppKit
 import Observation
 import BuddyCore
 import BuddyCharacter
+import BuddyIntegrations
+import BuddyAssistant
 
 enum PanelTab: String, CaseIterable, Identifiable {
-    case today, focus
+    case today, focus, chat
     var id: Self { self }
 }
 
@@ -17,6 +19,7 @@ final class AppModel {
     struct WindowCommands {
         var setPanelOpen: (Bool) -> Void
         var resetPosition: () -> Void
+        var openConnections: () -> Void
     }
 
     /// How much a line is allowed to interrupt.
@@ -34,6 +37,9 @@ final class AppModel {
     let tasks: TaskStore
     let focus: FocusController
     let focusLog: FocusLogStore
+    let calendar: GoogleCalendarService
+    let notion: NotionService
+    let assistant: AssistantService
     let character = CharacterModel()
     let voiceOut = VoiceOutput()
     let voiceIn = VoiceInput()
@@ -48,12 +54,25 @@ final class AppModel {
     private(set) var completionPrompt: BuddyTask.ID?
     private(set) var recentlyRemoved: BuddyTask?
     private(set) var isUserAway = false
+    /// Tasks the assistant asked about — not marked done unless the user confirms here.
+    private(set) var pendingCompletions: [BuddyTask.ID] = []
+    @ObservationIgnored private var focusStartedFromChat = false
+    /// A Notion-linked task the user just completed: ask before changing Notion.
+    private(set) var pendingNotionCompletion: BuddyTask?
     /// The task whose editor is open in the Today list.
     var editingTaskID: BuddyTask.ID?
     /// Tasks heard by voice, waiting for review. Nothing is added until the user confirms.
-    var voiceDrafts: [VoiceDraft] = []
+    var taskDrafts: [TaskDraft] = []
+    /// Where the current drafts came from, for the review card's label.
+    private(set) var draftOrigin: DraftOrigin = .voice
 
-    struct VoiceDraft: Identifiable, Equatable {
+    enum DraftOrigin { case voice, chat }
+
+    #if DEBUG
+    func setDraftOriginForPreview(_ origin: DraftOrigin) { draftOrigin = origin }
+    #endif
+
+    struct TaskDraft: Identifiable, Equatable {
         let id = UUID()
         var title: String
         var priority: TaskPriority
@@ -70,6 +89,8 @@ final class AppModel {
     @ObservationIgnored private let sounds: SoundPlayer
     @ObservationIgnored private let presence = PresenceMonitor()
     @ObservationIgnored private var undoExpiry: Task<Void, Never>?
+    @ObservationIgnored private var reminderTimer: Timer?
+    @ObservationIgnored private var remindedEventIDs: Set<String> = []
 
     /// - Parameter preview: in-memory stores and throwaway defaults, for snapshots.
     init(preview: Bool = false) {
@@ -78,6 +99,9 @@ final class AppModel {
         tasks = TaskStore(persistent: !preview)
         focus = FocusController(preferences: preferences, notifications: notifications, persistent: !preview)
         focusLog = FocusLogStore(persistent: !preview)
+        calendar = GoogleCalendarService(persistent: !preview)
+        notion = NotionService(persistent: !preview)
+        assistant = AssistantService(persistent: !preview)
         sounds = SoundPlayer(preferences: preferences)
         buddyLine = BuddyVoice.greeting()
     }
@@ -87,6 +111,20 @@ final class AppModel {
         focus.onEvent = { [weak self] in self?.handle($0) }
         focus.taskTitle = { [weak self] in self?.tasks.task($0)?.title }
         presence.onChange = { [weak self] away in self?.userAwayChanged(away) }
+        assistant.performAction = { [weak self] action in
+            await self?.perform(action) ?? AssistantService.ToolOutcome(result: "Unavailable.", isError: true)
+        }
+        assistant.onPhaseChanged = { [weak self] phase in
+            switch phase {
+            case .idle: self?.character.release()
+            case .waiting, .usingTools: self?.character.hold(.thinking)
+            case .writing: self?.character.hold(.talking)
+            }
+        }
+        assistant.onReplyFinished = { [weak self] reply in
+            guard let self, self.voiceAudible, !reply.isEmpty else { return }
+            self.voiceOut.speak(reply)
+        }
         voiceIn.onFinish = { [weak self] transcript in self?.handleTranscript(transcript) }
         voiceOut.onSpeakingChanged = { [weak self] speaking in self?.character.setVoiceActive(speaking) }
 
@@ -97,6 +135,101 @@ final class AppModel {
         presence.start()
         focus.restoreAfterLaunch()
         greetOncePerDay()
+        startConnections()
+    }
+
+    // MARK: - Connections
+
+    func openConnections() {
+        setPanelOpen(false)
+        windows?.openConnections()
+    }
+
+    private func startConnections() {
+        calendar.onScheduleChanged = { [weak self] in self?.scheduleMeetingReminder() }
+        calendar.startAutoRefresh()
+        scheduleMeetingReminder()
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshConnections() }
+        }
+        refreshConnections()
+    }
+
+    /// Calendar, Notion candidates and linked tasks — each only if connected.
+    func refreshConnections() {
+        Task {
+            await calendar.refresh()
+            guard Features.notion else { return }
+            await notion.refreshTasks()
+            await syncLinkedTasks()
+        }
+    }
+
+    private func syncLinkedTasks() async {
+        let refs = tasks.openLinkedRefs
+        guard !refs.isEmpty, notion.isReady else { return }
+        tasks.applyExternalUpdates(await notion.currentState(of: refs))
+    }
+
+    /// Notion tasks the user picked for today.
+    func addFromNotion(_ picked: [NotionTask]) {
+        let result = tasks.addLinked(picked.map { $0.makeTask() })
+        if result.added + result.linked == 0 {
+            speak("Those are already on your list.", .acknowledge)
+        }
+    }
+
+    /// Notion tasks not yet on the list — what the picker offers.
+    var notionCandidates: [NotionTask] {
+        let linked = Set(tasks.list.tasks.compactMap { $0.external?.id })
+        return notion.openTasks.filter { !linked.contains($0.id) }
+    }
+
+    func confirmNotionCompletion() {
+        guard let task = pendingNotionCompletion, let ref = task.external else { return }
+        pendingNotionCompletion = nil
+        Task {
+            do {
+                try await notion.markDone(ref)
+                speak(BuddyVoice.notionUpdated, .acknowledge)
+            } catch {
+                let reason = (error as? IntegrationError)?.userMessage ?? error.localizedDescription
+                speak(BuddyVoice.notionUpdateFailed(reason), .acknowledge)
+            }
+        }
+    }
+
+    func skipNotionCompletion() {
+        pendingNotionCompletion = nil
+    }
+
+    /// One timer for the next reminder, rather than polling.
+    private func scheduleMeetingReminder() {
+        reminderTimer?.invalidate()
+        notifications.cancel(prefix: "meeting.")
+        let lead = TimeInterval(calendar.reminderMinutes * 60)
+        guard calendar.isConnected, lead > 0 else { return }
+        let now = Date.now
+        guard let next = calendar.schedule.events.first(where: {
+            $0.start > now && !remindedEventIDs.contains($0.id)
+        }) else { return }
+        let fireAt = max(now.addingTimeInterval(1), next.start.addingTimeInterval(-lead))
+        notifications.schedule(id: "meeting.\(next.id)", title: next.title,
+                               body: "Starts at \(next.start.formatted(date: .omitted, time: .shortened)).", at: fireAt)
+        reminderTimer = Timer(fire: fireAt, interval: 0, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated { self?.remind(next) }
+        }
+        reminderTimer?.tolerance = 2
+        RunLoop.main.add(reminderTimer!, forMode: .common)
+    }
+
+    private func remind(_ event: CalendarEvent) {
+        remindedEventIDs.insert(event.id)
+        let minutes = max(0, Int((event.start.timeIntervalSinceNow / 60).rounded()))
+        character.react(.perk)
+        // A clear reason to speak up, even during focus.
+        speak(BuddyVoice.meetingSoon(event.title, minutes: minutes), .important)
+        scheduleMeetingReminder()
     }
 
     // MARK: - Intents (called by views and menus)
@@ -229,7 +362,7 @@ final class AppModel {
         // Never let the microphone hear Coco's own voice.
         voiceOut.stop()
         character.dismissSpeech()
-        voiceDrafts = []
+        taskDrafts = []
         Task {
             await voiceIn.start()
             switch voiceIn.status {
@@ -245,27 +378,38 @@ final class AppModel {
         if !voiceIn.isListening { toggleListening() }
     }
 
-    func addVoiceDrafts() {
-        let results = voiceDrafts.map {
+    func addTaskDrafts() {
+        let results = taskDrafts.map {
             QuickAddParser.Result(title: $0.title, priority: $0.priority, estimateMinutes: $0.estimateMinutes)
         }
-        voiceDrafts = []
+        taskDrafts = []
         let added = tasks.add(results)
+        if draftOrigin == .chat {
+            assistant.note(added == 0 ? "The suggested tasks were already on the list; nothing new was added."
+                           : "The user reviewed the suggested tasks and added \(added) to their list.")
+        }
         if added == 0 { speak("Those are already on your list.", .acknowledge) }
     }
 
-    func discardVoiceDrafts() {
-        voiceDrafts = []
+    func discardTaskDrafts() {
+        if draftOrigin == .chat { assistant.note("The user discarded the suggested tasks.") }
+        taskDrafts = []
     }
 
     private func handleTranscript(_ transcript: String) {
+        // In the Chat tab, speech is a chat message.
+        if panelTab == .chat, assistant.isReady, !transcript.isEmpty {
+            assistant.send(transcript)
+            return
+        }
         character.play(.thinking, for: 0.6)
         switch VoiceCommandParser.parse(transcript) {
         case .nothing:
             speak(BuddyVoice.heardNothing, .acknowledge)
         case .addTasks(let heard):
             panelTab = .today
-            voiceDrafts = heard.map(VoiceDraft.init)
+            draftOrigin = .voice
+            taskDrafts = heard.map(TaskDraft.init)
             speak(BuddyVoice.heardTasks(heard.count), .acknowledge)
         case .startFocus(let hint):
             var taskID = focus.timer.taskID
@@ -312,6 +456,71 @@ final class AppModel {
         }
         guard let best = scored.max(by: { $0.1 < $1.1 }), best.1 >= 0.5 else { return nil }
         return best.0.id
+    }
+
+    // MARK: - Assistant actions
+
+    /// Carries out a validated assistant tool call. Results say exactly what happened,
+    /// so the assistant never reports something that didn't.
+    private func perform(_ action: AssistantAction) async -> AssistantService.ToolOutcome {
+        switch action {
+        case .getToday:
+            let timer = focus.timer
+            let focusState = timer.isActive
+                ? "\(timer.phase.label.lowercased()) \(timer.isPaused ? "paused" : "running"), \(Self.clock(focus.remaining)) left"
+                    + (tasks.task(timer.taskID).map { " on “\($0.title)”" } ?? "")
+                : "not running (default focus length \(preferences.focusSettings.focusMinutes) min)"
+            let text = AssistantPrompt.today(
+                tasks: tasks.today(), focus: .init(focusState), focusedMinutesToday: focusLog.today.minutes,
+                calendarConnected: calendar.isConnected,
+                events: calendar.schedule.events + calendar.schedule.allDayEvents, now: .now)
+            return .init(result: text, activity: calendar.isConnected ? "Looked at your tasks and calendar" : "Looked at your tasks")
+
+        case .proposeTasks(let proposals):
+            draftOrigin = .chat
+            taskDrafts = proposals.map(TaskDraft.init)
+            let count = proposals.count
+            return .init(result: "Showing \(count) draft task\(count == 1 ? "" : "s") to the user for review. Nothing is added until they confirm.",
+                         activity: "Suggested \(count) task\(count == 1 ? "" : "s") — review below")
+
+        case .startFocus(let id, let minutes):
+            var taskID: UUID?
+            if let id {
+                guard let uuid = UUID(uuidString: id), let task = tasks.task(uuid), !task.isCompleted else {
+                    return .init(result: "No open task has id \(id). Call get_today for current ids.", isError: true)
+                }
+                taskID = uuid
+            }
+            if focus.timer.isActive {
+                return .init(result: "Not started: a \(focus.timer.phase.label.lowercased()) session is already running (\(Self.clock(focus.remaining)) left).", isError: true)
+            }
+            focusStartedFromChat = true
+            focus.start(.focus, taskID: taskID, minutes: minutes)
+            let length = Int((focus.timer.duration / 60).rounded())
+            let on = tasks.task(taskID).map { " on “\($0.title)”" } ?? ""
+            return .init(result: "Focus timer started: \(length) minutes\(on).", activity: "Started a \(length)-min focus\(on)")
+
+        case .requestCompletion(let id):
+            guard let uuid = UUID(uuidString: id), let task = tasks.task(uuid) else {
+                return .init(result: "No task has id \(id). Call get_today for current ids.", isError: true)
+            }
+            if task.isCompleted { return .init(result: "“\(task.title)” is already marked done.") }
+            if !pendingCompletions.contains(uuid) { pendingCompletions.append(uuid) }
+            return .init(result: "Asked the user to confirm marking “\(task.title)” done. It is NOT done unless they confirm.",
+                         activity: "Asked you to confirm “\(BuddyVoice.short(task.title))”")
+        }
+    }
+
+    func confirmCompletion(_ id: BuddyTask.ID) {
+        pendingCompletions.removeAll { $0 == id }
+        guard let task = tasks.task(id) else { return }
+        tasks.setCompleted(id, true)
+        assistant.note("The user confirmed: “\(task.title)” is now marked done.")
+    }
+
+    func declineCompletion(_ id: BuddyTask.ID) {
+        pendingCompletions.removeAll { $0 == id }
+        if let task = tasks.task(id) { assistant.note("The user said “\(task.title)” isn't done yet.") }
     }
 
     // MARK: - Speaking
@@ -367,6 +576,7 @@ final class AppModel {
             speak(BuddyVoice.duplicate(task.title), .acknowledge)
 
         case .completed(let task):
+            pendingCompletions.removeAll { $0 == task.id }
             sounds.play(.taskDone)
             let remaining = tasks.openToday.count
             if focus.isFocusing, preferences.focusPresentation == .quiet {
@@ -375,10 +585,17 @@ final class AppModel {
                 character.play(.celebrating, for: remaining == 0 ? 2.6 : 1.6)
             }
             if completionPrompt == task.id { completionPrompt = nil }
-            speak(BuddyVoice.taskCompleted(remaining: remaining), .acknowledge)
+            if Features.notion, task.external?.source == .notion, let mapping = notion.mapping,
+               mapping.writeBackEnabled, mapping.canWriteCompletion, notion.isConnected {
+                pendingNotionCompletion = task
+                speak(BuddyVoice.askNotionCompletion, .acknowledge)
+            } else {
+                speak(BuddyVoice.taskCompleted(remaining: remaining), .acknowledge)
+            }
 
-        case .reopened:
+        case .reopened(let task):
             character.react(.nod)
+            if pendingNotionCompletion?.id == task.id { pendingNotionCompletion = nil }
 
         case .removed(let task):
             if editingTaskID == task.id { editingTaskID = nil }
@@ -400,7 +617,11 @@ final class AppModel {
             sounds.play(.sessionStart)
             completionPrompt = nil
             let minutes = preferences.focusSettings.minutes(for: phase)
-            if phase == .focus {
+            if phase == .focus, focusStartedFromChat {
+                // Started from the chat: the reply acknowledges it, and the panel stays open.
+                focusStartedFromChat = false
+                character.react(.nod)
+            } else if phase == .focus {
                 character.react(.nod)
                 let line = BuddyVoice.focusStarted(task: tasks.task(taskID)?.title, minutes: minutes)
                 // Minimise distractions: tuck the panel away, acknowledge once, then go quiet.

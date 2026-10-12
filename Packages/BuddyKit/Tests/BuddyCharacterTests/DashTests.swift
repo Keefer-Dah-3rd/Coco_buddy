@@ -107,6 +107,48 @@ import Testing
         #expect(dash.direction(at: t0) == SIMD2(0, -1))
     }
 
+    @Test func facesOneOfThirtyTwoDirectionsOnAStraightRun() {
+        let step = 2 * Double.pi / Double(Dash.facings)
+        for target in [SIMD2<Double>(-700, 0), SIMD2(0, 500), SIMD2(300, -300), SIMD2(-250, 420)] {
+            let dash = Dash(from: home, to: home + target, at: t0)
+            let facing = dash.facing(at: dash.launchTime + 0.3)
+            let angle = atan2(facing.y, facing.x)
+            #expect(abs(angle / step - (angle / step).rounded()) < 1e-6)
+            #expect(abs(facing.x * facing.x + facing.y * facing.y - 1) < 1e-9)
+        }
+        // Straight down the screen faces the viewer; straight up faces away.
+        #expect(distance(Dash.facing(forScreenDirection: SIMD2(0, -1)), SIMD2(0, -1)) < 1e-9)
+        #expect(distance(Dash.facing(forScreenDirection: SIMD2(0, 1)), SIMD2(0, 1)) < 1e-9)
+    }
+
+    @Test func snappingToFacingsNeverMakesHerTurnFasterThanHerCourse() {
+        let first = Dash(from: home, to: home + SIMD2(-1500, 0), at: t0)
+        for (redirectAfter, target) in [(0.45, SIMD2<Double>(-700, 600)), (0.15, SIMD2(-500, -250)), (0.8, SIMD2(-200, 300))] {
+            let bend = first.redirected(to: home + target, at: first.launchTime + redirectAfter)
+            func yaw(_ v: SIMD2<Double>) -> Double { atan2(v.y / sin(Dash.viewElevation), v.x) }
+            var previousCourse = yaw(bend.direction(at: bend.startTime))
+            var previousFacing = yaw(bend.facing(at: bend.startTime) * SIMD2(1, sin(Dash.viewElevation)))
+            var fastestCourse = 0.0
+            var fastestFacing = 0.0
+            for t in stride(from: bend.startTime, through: bend.arrivalTime, by: 1.0 / 60) {
+                let course = yaw(bend.direction(at: t))
+                let facing = atan2(bend.facing(at: t).y, bend.facing(at: t).x)
+                fastestCourse = max(fastestCourse, angleBetween(course, previousCourse))
+                fastestFacing = max(fastestFacing, angleBetween(facing, previousFacing))
+                previousCourse = course
+                previousFacing = facing
+            }
+            // Snapping to 32 facings adds no pops: she never turns faster than her course
+            // does, give or take a quarter of a step.
+            #expect(fastestFacing <= fastestCourse + 2 * Double.pi / Double(Dash.facings) * 0.25)
+        }
+    }
+
+    private func angleBetween(_ a: Double, _ b: Double) -> Double {
+        let d = abs(a - b).truncatingRemainder(dividingBy: 2 * Double.pi)
+        return min(d, 2 * Double.pi - d)
+    }
+
     @Test func animatorDrawsEveryFrameOnlyWhileDashing() {
         var animator = CharacterAnimator()
         animator.setState(.focused, at: t0 - 10)

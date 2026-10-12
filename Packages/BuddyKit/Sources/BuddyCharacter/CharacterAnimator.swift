@@ -330,8 +330,8 @@ extension CharacterAnimator {
         }
     }
 
-    /// Called somewhere: eyes on the spot and a crouch, then bounding along leaning
-    /// into the run, then a little landing wobble.
+    /// Called somewhere: eyes on the spot and a crouch, then the running Coco takes over
+    /// and bounds there, then she turns to face you and sits back down.
     static func apply(_ dash: Dash, at t: TimeInterval, to p: inout CharacterPose) {
         let heading = dash.direction(at: t)
         switch dash.phase(at: t) {
@@ -343,29 +343,54 @@ extension CharacterAnimator {
             p.gazeY = -heading.y
             p.squash += 0.07 * crouch
             p.tail += 0.35 * sin(t * 24) * crouch
+            // The running Coco fades in at the very end, already facing the spot.
+            let takeover = ease((k - 0.8) / 0.2)
+            if takeover > 0 {
+                p = .blend(p, runningPose(from: p, facing: dash.facing(at: t), strides: dash.strides(at: t), effort: 0, at: t), takeover)
+                p.run = takeover
+            }
         case .running:
-            let effort = dash.effort(at: t)
-            let bound = abs(sin(dash.strides(at: t) * .pi))
-            p.lift += (2 + 6 * effort) * bound
-            p.squash += 0.05 * effort * (0.5 - bound)
-            p.tilt += 0.2 * heading.x * effort
-            p.gazeX = heading.x
-            p.gazeY = -heading.y
-            p.earPerk = 0.45
-            p.earLeft += 0.3 * effort
-            p.earRight += 0.3 * effort
-            p.eyeSmile = max(p.eyeSmile, 0.6)
-            p.mouthOpen = max(p.mouthOpen, 0.5)
-            p.mouthCurve = 0.8
-            p.tongue = 1
-            p.tail += 0.5 * sin(t * 22)
+            p = runningPose(from: p, facing: dash.facing(at: t), strides: dash.strides(at: t), effort: dash.effort(at: t), at: t)
         case .settling(let k):
-            p.squash += 0.1 * exp(-k * 5) * cos(k * 14)
+            // Turns to face you, then the sitting Coco takes back over.
+            let facing = turn(from: dash.facing(at: t), to: SIMD2(0, -1), by: ease(k / 0.6))
+            let running = runningPose(from: p, facing: facing, strides: dash.strides(at: t), effort: 0, at: t)
+            let handback = ease((k - 0.6) / 0.4)
+            p = .blend(running, p, handback)
+            p.run = 1 - handback
+            p.squash += 0.1 * exp(-k * 5) * cos(k * 14) * handback
             p.tongue = max(p.tongue, 1 - k)
             p.mouthOpen = max(p.mouthOpen, 0.45 * (1 - k))
         case .finished:
             break
         }
+    }
+
+    /// The running Coco mid-dash: bounding along in a direction with a happy, open-mouthed
+    /// face, ears blown back and tail going. `effort` is 0 standing … 1 full tilt.
+    public static func runningPose(from base: CharacterPose = CharacterPose(), facing: SIMD2<Double>,
+                                   strides: Double, effort: Double, at t: TimeInterval) -> CharacterPose {
+        var p = base
+        p.run = 1
+        p.headingX = facing.x
+        p.headingY = facing.y
+        p.stride = strides
+        // Even a short trot bounds a little.
+        p.gallop = effort > 0 ? min(1, 0.35 + effort) : 0
+        p.earBack = min(1, 0.2 + effort)
+        p.earPerk = 1
+        p.eyeSmile = 0.85
+        p.eyeOpen = 1
+        p.mouthOpen = 0.55
+        p.mouthCurve = 0.8
+        p.tongue = 1
+        p.tail = 0.45 * sin(t * 20)
+        p.lift = 0
+        p.squash = 0
+        p.tilt = 0
+        p.headTilt = 0
+        p.headDip = 0
+        return p
     }
 }
 
@@ -520,6 +545,16 @@ extension CharacterAnimator {
     }
 
     // MARK: Math
+
+    /// Turns a unit vector toward another the shorter way round; k from 0 to 1.
+    static func turn(from a: SIMD2<Double>, to b: SIMD2<Double>, by k: Double) -> SIMD2<Double> {
+        let start = atan2(a.y, a.x)
+        var delta = atan2(b.y, b.x) - start
+        if delta > .pi { delta -= 2 * .pi }
+        if delta < -.pi { delta += 2 * .pi }
+        let angle = start + delta * k
+        return SIMD2(cos(angle), sin(angle))
+    }
 
     /// Smoothstep, clamped to 0…1.
     static func ease(_ x: Double) -> Double {

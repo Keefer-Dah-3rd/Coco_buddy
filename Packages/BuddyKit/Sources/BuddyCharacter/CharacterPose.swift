@@ -79,6 +79,26 @@ public struct CharacterPose: Equatable, Sendable {
     /// Tail rotation in radians (wagging).
     public var tail: Double = 0
 
+    // Running
+    /// 0 the sitting artwork … 1 the running Coco.
+    public var run: Double = 0
+    /// Which way she faces on the desktop "floor", as a unit vector: x right, y away
+    /// from the viewer (up the screen). (0, −1) faces the viewer.
+    public var headingX: Double = 0
+    public var headingY: Double = -1
+    /// Leg cycles so far; the fractional part is the point in her stride.
+    public var stride: Double = 0
+    /// 0 standing … 1 full gallop.
+    public var gallop: Double = 0
+    /// 0 … 1 play bow: front end down, rear up, ready to spring.
+    public var bow: Double = 0
+    /// 0 … 1 gathered low — winding up, or soaking up a landing.
+    public var crouch: Double = 0
+    /// Lean into a turn in radians; positive leans to her left.
+    public var bank: Double = 0
+    /// 0 … 1 ears swept back by the wind.
+    public var earBack: Double = 0
+
     // Extras
     /// Status light (collar tag), 0 off … 1 lit.
     public var led: Double = 0
@@ -113,6 +133,15 @@ public struct CharacterPose: Equatable, Sendable {
         p.earLeft = mix(a.earLeft, b.earLeft)
         p.earRight = mix(a.earRight, b.earRight)
         p.tail = mix(a.tail, b.tail)
+        p.run = mix(a.run, b.run)
+        p.headingX = mix(a.headingX, b.headingX)
+        p.headingY = mix(a.headingY, b.headingY)
+        p.stride = mix(a.stride, b.stride)
+        p.gallop = mix(a.gallop, b.gallop)
+        p.bow = mix(a.bow, b.bow)
+        p.crouch = mix(a.crouch, b.crouch)
+        p.bank = mix(a.bank, b.bank)
+        p.earBack = mix(a.earBack, b.earBack)
         p.led = mix(a.led, b.led)
         p.dangle = mix(a.dangle, b.dangle)
         p.sleepZ = mix(a.sleepZ, b.sleepZ)

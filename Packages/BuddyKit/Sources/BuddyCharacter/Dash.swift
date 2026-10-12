@@ -99,6 +99,37 @@ public struct Dash: Sendable, Equatable {
         min(1, speed(at: t) / Self.topSpeed)
     }
 
+    // MARK: - Facing
+
+    /// The desktop is drawn as a floor seen from above at this angle, so running up the
+    /// screen means running away from the viewer. Artwork projects her with the same angle.
+    public static let viewElevation = 24.0 * Double.pi / 180
+    /// She faces one of this many directions around the compass.
+    public static let facings = 32
+    /// Steps between facings blend over this long, so a curving run turns smoothly.
+    static let facingBlend: TimeInterval = 0.1
+
+    /// Which way she faces on the floor: a unit vector, x right, y away from the viewer.
+    /// It's her course direction snapped to the nearest of the 32 facings, averaged over
+    /// the last tenth of a second so each step glides into the next.
+    public func facing(at t: TimeInterval) -> SIMD2<Double> {
+        let samples = 6
+        var sum = SIMD2<Double>.zero
+        for k in 0..<samples {
+            sum += Self.facing(forScreenDirection: direction(at: t - Self.facingBlend * Double(k) / Double(samples - 1)))
+        }
+        return sum.normalized ?? Self.facing(forScreenDirection: direction(at: t))
+    }
+
+    /// The facing for a direction of travel on screen (y up), snapped to the 32 facings.
+    /// Up the screen is foreshortened by the view, so it maps to a steeper angle on the floor.
+    public static func facing(forScreenDirection screen: SIMD2<Double>) -> SIMD2<Double> {
+        let angle = atan2(screen.y / sin(viewElevation), screen.x)
+        let step = 2 * Double.pi / Double(facings)
+        let snapped = (angle / step).rounded() * step
+        return SIMD2(cos(snapped), sin(snapped))
+    }
+
     /// Leg cycles so far; the fractional part is where she is in her stride. Cadence
     /// follows her speed, so her paws never look like they're sliding.
     public func strides(at t: TimeInterval) -> Double {

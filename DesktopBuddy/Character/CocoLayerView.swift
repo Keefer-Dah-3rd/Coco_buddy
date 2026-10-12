@@ -38,6 +38,8 @@ final class CocoLayerView: NSView {
     private let thoughtDots = [CAShapeLayer(), CAShapeLayer(), CAShapeLayer()]
     private let sleepZ = (0..<3).map { _ in (halo: CAShapeLayer(), ink: CAShapeLayer()) }
     private let sparkles = (0..<6).map { _ in CAShapeLayer() }
+    /// Coco on the move, drawn in place of the sitting artwork while she runs.
+    private let runner = RunningCoco()
 
     private var lastMouthCurve: Double = .nan
     private static let ground: CGFloat = 93
@@ -92,10 +94,19 @@ final class CocoLayerView: NSView {
 
         let lift = CGFloat(p.lift)
         let dangle = CGFloat(p.dangle)
+        let run = CGFloat(min(1, max(0, p.run)))
+
+        // While she runs, the running Coco takes over from the sitting drawing.
+        body.opacity = Float(1 - run)
+        runner.layer.isHidden = run < 0.001
+        if run >= 0.001 {
+            runner.layer.opacity = Float(run)
+            runner.render(p)
+        }
 
         // Contact shadow: shrinks and fades as Coco leaves the ground.
         let air = min(1, lift / 14)
-        groundShadow.opacity = Float(0.22 * (1 - air * 0.6) * (1 - dangle))
+        groundShadow.opacity = Float(0.22 * (1 - air * 0.6) * (1 - dangle) * (1 - run))
         groundShadow.setAffineTransform(CGAffineTransform(scaleX: 1 - air * 0.35, y: 1))
 
         // Squash/stretch anchored at the paws, then tilt around the same point.
@@ -257,6 +268,49 @@ final class CocoLayerView: NSView {
     }
 }
 
+// MARK: - Shared outlines
+
+/// Shapes the running Coco reuses, so both drawings have the very same ears and eyes.
+extension CocoLayerView {
+    /// One ear's outline, its base at the origin and its tip leaning toward −x (y down).
+    static let earOutline: CGPath = {
+        let outer = CGMutablePath()
+        outer.move(to: CGPoint(x: -9, y: 3))
+        outer.addCurve(to: CGPoint(x: -6.5, y: -23.5), control1: CGPoint(x: -12.5, y: -6), control2: CGPoint(x: -10.5, y: -18))
+        outer.addQuadCurve(to: CGPoint(x: -2.6, y: -22), control: CGPoint(x: -4.5, y: -26.5))
+        outer.addCurve(to: CGPoint(x: 9, y: 1), control1: CGPoint(x: 1.5, y: -15), control2: CGPoint(x: 6, y: -6))
+        outer.closeSubpath()
+        return outer
+    }()
+
+    /// The darker inside of the ear, in the same coordinates as `earOutline`.
+    static let earInside: CGPath = {
+        let inner = CGMutablePath()
+        inner.move(to: CGPoint(x: -5.8, y: 0))
+        inner.addCurve(to: CGPoint(x: -5.4, y: -18), control1: CGPoint(x: -8.4, y: -6), control2: CGPoint(x: -7.6, y: -14))
+        inner.addQuadCurve(to: CGPoint(x: -3.2, y: -17), control: CGPoint(x: -4.2, y: -20.2))
+        inner.addCurve(to: CGPoint(x: 4.8, y: -0.5), control1: CGPoint(x: -0.4, y: -11), control2: CGPoint(x: 3, y: -5))
+        inner.closeSubpath()
+        return inner
+    }()
+
+    /// A closed eye, centred on the origin (y down).
+    static let closedEye: CGPath = {
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: -3.3, y: 0))
+        path.addQuadCurve(to: CGPoint(x: 3.3, y: 0), control: CGPoint(x: 0, y: 2.4))
+        return path
+    }()
+
+    /// A happy "^" eye, centred on the origin (y down).
+    static let happyEye: CGPath = {
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: -3.4, y: 1.4))
+        path.addQuadCurve(to: CGPoint(x: 3.4, y: 1.4), control: CGPoint(x: 0, y: -3.4))
+        return path
+    }()
+}
+
 // MARK: - Construction
 
 /// Coco's colors come from the design tokens (Figma collection “Brand”).
@@ -295,6 +349,8 @@ private extension CocoLayerView {
         buildBody()
         buildCollar()
         buildHead()
+        runner.layer.isHidden = true
+        root.addSublayer(runner.layer)
         buildOverlays()
     }
 
@@ -415,18 +471,8 @@ private extension CocoLayerView {
         body.addSublayer(head)
 
         // Ears first, so the head covers their bases.
-        let outer = CGMutablePath()
-        outer.move(to: CGPoint(x: -9, y: 3))
-        outer.addCurve(to: CGPoint(x: -6.5, y: -23.5), control1: CGPoint(x: -12.5, y: -6), control2: CGPoint(x: -10.5, y: -18))
-        outer.addQuadCurve(to: CGPoint(x: -2.6, y: -22), control: CGPoint(x: -4.5, y: -26.5))
-        outer.addCurve(to: CGPoint(x: 9, y: 1), control1: CGPoint(x: 1.5, y: -15), control2: CGPoint(x: 6, y: -6))
-        outer.closeSubpath()
-        let inner = CGMutablePath()
-        inner.move(to: CGPoint(x: -5.8, y: 0))
-        inner.addCurve(to: CGPoint(x: -5.4, y: -18), control1: CGPoint(x: -8.4, y: -6), control2: CGPoint(x: -7.6, y: -14))
-        inner.addQuadCurve(to: CGPoint(x: -3.2, y: -17), control: CGPoint(x: -4.2, y: -20.2))
-        inner.addCurve(to: CGPoint(x: 4.8, y: -0.5), control1: CGPoint(x: -0.4, y: -11), control2: CGPoint(x: 3, y: -5))
-        inner.closeSubpath()
+        let outer = Self.earOutline
+        let inner = Self.earInside
         for (index, ear) in ears.enumerated() {
             let mirror = index == 0 ? CGFloat(1) : -1
             let base = CGPoint(x: index == 0 ? 35 : 65, y: 25)
@@ -498,12 +544,8 @@ private extension CocoLayerView {
     }
 
     func buildEyes() {
-        let closedPath = CGMutablePath()
-        closedPath.move(to: CGPoint(x: -3.3, y: 0))
-        closedPath.addQuadCurve(to: CGPoint(x: 3.3, y: 0), control: CGPoint(x: 0, y: 2.4))
-        let happyPath = CGMutablePath()
-        happyPath.move(to: CGPoint(x: -3.4, y: 1.4))
-        happyPath.addQuadCurve(to: CGPoint(x: 3.4, y: 1.4), control: CGPoint(x: 0, y: -3.4))
+        let closedPath = Self.closedEye
+        let happyPath = Self.happyEye
 
         for eye in eyes {
             eye.open.path = Self.ellipse(CGRect(x: -3.3, y: -3.7, width: 6.6, height: 7.4))

@@ -27,6 +27,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             print("keychain selftest: saved=\(saved) readBack=\(read == "selftest") status=\(Keychain.lastStatus)")
             exit(0)
         }
+        if let index = CommandLine.arguments.firstIndex(of: "--run-preview"), index + 1 < CommandLine.arguments.count {
+            RunPreview.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
+            exit(0)
+        }
         if CommandLine.arguments.contains("--dash-selftest") {
             DashSelfTest.run()
             exit(0)

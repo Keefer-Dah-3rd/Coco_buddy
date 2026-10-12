@@ -169,7 +169,7 @@ private struct StepButton: View {
 
 private extension View {
     func fieldWell() -> some View {
-        padding(.horizontal, 8)
+        padding(.horizontal, Space.sm)
             .padding(.vertical, Space.xs)
             .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Radius.key, style: .continuous).strokeBorder(Theme.hairline))

@@ -458,10 +458,10 @@ private struct Row<Content: View>: View {
 
 private extension Text {
     func bodyStyle() -> some View {
-        font(.system(size: 12)).foregroundStyle(Theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
+        font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
     }
 
     func valueStyle() -> some View {
-        font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.ink).lineLimit(1)
+        font(.style(.bodySmallEmphasis)).foregroundStyle(Theme.ink).lineLimit(1)
     }
 }

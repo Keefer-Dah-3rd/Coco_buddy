@@ -30,9 +30,9 @@ DesktopBuddy/Generated/DesignTokens.generated.swift  →  Theme.*, Space, Radius
 | Cover | Title card. |
 | Getting started | The short version of this document. |
 | Foundations | Every variable and text style, with Light and Dark side by side (the same variables, each frame pinned to a mode), primitives, Coco's palette, type specimens, space and radius. |
-| Components | Sections in dependency order: Icons → Atoms → Key Button → Key Segment → Today → Panel, Bubble & Chat → Settings & Welcome. |
+| Components | 40 components and 20 icons, in sections in dependency order: Icons → Atoms → Key Button → Key Segment → Today → Panel, Bubble & Chat → Settings & Welcome → Editor, Review & Focus → Editor, Chat & Connections. |
 | Mascot | `Mascot / Coco` (14 poses) and `Brand / App Icon`. |
-| Screens | Today (Light and Dark), Settings, Welcome 1 and 3, Focus, Chat, and a desktop focus scene. Built only from component instances. |
+| Screens | Every window and panel state the app has: Today (Light and Dark), editing a task, voice review, Focus, Focus session complete, Chat, Settings, Connections, Welcome steps 1–4, and a desktop focus scene (Coco, her bubble, the LCD). Built only from component instances. |
 
 ## 2. Naming
 
@@ -80,6 +80,8 @@ Swift names come from the code and travel with the token. Each variable's **iOS 
 - `resize()` resets hug sizing, so set `counterAxisSizingMode = 'AUTO'` after resizing.
 - Expose a nested instance only after it's inside its component.
 - After a font change, re-measure text that has fill width.
+- Rebinding an existing shape's paint can leave a stale color on screen. If a re-bound color looks wrong, replace the shape.
+- Roboto Mono, the stand-in for SF Mono, has no ↩ glyph. Set just that character to Inter, as the Welcome step 4 keycap does.
 
 ## 5. Mascot and brand assets
 
@@ -148,16 +150,21 @@ What actually syncs automatically: **variables and text styles**, meaning colors
 - **No Code Connect.** It needs a Dev or Full seat on an Organization or Enterprise plan (the error, 2026-10-11, said exactly that). The mapping lives in `design/figma-map.json` and the component descriptions instead. If the plan changes, add the mappings with the Figma MCP `add_code_connect_map` using the `SwiftUI` label and the paths in that file.
 - **No unattended sync.** Figma's REST Variables API is Enterprise-only. A person or Claude exports, and the sync script does the rest.
 - **Stand-in fonts in Figma.** Figma's renderer has no SF Pro or SF Mono (SF Pro text measured 0 wide). Figma uses Inter and Roboto Mono at the same sizes and weights, so widths differ slightly from the app. The app always uses the system fonts.
-- **Native controls are stand-ins.** The macOS 26 kit's Switch and Stepper couldn't be imported ("Not permitted to upsert from library"), so `Switch` and `Stepper` are drawn stand-ins. "On" uses macOS's default blue, because the app leaves switches native.
+- **Native controls are stand-ins.** The macOS 26 kit's Switch and Stepper couldn't be imported ("Not permitted to upsert from library"). So `Switch`, `Stepper` and `Text Field (native)` are drawn stand-ins, and `Field Well / Kind=Date` stands in for the date picker. They use macOS's default blue where the system accent shows, because the app leaves these controls native; so does the `Link` icon in Connections setup steps.
 - **Icons are frozen outlines.** They're the real SF Symbol outlines (SF Pro Semibold) at one weight. Figma has no SF Symbols font, so add a new icon with `swift scripts/sf-symbol-svg.swift <symbol>` and import the SVG.
 
-**Not yet in Figma:**
-- Screens: the task editor, voice review, Connections, Welcome steps 2 and 4, and the focus-finished card.
-- Components: the task-draft review card, the chat composer and the Focus task picker. They're built inline on the Screens page instead.
+**The Coco Tokens plugin, tested 2026-10-11:**
+- **Code side:** `code.js` ran unmodified inside Figma, with only its UI channel faked.
+  - Export gave the repo's exact checksum.
+  - Importing that export created 0, updated 75 variables and 17 text styles, and found no extras.
+  - A second export was identical.
+  - Malformed JSON came back as a clear error.
+- **Panel side:** `ui.html` ran in a browser. Export sends its request, the export appears with a working `coco-tokens.json` download (checksum intact), Import sends the pasted JSON, and reports and errors show.
+- **Not tested:** clicking through the plugin inside the Figma desktop app. That needs a person; the first run is *Plugins › Development › Import plugin from manifest…*.
 
 **Binding audit (Components page, 2026-10-11):**
-- **Colors:** 338 of 353 solid paints are bound to variables. The 15 unbound ones are deliberate: the LCD's 35% black edge and the native switch/stepper stand-ins (the same literals as the code).
-- **Text:** 120 of 140 text nodes use a text style. The other 20 are one-off glyphs (`+`, `›`, LCD digits) or a style plus an override that mirrors the code (ESC keycap tracking, bubble line spacing).
+- **Colors:** 534 of 552 solid paints are bound to variables. The 18 unbound ones are deliberate and match the code: the LCD's 35% black edge, the native control stand-ins (switch, stepper, text field) and the system-blue link.
+- **Text:** 203 of 225 text nodes use a text style. The other 22 are glyphs the code also sets directly (`+`, `›`, LCD digits, the editor's `30m`), or a style plus an override that mirrors the code (ESC keycap tracking, bubble line spacing).
 
 **Troubleshooting**
 

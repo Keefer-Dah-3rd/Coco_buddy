@@ -170,9 +170,9 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 
 Coco has a full design system in [Figma](https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco):
 - foundations: variables in light and dark, plus text styles;
-- 26 components and 19 SF Symbol icons, each mapped to its SwiftUI source;
+- 40 components and 20 SF Symbol icons, each mapped to its SwiftUI source;
 - Coco's 14 poses as vectors exported from her real artwork;
-- screens built from instances.
+- every app screen, built from instances.
 
 Tokens live in one file, [design/tokens.json](design/tokens.json). It generates both the Swift constants the app uses (`Theme`, `Space`, `Radius`, `TypeStyle`, `BrandPalette`) and the Figma variables. A design change in Figma comes back with one command, which shows a pixel diff of every screen:
 

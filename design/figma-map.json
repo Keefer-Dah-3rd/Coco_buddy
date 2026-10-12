@@ -322,6 +322,181 @@
         "anchor": "static func renderIcon"
       },
       "notes": "Rendered by SnapshotRenderer.renderIcon into Resources/Assets.xcassets/AppIcon.appiconset."
+    },
+    {
+      "figma": {
+        "name": "Step Key",
+        "nodeId": "27:249",
+        "key": "f6f13c334690c55ed118a8ef0b96e0bdca78754c"
+      },
+      "swift": {
+        "symbol": "StepButton / LengthButton",
+        "file": "DesktopBuddy/Panel/TaskEditor.swift",
+        "anchor": "struct StepButton"
+      },
+      "notes": "Size=Editor is StepButton (TaskEditor.swift, 24 × 22); Size=Focus is LengthButton (FocusView.swift, 26 × 22)."
+    },
+    {
+      "figma": {
+        "name": "Icon Key",
+        "nodeId": "27:259",
+        "key": "b80b67d8015a87e5cd64948f3d86be1f787dc8e4"
+      },
+      "swift": {
+        "symbol": "IconKey",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "struct IconKey"
+      }
+    },
+    {
+      "figma": {
+        "name": "Field Well",
+        "nodeId": "27:266",
+        "key": "323c8fdff41188b73e67fa7a36f11951a3754e56"
+      },
+      "swift": {
+        "symbol": "fieldWell()",
+        "file": "DesktopBuddy/Panel/TaskEditor.swift",
+        "anchor": "func fieldWell()"
+      },
+      "notes": "Kind=Date stands in for the native DatePicker(.field)."
+    },
+    {
+      "figma": {
+        "name": "Draft Row",
+        "nodeId": "27:267",
+        "key": "3f4b7c5e30023f04ba4b34e0b30936dbe66a0ac7"
+      },
+      "swift": {
+        "symbol": "TaskDraftReviewCard row",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "Leave this one out"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task Draft Review Card",
+        "nodeId": "27:342",
+        "key": "da40a4b15d1e1d91e659645f45b16dc3cfb460b9"
+      },
+      "swift": {
+        "symbol": "TaskDraftReviewCard",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "struct TaskDraftReviewCard"
+      },
+      "notes": "Origin ↔ model.draftOrigin (.voice / .chat)."
+    },
+    {
+      "figma": {
+        "name": "Focus / Task Picker",
+        "nodeId": "27:343",
+        "key": "1eaa133c5019bf6ea094359153a4c59ae8890c9d"
+      },
+      "swift": {
+        "symbol": "FocusView.taskPicker",
+        "file": "DesktopBuddy/Panel/FocusView.swift",
+        "anchor": "private var taskPicker"
+      }
+    },
+    {
+      "figma": {
+        "name": "Focus / Completion Card",
+        "nodeId": "27:385",
+        "key": "1dc7502f03e1b3329151e28945dde5d0650e5d54"
+      },
+      "swift": {
+        "symbol": "CompletionCard",
+        "file": "DesktopBuddy/Panel/FocusView.swift",
+        "anchor": "struct CompletionCard"
+      },
+      "notes": "Prompt ↔ model.completionPrompt != nil."
+    },
+    {
+      "figma": {
+        "name": "Task Editor",
+        "nodeId": "29:481",
+        "key": "a22073262493db15f177abef45a4860ce47f1d44"
+      },
+      "swift": {
+        "symbol": "TaskEditor",
+        "file": "DesktopBuddy/Panel/TaskEditor.swift",
+        "anchor": "struct TaskEditor"
+      },
+      "notes": "Due=Date ↔ draft.deadline != nil; Due=Quick shows quickDue buttons."
+    },
+    {
+      "figma": {
+        "name": "Chat / Composer",
+        "nodeId": "29:558",
+        "key": "8c6791b6dfb041ca3e6b2ed568c0e6ff0e70a4a5"
+      },
+      "swift": {
+        "symbol": "ChatView.composer",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private var composer"
+      },
+      "notes": "State ↔ draft empty / ready, assistant.isResponding, voiceIn.isListening."
+    },
+    {
+      "figma": {
+        "name": "Connections / Status",
+        "nodeId": "29:567",
+        "key": "30e5bbeaaadd2f487dfc16641fb9a2852272fb47"
+      },
+      "swift": {
+        "symbol": "Card status",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct Card"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections / Setup Step",
+        "nodeId": "29:568",
+        "key": "6037e2c62b1380363382eebf2e943ee5b96a9d04"
+      },
+      "swift": {
+        "symbol": "SetupSteps",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct SetupSteps"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections / Value Row",
+        "nodeId": "29:573",
+        "key": "6ccb6888dde40a6ca082fd89229da1fb917d6f20"
+      },
+      "swift": {
+        "symbol": "Row + valueStyle()",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "func valueStyle()"
+      }
+    },
+    {
+      "figma": {
+        "name": "Text Field (native)",
+        "nodeId": "29:578",
+        "key": "508afb2ecdab3566fcb9e59bb2f5f6dc6c83d853"
+      },
+      "swift": {
+        "symbol": "TextField / SecureField (.roundedBorder)",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": ".textFieldStyle(.roundedBorder)"
+      },
+      "notes": "Stand-in for the native control."
+    },
+    {
+      "figma": {
+        "name": "Welcome / Added Task",
+        "nodeId": "29:580",
+        "key": "d2f2584e52809adeb6308724400bd3d6d4fd128f"
+      },
+      "swift": {
+        "symbol": "OnboardingView.plan task list",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "checkmark.circle.fill"
+      }
     }
   ],
   "icons": [
@@ -513,6 +688,16 @@
       },
       "swift": {
         "symbol": "Image(systemName: \"checkmark.circle.fill\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/arrow.up.right.square",
+        "nodeId": "27:241",
+        "key": "14d1276a66202f6ee6753cb2bcd0bffd473474a9"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"arrow.up.right.square\")"
       }
     }
   ]

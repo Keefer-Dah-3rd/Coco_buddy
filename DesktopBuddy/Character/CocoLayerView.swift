@@ -259,27 +259,8 @@ final class CocoLayerView: NSView {
 
 // MARK: - Construction
 
-private enum Palette {
-    static let fur = NSColor(hex: 0x221D1B)
-    /// A warm grey edge so a black dog still reads on a dark desktop.
-    static let rim = NSColor(hex: 0x5E5550)
-    static let furShade = NSColor(hex: 0x3A322F)
-    static let white = NSColor(hex: 0xF4F0E8)
-    static let whiteEdge = NSColor(hex: 0xCFC7BB)
-    static let innerEar = NSColor(hex: 0x7A5446)
-    static let nose = NSColor(hex: 0x141112)
-    static let eye = NSColor(hex: 0x1A110D)
-    static let eyeRim = NSColor(hex: 0x86675A)
-    static let closedEye = NSColor(hex: 0xD7CEC4)
-    static let mouthLine = NSColor(hex: 0x2A2220)
-    static let mouthInside = NSColor(hex: 0x3D1D24)
-    static let tongue = NSColor(hex: 0xEC8A9B)
-    static let collar = NSColor(hex: 0x151515)
-    static let collarRim = NSColor(hex: 0x4A4542)
-    static let tagFace = NSColor(hex: 0xECEAE5)
-    static let accent = NSColor(hex: 0xFF5A1F)
-    static let ink = NSColor(hex: 0x2B2A27)
-}
+/// Coco's colors come from the design tokens (Figma collection “Brand”).
+private typealias Palette = BrandPalette
 
 private extension CocoLayerView {
     /// Paths are drawn in absolute unit-box coordinates, then shifted into a group's space.
@@ -496,7 +477,7 @@ private extension CocoLayerView {
         tongue.anchorPoint = CGPoint(x: 0.5, y: 0)
         let groove = CALayer()
         groove.frame = CGRect(x: 2.35, y: 1, width: 0.5, height: 3)
-        groove.backgroundColor = NSColor(hex: 0xC8687C).cgColor
+        groove.backgroundColor = Palette.tongueGroove.cgColor
         tongue.addSublayer(groove)
         head.addSublayer(tongue)
         mouthLine.fillColor = nil

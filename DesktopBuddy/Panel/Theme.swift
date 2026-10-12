@@ -2,29 +2,18 @@ import SwiftUI
 
 /// Design tokens. A restrained, warm-paper palette with one accent, sans for reading,
 /// mono for labels and numbers — the "instrument panel" detail used sparingly.
+///
+/// The values live in design/tokens.json (synced with Figma) and are generated into
+/// DesktopBuddy/Generated/DesignTokens.generated.swift: colors as `Theme.paper` etc.,
+/// plus `Space`, `Radius`, `Metrics`, `BrandPalette` and the `TypeStyle` presets.
 enum Theme {
-    static let paper = dynamic(light: 0xF3F1EC, dark: 0x1C1C1A)
-    static let well = dynamic(light: 0xE8E5DE, dark: 0x272724)
-    static let ink = dynamic(light: 0x1A1A18, dark: 0xEFECE5)
-    static let inkSecondary = dynamic(light: 0x6E6A61, dark: 0x9C988E)
-    static let inkTertiary = dynamic(light: 0xA6A196, dark: 0x64615A)
-    static let hairline = dynamic(light: 0xD9D5CB, dark: 0x363531)
-    static let accent = dynamic(light: 0xFF5A1F, dark: 0xFF6A33)
-    /// Text on accent fills. Dark in both modes, like a printed key cap.
-    static let onAccent = Color(hex: 0x1A1A18)
-    /// The tiny LCD used for the countdown chip — same in both modes.
-    static let lcd = Color(hex: 0x1D1E1B)
-    static let phosphor = Color(hex: 0xFFE6B0)
-
-    static let panelWidth: CGFloat = 340
-    static let panelHeight: CGFloat = 540
-    static let corner: CGFloat = 12
-
+    /// For one-off glyphs only; text uses a `TypeStyle`.
     static func mono(_ size: CGFloat, _ weight: Font.Weight = .medium) -> Font {
         .system(size: size, weight: weight, design: .monospaced)
     }
 
-    private static func dynamic(light: UInt32, dark: UInt32) -> Color {
+    /// A color that follows the light / dark appearance; used by the generated tokens.
+    static func dynamic(light: UInt32, dark: UInt32) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in
             let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
             return NSColor(hex: isDark ? dark : light)
@@ -49,6 +38,38 @@ extension Color {
     }
 }
 
+/// A named text style: a font plus the tracking and case that go with it.
+/// The presets (`.body`, `.monoLabel`…) are generated from the Figma text styles.
+nonisolated struct TypeStyle: Sendable {
+    var design: Font.Design
+    var weight: Font.Weight
+    var size: CGFloat
+    var tracking: CGFloat = 0
+    var uppercase = false
+
+    var font: Font { .system(size: size, weight: weight, design: design) }
+}
+
+extension Font {
+    /// The font of a design-system text style, e.g. `.font(.style(.bodySmall))`.
+    static func style(_ style: TypeStyle) -> Font { style.font }
+}
+
+extension View {
+    /// Applies a text style's font, tracking and (for label styles) uppercase.
+    /// Tracking and case are only set when the style has them, so inherited ones survive.
+    @ViewBuilder
+    func textStyle(_ style: TypeStyle) -> some View {
+        let styled = font(style.font)
+            .transformEnvironment(\.textCase) { if style.uppercase { $0 = .uppercase } }
+        if style.tracking != 0 {
+            styled.tracking(style.tracking)
+        } else {
+            styled
+        }
+    }
+}
+
 /// Small uppercase mono label, e.g. "TODAY", "LENGTH".
 struct MonoLabel: View {
     var text: String
@@ -61,8 +82,8 @@ struct MonoLabel: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(Theme.mono(10, .semibold))
-            .tracking(0.8)
+            .font(.style(.monoLabel))
+            .tracking(TypeStyle.monoLabel.tracking)
             .foregroundStyle(color)
     }
 }
@@ -88,24 +109,23 @@ struct KeyButtonStyle: ButtonStyle {
         @State private var hovering = false
 
         var body: some View {
+            let style: TypeStyle = compact ? .monoKeyCompact : .monoKey
             configuration.label
-                .font(Theme.mono(compact ? 10 : 11, .semibold))
-                .tracking(0.6)
-                .textCase(.uppercase)
+                .textStyle(style)
                 .lineLimit(1)
                 .fixedSize(horizontal: !fillWidth, vertical: false)
                 .foregroundStyle(foreground)
-                .padding(.horizontal, compact ? 8 : 12)
+                .padding(.horizontal, compact ? Space.sm : Space.lg)
                 .frame(maxWidth: fillWidth ? .infinity : nil, minHeight: compact ? 24 : 30)
-                .background(background, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .background(background, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
                 .overlay {
                     if kind == .secondary {
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: Radius.key, style: .continuous)
+                            .strokeBorder(Theme.hairline, lineWidth: Metrics.hairline)
                     }
                 }
                 .offset(y: configuration.isPressed ? 1 : 0)
-                .opacity(isEnabled ? 1 : 0.4)
+                .opacity(isEnabled ? 1 : Metrics.disabledOpacity)
                 .contentShape(Rectangle())
                 .onHover { hovering = $0 }
         }
@@ -116,7 +136,7 @@ struct KeyButtonStyle: ButtonStyle {
 
         private var background: Color {
             switch kind {
-            case .primary: Theme.accent.opacity(configuration.isPressed ? 0.85 : 1)
+            case .primary: Theme.accent.opacity(configuration.isPressed ? Metrics.pressedOpacity : 1)
             case .secondary: hovering ? Theme.well : Theme.paper
             case .quiet: hovering || configuration.isPressed ? Theme.well : .clear
             }

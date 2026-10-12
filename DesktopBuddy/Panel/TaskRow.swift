@@ -12,7 +12,7 @@ struct TaskRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .top, spacing: Space.md) {
                 Button { model.toggleTask(task.id) } label: {
                     CheckSquare(checked: task.isCompleted)
                 }
@@ -27,7 +27,7 @@ struct TaskRow: View {
                 } else {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(task.title)
-                            .font(.system(size: 13))
+                            .font(.style(.body))
                             .foregroundStyle(task.isCompleted ? Theme.inkTertiary : Theme.ink)
                             .strikethrough(task.isCompleted, color: Theme.inkTertiary)
                             .lineLimit(2)
@@ -41,7 +41,7 @@ struct TaskRow: View {
                 }
 
                 if hovering && !isEditing {
-                    HStack(spacing: 2) {
+                    HStack(spacing: Space.xxxs) {
                         if !task.isCompleted {
                             RowIconButton(symbol: "play.fill", help: "Focus on this") { model.focus(on: task.id) }
                         }
@@ -50,7 +50,7 @@ struct TaskRow: View {
                     .transition(.opacity)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, Space.xl)
             .padding(.vertical, isEditing ? 10 : 8)
         }
         .background(isEditing ? Theme.well : hovering ? Theme.well.opacity(0.7) : .clear)
@@ -70,16 +70,16 @@ struct TaskRow: View {
         let parts = metaParts
         let due = TaskLabels.due(task)
         if !parts.isEmpty || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty || task.external != nil {
-            HStack(spacing: 8) {
+            HStack(spacing: Space.sm) {
                 if isInFocus {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Space.xxs) {
                         Circle().fill(Theme.accent).frame(width: 5, height: 5)
                         MonoLabel("In focus", color: Theme.accent)
                     }
                 }
                 if task.priority != .none, !task.isCompleted {
                     Text(String(repeating: "!", count: task.priority.rawValue))
-                        .font(Theme.mono(10, .bold))
+                        .font(.style(.monoMark))
                         .foregroundStyle(Theme.accent)
                         .accessibilityLabel("\(task.priority.label) priority")
                 }
@@ -171,9 +171,9 @@ private struct CheckSquare: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.check, style: .continuous)
                 .fill(checked ? Theme.ink : Color.clear)
-            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.check, style: .continuous)
                 .strokeBorder(checked ? Theme.ink : Theme.inkSecondary, lineWidth: 1.5)
             if checked {
                 Image(systemName: "checkmark")
@@ -200,7 +200,7 @@ struct RowIconButton: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(hovering ? Theme.ink : Theme.inkSecondary)
                 .frame(width: 22, height: 22)
-                .background(hovering ? Theme.hairline : .clear, in: RoundedRectangle(cornerRadius: 4))
+                .background(hovering ? Theme.hairline : .clear, in: RoundedRectangle(cornerRadius: Radius.keycap))
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }

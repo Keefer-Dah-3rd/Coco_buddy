@@ -16,10 +16,10 @@ struct TaskEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Space.md) {
             TextField("Title", text: $draft.title)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13, weight: .medium))
+                .font(.style(.bodyEmphasis))
                 .foregroundStyle(Theme.ink)
                 .focused($titleFocused)
                 .onSubmit { model.editingTaskID = nil }
@@ -28,7 +28,7 @@ struct TaskEditor: View {
             TextField("Notes", text: $draft.notes, prompt: Text("Notes — links, details, the first step…")
                 .foregroundStyle(Theme.inkTertiary), axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12))
+                .font(.style(.bodySmall))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(2...5)
                 .fieldWell()
@@ -43,7 +43,7 @@ struct TaskEditor: View {
             }
 
             row("Estimate") {
-                HStack(spacing: 6) {
+                HStack(spacing: Space.xs) {
                     StepButton(symbol: "minus", help: "15 minutes less") { stepEstimate(-15) }
                         .disabled(draft.estimateMinutes == nil)
                     Text(draft.estimateMinutes.map(TodayView.duration) ?? "—")
@@ -84,18 +84,18 @@ struct TaskEditor: View {
     @ViewBuilder
     private var deadlineControl: some View {
         if let deadline = draft.deadline {
-            HStack(spacing: 6) {
+            HStack(spacing: Space.xs) {
                 DatePicker("Due date", selection: Binding(
                     get: { deadline },
                     set: { draft.deadline = Calendar.current.startOfDay(for: $0) }
                 ), displayedComponents: .date)
                 .labelsHidden()
                 .datePickerStyle(.field)
-                .font(.system(size: 12))
+                .font(.style(.bodySmall))
                 StepButton(symbol: "xmark", help: "No due date") { draft.deadline = nil }
             }
         } else {
-            HStack(spacing: 4) {
+            HStack(spacing: Space.xxs) {
                 quickDue("Today", days: 0)
                 quickDue("Tmrw", days: 1)
                 quickDue("+1 wk", days: 7)
@@ -158,7 +158,7 @@ private struct StepButton: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(Theme.ink)
                 .frame(width: 24, height: 22)
-                .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Theme.hairline))
+                .overlay(RoundedRectangle(cornerRadius: Radius.keycap, style: .continuous).strokeBorder(Theme.hairline))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -170,8 +170,8 @@ private struct StepButton: View {
 private extension View {
     func fieldWell() -> some View {
         padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Theme.hairline))
+            .padding(.vertical, Space.xs)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.key, style: .continuous).strokeBorder(Theme.hairline))
     }
 }

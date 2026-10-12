@@ -93,13 +93,13 @@ struct SpeechBubbleView: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 12.5, weight: .medium))
+            .font(.style(.speechBubble))
             .foregroundStyle(Theme.ink)
             .lineSpacing(1.5)
             .frame(maxWidth: 210, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 11)
-            .padding(.vertical, 8)
+            .padding(.vertical, Space.sm)
             .padding(tailEdge, Self.tailSize)
             .background {
                 let shape = BubbleShape(tail: tail, anchor: tailAnchor, tailSize: Self.tailSize)
@@ -147,7 +147,7 @@ private struct BubbleShape: Shape {
             pointer.addLine(to: CGPoint(x: body.maxX + tailSize, y: body.midY + 2))
         }
         pointer.closeSubpath()
-        let bubble = Path(roundedRect: body.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 9, style: .continuous)
+        let bubble = Path(roundedRect: body.insetBy(dx: 0.5, dy: 0.5), cornerRadius: Radius.bubble, style: .continuous)
         return bubble.union(pointer)
     }
 }

@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  body { font: 12px/1.4 Inter, system-ui, sans-serif; margin: 12px; color: var(--figma-color-text, #1a1a18); background: var(--figma-color-bg, #fff); }
+  h1 { font-size: 13px; margin: 0 0 4px; }
+  p { margin: 0 0 10px; color: var(--figma-color-text-secondary, #6e6a61); }
+  textarea { width: 100%; height: 150px; box-sizing: border-box; font: 11px ui-monospace, Menlo, monospace; }
+  .row { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+  button, a.button { font: inherit; padding: 6px 10px; border-radius: 5px; border: 1px solid var(--figma-color-border, #d9d5cb); background: var(--figma-color-bg, #fff); color: inherit; text-decoration: none; cursor: pointer; }
+  button.primary { background: #ff5a1f; border-color: #ff5a1f; color: #1a1a18; }
+  #status { min-height: 16px; white-space: pre-wrap; }
+</style>
+<h1>Coco Tokens</h1>
+<p>Export this file’s variables and text styles as <code>coco-tokens.json</code>, then run <code>scripts/sync-design-tokens.sh coco-tokens.json</code> in the repo. Or paste a <code>design/tokens.json</code> and import it.</p>
+<div class="row">
+  <button class="primary" id="export">Export tokens</button>
+  <a class="button" id="download" download="coco-tokens.json" hidden>Download coco-tokens.json</a>
+  <button id="copy" hidden>Copy</button>
+</div>
+<textarea id="json" placeholder="Exported JSON appears here — or paste design/tokens.json to import it."></textarea>
+<div class="row"><button id="import">Import pasted tokens.json into Figma</button></div>
+<div id="status"></div>
+<script>
+  const $ = id => document.getElementById(id);
+  const status = text => { $('status').textContent = text; };
+  $('export').onclick = () => { status('Exporting…'); parent.postMessage({ pluginMessage: { type: 'export' } }, '*'); };
+  $('import').onclick = () => { status('Importing…'); parent.postMessage({ pluginMessage: { type: 'import', json: $('json').value } }, '*'); };
+  $('copy').onclick = () => { $('json').select(); document.execCommand('copy'); status('Copied.'); };
+  onmessage = event => {
+    const msg = event.data.pluginMessage;
+    if (msg.type === 'exported') {
+      const text = JSON.stringify(msg.result, null, 2);
+      $('json').value = text;
+      $('download').href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      $('download').hidden = false; $('copy').hidden = false;
+      status(msg.result.warnings.length ? 'Exported with warnings:\n' + msg.result.warnings.join('\n') : 'Exported. Checksum ' + msg.result.checksum + '.');
+    } else if (msg.type === 'imported') {
+      const r = msg.report;
+      status(`Imported: ${r.created.length} created, ${r.updated.length ?? r.updated} updated, ${r.textStyles.length} text styles.` + (r.extrasInFigma.length ? `\nIn Figma but not in the JSON (left alone): ${r.extrasInFigma.join(', ')}` : ''));
+    } else if (msg.type === 'error') {
+      status('Error: ' + msg.message);
+    }
+  };
+</script>

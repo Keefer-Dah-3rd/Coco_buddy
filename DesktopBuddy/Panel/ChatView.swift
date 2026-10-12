@@ -29,7 +29,7 @@ struct ChatView: View {
     private var conversation: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: Space.lg) {
                     if assistant.turns.isEmpty {
                         Starters { model.assistant.send($0) }
                     }
@@ -46,7 +46,7 @@ struct ChatView: View {
                     }
                     Color.clear.frame(height: 1).id("bottom")
                 }
-                .padding(16)
+                .padding(Space.xl)
             }
             .scrollIndicators(.never)
             .onChange(of: assistant.turns.last?.text) { scrollToBottom(proxy) }
@@ -63,11 +63,11 @@ struct ChatView: View {
     // MARK: - Composer
 
     private var composer: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .bottom, spacing: 8) {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            HStack(alignment: .bottom, spacing: Space.sm) {
                 if model.voiceIn.isListening {
                     Text(model.voiceIn.transcript.isEmpty ? "Listening…" : model.voiceIn.transcript)
-                        .font(.system(size: 13))
+                        .font(.style(.body))
                         .foregroundStyle(model.voiceIn.transcript.isEmpty ? Theme.inkTertiary : Theme.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 7)
@@ -75,7 +75,7 @@ struct ChatView: View {
                     TextField("Message", text: $draft, prompt: Text("Ask \(Buddy.name) anything…").foregroundStyle(Theme.inkTertiary),
                               axis: .vertical)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13))
+                        .font(.style(.body))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1...4)
                         .focused($inputFocused)
@@ -94,13 +94,13 @@ struct ChatView: View {
                         .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
-            .padding(.horizontal, 10)
-            .background(Theme.well, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .padding(.horizontal, Space.md)
+            .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
 
-            HStack(spacing: 10) {
+            HStack(spacing: Space.md) {
                 Button("New chat") { model.assistant.newChat() }
                     .buttonStyle(.plain)
-                    .font(Theme.mono(9, .semibold))
+                    .font(.style(.monoTiny))
                     .foregroundStyle(Theme.inkSecondary)
                     .disabled(assistant.turns.isEmpty)
                     .keyboardShortcut("n", modifiers: .command)
@@ -112,8 +112,8 @@ struct ChatView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, Space.xl)
+        .padding(.vertical, Space.md)
     }
 
     private func send() {
@@ -135,15 +135,15 @@ private struct TurnView: View {
             HStack {
                 Spacer(minLength: 40)
                 Text(turn.text)
-                    .font(.system(size: 13))
+                    .font(.style(.body))
                     .foregroundStyle(Theme.ink)
                     .textSelection(.enabled)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, Space.md)
                     .padding(.vertical, 7)
-                    .background(Theme.well, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
         case .coco:
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Space.xs) {
                 ForEach(turn.activities, id: \.self) { activity in
                     HStack(spacing: 5) {
                         Circle().fill(Theme.accent).frame(width: 4, height: 4)
@@ -157,7 +157,7 @@ private struct TurnView: View {
                             ThinkingDots()
                         } else {
                             Text(turn.text)
-                                .font(.system(size: 13))
+                                .font(.style(.body))
                                 .foregroundStyle(Theme.ink)
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -166,7 +166,7 @@ private struct TurnView: View {
                 }
                 if let failure = turn.failure {
                     Text(failure)
-                        .font(.system(size: 11))
+                        .font(.style(.caption))
                         .foregroundStyle(Theme.accent)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -181,7 +181,7 @@ private struct ThinkingDots: View {
     private let timer = Timer.publish(every: 0.35, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Space.xxs) {
             ForEach(0..<3, id: \.self) { index in
                 Circle().fill(Theme.inkSecondary).frame(width: 5, height: 5).opacity(index == phase ? 1 : 0.3)
             }
@@ -197,19 +197,19 @@ private struct CompletionConfirmCard: View {
     let model: AppModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Space.sm) {
             Text("Mark “\(BuddyVoice.short(task.title, limit: 40))” done?")
-                .font(.system(size: 12, weight: .medium))
+                .font(.style(.bodySmallEmphasis))
                 .foregroundStyle(Theme.ink)
-            HStack(spacing: 8) {
+            HStack(spacing: Space.sm) {
                 Button { model.confirmCompletion(task.id) } label: { Label("Mark done", systemImage: "checkmark") }
                     .buttonStyle(KeyButtonStyle(kind: .primary, fillWidth: true, compact: true))
                 Button("Not yet") { model.declineCompletion(task.id) }
                     .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
             }
         }
-        .padding(10)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(Space.md)
+        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 }
 
@@ -223,21 +223,21 @@ private struct Starters: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Space.md) {
             Text("Ask about your day, think something through, or get a plan. \(Buddy.name) looks at your tasks and calendar only when you ask about them.")
-                .font(.system(size: 12))
+                .font(.style(.bodySmall))
                 .foregroundStyle(Theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(prompts, id: \.self) { prompt in
                 Button { send(prompt) } label: {
                     HStack {
-                        Text(prompt).font(.system(size: 12)).foregroundStyle(Theme.ink)
+                        Text(prompt).font(.style(.bodySmall)).foregroundStyle(Theme.ink)
                         Spacer()
                         Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(Theme.inkTertiary)
                     }
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, Space.md)
                     .frame(height: 28)
-                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.hairline))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Theme.hairline))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -250,16 +250,16 @@ private struct ConnectPrompt: View {
     let model: AppModel
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Space.lg) {
             Spacer()
             Image(systemName: "bubble.left.and.text.bubble.right")
                 .font(.system(size: 22, weight: .light))
                 .foregroundStyle(Theme.inkTertiary)
             Text("Chat needs a Claude API key.")
-                .font(.system(size: 13, weight: .medium))
+                .font(.style(.bodyEmphasis))
                 .foregroundStyle(Theme.ink)
             Text("Add it in Connections. Everything else works without it.")
-                .font(.system(size: 12))
+                .font(.style(.bodySmall))
                 .foregroundStyle(Theme.inkSecondary)
                 .multilineTextAlignment(.center)
             Button("Open Connections") { model.openConnections() }
@@ -268,7 +268,7 @@ private struct ConnectPrompt: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        .padding(16)
+        .padding(Space.xl)
     }
 }
 
@@ -285,13 +285,13 @@ private struct IconKey: View {
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(prominent ? Theme.onAccent : Theme.inkSecondary)
                 .frame(width: 26, height: 26)
-                .background(prominent ? Theme.accent : Color.clear, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .background(prominent ? Theme.accent : Color.clear, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
                 .opacity(isEnabled ? 1 : 0.4)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .help(help)
         .accessibilityLabel(help)
-        .padding(.vertical, 4)
+        .padding(.vertical, Space.xxs)
     }
 }

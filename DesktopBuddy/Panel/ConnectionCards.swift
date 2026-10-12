@@ -10,7 +10,7 @@ struct ScheduleStrip: View {
         let service = model.calendar
         let now = Date.now
         let schedule = service.schedule
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Space.xs) {
             if let current = schedule.current(at: now) {
                 meetingLine(label: "Now", event: current,
                             detail: "until \(current.end.formatted(date: .omitted, time: .shortened))", urgent: true)
@@ -20,17 +20,17 @@ struct ScheduleStrip: View {
                             detail: minutes < 60 ? "in \(minutes)m" : next.start.formatted(date: .omitted, time: .shortened),
                             urgent: minutes <= 10)
             } else {
-                HStack(spacing: 8) {
+                HStack(spacing: Space.sm) {
                     MonoLabel("Calendar")
                     Text(schedule.events.isEmpty ? "No meetings today — wide open." : "No more meetings today.")
-                        .font(.system(size: 12)).foregroundStyle(Theme.inkSecondary)
+                        .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
                 }
             }
             if let free = longestFreeBlock(now: now) {
-                HStack(spacing: 8) {
+                HStack(spacing: Space.sm) {
                     MonoLabel("Free", color: Theme.ink)
                     Text("\(free.start.formatted(date: .omitted, time: .shortened))–\(free.end.formatted(date: .omitted, time: .shortened))")
-                        .font(.system(size: 12)).foregroundStyle(Theme.ink)
+                        .font(.style(.bodySmall)).foregroundStyle(Theme.ink)
                     MonoLabel(TodayView.duration(Int(free.duration / 60)))
                     Spacer()
                 }
@@ -45,16 +45,16 @@ struct ScheduleStrip: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.hairline))
+        .padding(.horizontal, Space.md)
+        .padding(.vertical, Space.sm)
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
     }
 
     private func meetingLine(label: String, event: CalendarEvent, detail: String, urgent: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.sm) {
             MonoLabel(label, color: urgent ? Theme.accent : Theme.inkSecondary)
             Text(event.title)
-                .font(.system(size: 13, weight: .medium))
+                .font(.style(.bodyEmphasis))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
             MonoLabel(detail)
@@ -85,15 +85,15 @@ struct NotionPickerCard: View {
 
     var body: some View {
         let candidates = model.notionCandidates
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Space.sm) {
             Button {
                 if !expanded { selected = Set(candidates.filter(isDueSoon).map(\.id)) }
                 expanded.toggle()
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: Space.sm) {
                     MonoLabel("Notion", color: Theme.ink)
                     Text("\(candidates.count) open in “\(model.notion.mapping?.dataSourceTitle ?? "Notion")”")
-                        .font(.system(size: 12)).foregroundStyle(Theme.inkSecondary).lineLimit(1)
+                        .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary).lineLimit(1)
                     Spacer()
                     MonoLabel(expanded ? "Close" : "Pick ›", color: Theme.accent)
                 }
@@ -106,11 +106,11 @@ struct NotionPickerCard: View {
                     Button {
                         if selected.contains(task.id) { selected.remove(task.id) } else { selected.insert(task.id) }
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: Space.sm) {
                             Image(systemName: selected.contains(task.id) ? "checkmark.square.fill" : "square")
                                 .font(.system(size: 12))
                                 .foregroundStyle(selected.contains(task.id) ? Theme.accent : Theme.inkTertiary)
-                            Text(task.title).font(.system(size: 12)).foregroundStyle(Theme.ink).lineLimit(1)
+                            Text(task.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
                             Spacer()
                             if let due = task.due {
                                 MonoLabel(dueText(due), color: isDueSoon(task) ? Theme.accent : Theme.inkTertiary)
@@ -134,9 +134,9 @@ struct NotionPickerCard: View {
                 }
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.hairline))
+        .padding(.horizontal, Space.md)
+        .padding(.vertical, Space.sm)
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
         .animation(.snappy(duration: 0.2), value: expanded)
     }
 
@@ -157,19 +157,19 @@ struct NotionCompletionCard: View {
     let task: BuddyTask
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Space.sm) {
             Text("Also mark “\(BuddyVoice.short(task.title, limit: 34))” done in Notion?")
-                .font(.system(size: 12, weight: .medium))
+                .font(.style(.bodySmallEmphasis))
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 8) {
+            HStack(spacing: Space.sm) {
                 Button("Mark done in Notion") { model.confirmNotionCompletion() }
                     .buttonStyle(KeyButtonStyle(kind: .primary, fillWidth: true, compact: true))
                 Button("Only here") { model.skipNotionCompletion() }
                     .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
             }
         }
-        .padding(10)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(Space.md)
+        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 }

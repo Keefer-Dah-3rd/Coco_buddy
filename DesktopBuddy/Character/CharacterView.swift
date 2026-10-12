@@ -22,7 +22,7 @@ struct CountdownChipView: View {
     var body: some View {
         ZStack {
             if let countdown = model.countdown {
-                HStack(spacing: 4) {
+                HStack(spacing: Space.xxs) {
                     if countdown.isPaused {
                         Image(systemName: "pause.fill").font(.system(size: 7, weight: .black))
                     } else if countdown.isBreak {
@@ -33,10 +33,10 @@ struct CountdownChipView: View {
                         .monospacedDigit()
                 }
                 .foregroundStyle(Theme.phosphor.opacity(countdown.isPaused ? 0.6 : 1))
-                .padding(.horizontal, 6)
+                .padding(.horizontal, Space.xs)
                 .frame(height: 17)
-                .background(Theme.lcd, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(.black.opacity(0.35)))
+                .background(Theme.lcd, in: RoundedRectangle(cornerRadius: Radius.keycap, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.keycap, style: .continuous).strokeBorder(.black.opacity(0.35)))
                 .opacity(model.isDimmed ? 0.6 : 1)
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }

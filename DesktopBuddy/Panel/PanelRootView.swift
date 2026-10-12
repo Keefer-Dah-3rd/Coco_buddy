@@ -17,16 +17,16 @@ struct PanelRootView: View {
             }
             .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(width: Theme.panelWidth, height: Theme.panelHeight)
+        .frame(width: Metrics.panelWidth, height: Metrics.panelHeight)
         .background(Theme.paper)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous).strokeBorder(Theme.hairline))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).strokeBorder(Theme.hairline))
         .onExitCommand { model.setPanelOpen(false) }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Space.lg) {
+            HStack(spacing: Space.xs) {
                 Circle()
                     .fill(model.focus.timer.isRunning ? Theme.accent : Theme.inkTertiary)
                     .frame(width: 6, height: 6)
@@ -54,9 +54,9 @@ struct PanelRootView: View {
                 .help(model.preferences.voiceEnabled ? "\(Buddy.name) speaks aloud — click for text only" : "Text only — click to have \(Buddy.name) speak aloud")
                 .accessibilityLabel(model.preferences.voiceEnabled ? "Voice on" : "Voice off")
                 Button { model.setPanelOpen(false) } label: {
-                    Text("ESC").font(Theme.mono(9, .semibold)).tracking(0.6)
+                    Text("ESC").font(.style(.monoTiny)).tracking(0.6)
                         .foregroundStyle(Theme.inkTertiary)
-                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .padding(.horizontal, 5).padding(.vertical, Space.xxxs)
                         .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Theme.hairline))
                 }
                 .buttonStyle(.plain)
@@ -68,7 +68,7 @@ struct PanelRootView: View {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text("›").font(Theme.mono(14, .bold)).foregroundStyle(Theme.accent)
                 Text(model.buddyLine)
-                    .font(.system(size: 13.5, weight: .medium))
+                    .font(.style(.speechPanel))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -87,9 +87,9 @@ struct PanelRootView: View {
                 .init(.chat, "Chat", shortcut: "3"),
             ])
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, Space.xl)
         .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.bottom, Space.lg)
     }
 
     private var todayBadge: String {
@@ -132,8 +132,8 @@ struct KeySegment<Value: Hashable>: View {
             }
         }
         .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.hairline))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Theme.hairline))
     }
 
     @ViewBuilder
@@ -142,20 +142,20 @@ struct KeySegment<Value: Hashable>: View {
         let button = Button {
             selection = item.value
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: Space.xs) {
                 Text(item.title.uppercased())
-                    .font(Theme.mono(10, .semibold))
-                    .tracking(0.8)
+                    .font(.style(.monoLabel))
+                    .tracking(TypeStyle.monoLabel.tracking)
                 if let trailing = item.trailing {
                     Spacer(minLength: 2)
                     Text(trailing)
-                        .font(Theme.mono(11, .medium))
+                        .font(.style(.monoValue))
                         .monospacedDigit()
                         .opacity(0.7)
                 }
             }
             .foregroundStyle(selected ? Theme.paper : Theme.ink)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, Space.md)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(selected ? Theme.ink : Color.clear)
             .contentShape(Rectangle())

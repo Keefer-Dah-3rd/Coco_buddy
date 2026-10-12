@@ -10,10 +10,10 @@ struct ConnectionsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: Space.xs) {
                     MonoLabel("Connections", color: Theme.ink)
                     Text("\(Buddy.name) works fully on her own. Connect a service only if you want its data in your day.")
-                        .font(.system(size: 13))
+                        .font(.style(.body))
                         .foregroundStyle(Theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -23,13 +23,13 @@ struct ConnectionsView: View {
                     NotionSection(service: model.notion, model: model)
                 }
                 Text("Keys and sign-ins are kept in your Keychain. Calendar and task details reach Anthropic only when you ask the chat something that needs them — the chat shows each time. Nothing goes to analytics.")
-                    .font(.system(size: 11))
+                    .font(.style(.caption))
                     .foregroundStyle(Theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Space.xxl)
             .padding(.top, 34)
-            .padding(.bottom, 24)
+            .padding(.bottom, Space.xxl)
         }
         .frame(width: 540, height: 680)
         .background(Theme.paper)
@@ -77,7 +77,7 @@ private struct AssistantSection: View {
                 }
             }
             if let problem = service.keyProblem {
-                Text(problem).font(.system(size: 11)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+                Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -116,7 +116,7 @@ private struct CalendarSection: View {
                     .textFieldStyle(.roundedBorder)
                 HStack {
                     if !service.clientID.isEmpty && service.client == nil {
-                        Text("That doesn't look like a Google client ID.").font(.system(size: 11)).foregroundStyle(Theme.accent)
+                        Text("That doesn't look like a Google client ID.").font(.style(.caption)).foregroundStyle(Theme.accent)
                     }
                     Spacer()
                     Button("Sign in with Google") { connect() }
@@ -125,7 +125,7 @@ private struct CalendarSection: View {
                 }
 
             case .connecting:
-                HStack(spacing: 8) {
+                HStack(spacing: Space.sm) {
                     ProgressView().controlSize(.small)
                     Text("Waiting for Google…").bodyStyle()
                 }
@@ -166,7 +166,7 @@ private struct CalendarSection: View {
             }
 
             if let problem = service.problem {
-                Text(problem).font(.system(size: 11)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+                Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -273,7 +273,7 @@ private struct NotionSection: View {
                 ProgressView().controlSize(.small)
             }
             if let problem = service.problem {
-                Text(problem).font(.system(size: 11)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+                Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -293,7 +293,7 @@ private struct DataSourcePicker: View {
     let choose: (NotionDataSource) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Space.xs) {
             HStack {
                 MonoLabel("Choose your task database")
                 Spacer()
@@ -303,13 +303,13 @@ private struct DataSourcePicker: View {
             ForEach(service.dataSources) { source in
                 Button { choose(source) } label: {
                     HStack {
-                        Text(source.title).font(.system(size: 13)).foregroundStyle(Theme.ink)
+                        Text(source.title).font(.style(.body)).foregroundStyle(Theme.ink)
                         Spacer()
                         Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.inkTertiary)
                     }
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, Space.md)
                     .frame(height: 30)
-                    .background(Theme.paper, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -328,7 +328,7 @@ private struct MappingEditor: View {
     private var schema: NotionSchema { service.schema ?? NotionSchema(properties: []) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Space.sm) {
             MonoLabel("Map “\(draft.dataSourceTitle)”", color: Theme.accent)
             Row("Task name") {
                 propertyPicker(selection: Binding(get: { draft.titleProperty }, set: { draft.titleProperty = $0 }),
@@ -358,7 +358,7 @@ private struct MappingEditor: View {
             }
             Toggle(isOn: $draft.writeBackEnabled) {
                 Text("Let \(Buddy.name) mark tasks done in Notion (she asks first, every time)")
-                    .font(.system(size: 12))
+                    .font(.style(.bodySmall))
                     .foregroundStyle(Theme.ink)
             }
             .disabled(!draft.canWriteCompletion)
@@ -368,8 +368,8 @@ private struct MappingEditor: View {
                 Button("Use this database", action: save).buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
             }
         }
-        .padding(10)
-        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .padding(Space.md)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 
     private func propertyPicker(selection: Binding<String?>, types: [String], allowNone: Bool) -> some View {
@@ -397,9 +397,9 @@ private struct Card<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Space.lg) {
             HStack {
-                Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text(title).font(.style(.titleSection)).foregroundStyle(Theme.ink)
                 Spacer()
                 HStack(spacing: 5) {
                     Circle().fill(status.1 ? Theme.accent : Theme.inkTertiary).frame(width: 6, height: 6)
@@ -408,8 +408,8 @@ private struct Card<Content: View>: View {
             }
             content
         }
-        .padding(16)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(Space.xl)
+        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.section, style: .continuous))
     }
 }
 
@@ -417,11 +417,11 @@ private struct SetupSteps: View {
     let steps: [(String, URL?)]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Space.xs) {
             ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(index + 1)").font(Theme.mono(10, .bold)).foregroundStyle(Theme.accent).frame(width: 12)
-                    Text(step.0).font(.system(size: 12)).foregroundStyle(Theme.ink).fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                    Text("\(index + 1)").font(.style(.monoMark)).foregroundStyle(Theme.accent).frame(width: 12)
+                    Text(step.0).font(.style(.bodySmall)).foregroundStyle(Theme.ink).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     if let url = step.1 {
                         Link(destination: url) {
@@ -432,8 +432,8 @@ private struct SetupSteps: View {
                 }
             }
         }
-        .padding(10)
-        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .padding(Space.md)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 }
 

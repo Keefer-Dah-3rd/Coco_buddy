@@ -60,14 +60,14 @@ struct SettingsView: View {
                                 value: Binding(get: { preferences.focusSettings.sessionsBeforeLongBreak },
                                                set: { preferences.focusSettings.sessionsBeforeLongBreak = min(8, max(2, $0)) }),
                                 in: 2...8)
-                        .font(.system(size: 12))
+                        .font(.style(.bodySmall))
                     }
                 }
 
                 Section("Your day") {
                     Row("Workday ends at") {
                         Stepper(hourLabel(preferences.workdayEndHour), value: $preferences.workdayEndHour, in: 12...23)
-                            .font(.system(size: 12))
+                            .font(.style(.bodySmall))
                     }
                     Caption("Used to find free stretches for focused work.")
                     Row("Meeting reminders") {
@@ -98,9 +98,9 @@ struct SettingsView: View {
                     .font(Theme.mono(10))
                     .foregroundStyle(Theme.inkTertiary)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Space.xxl)
             .padding(.top, 34)
-            .padding(.bottom, 24)
+            .padding(.bottom, Space.xxl)
         }
         .frame(width: 540, height: height)
         .background(Theme.paper)
@@ -152,14 +152,14 @@ private struct Section<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
+        VStack(alignment: .leading, spacing: Space.md) {
+            Text(title).font(.style(.titleSection)).foregroundStyle(Theme.ink)
                 .accessibilityAddTraits(.isHeader)
             content
         }
-        .padding(16)
+        .padding(Space.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.section, style: .continuous))
     }
 }
 
@@ -195,7 +195,7 @@ private struct ToggleRow: View {
 
     var body: some View {
         HStack {
-            Text(label).font(.system(size: 12)).foregroundStyle(Theme.ink)
+            Text(label).font(.style(.bodySmall)).foregroundStyle(Theme.ink)
                 .accessibilityHidden(true)
             Spacer()
             Toggle(label, isOn: $isOn)
@@ -218,7 +218,7 @@ private struct MinutesRow: View {
     var body: some View {
         Row(label) {
             Stepper("\(value) min", value: $value, in: FocusSettings.minuteRange, step: 5)
-                .font(.system(size: 12))
+                .font(.style(.bodySmall))
                 .accessibilityLabel(label)
                 .accessibilityValue("\(value) minutes")
         }
@@ -231,7 +231,7 @@ private struct Caption: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 11))
+            .font(.style(.caption))
             .foregroundStyle(Theme.inkSecondary)
             .fixedSize(horizontal: false, vertical: true)
     }

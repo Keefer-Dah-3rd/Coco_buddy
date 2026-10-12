@@ -15,6 +15,7 @@ enum SnapshotRenderer {
     static func run(into folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         renderIcon(to: folder.appendingPathComponent("icon-1024.png"))
+        exportMascot(to: folder.appendingPathComponent("mascot"))
         for (name, background) in [("light", NSColor(hex: 0xD9E0E6)), ("dark", NSColor(hex: 0x1E252D))] {
             write(characterSheet(background: background), to: folder.appendingPathComponent("character-\(name).png"))
         }
@@ -92,7 +93,7 @@ enum SnapshotRenderer {
         let fresh = demoModel()
         write(view(SettingsView(model: fresh, height: 1240), appearance: .aqua), to: folder.appendingPathComponent("settings.png"))
         for step in 0..<4 {
-            write(view(OnboardingView(model: fresh, finish: {}, step: step), appearance: step == 2 ? .darkAqua : .aqua),
+            write(view(OnboardingView(model: fresh, finish: {}, step: step, animated: false), appearance: step == 2 ? .darkAqua : .aqua),
                   to: folder.appendingPathComponent("welcome-\(step + 1).png"))
         }
 
@@ -147,16 +148,16 @@ enum SnapshotRenderer {
             shadow.shadowBlurRadius = 24
             shadow.shadowOffset = NSSize(width: 0, height: -10)
             shadow.set()
-            NSColor(hex: 0xF3F1EC).setFill()
+            BrandPalette.iconTile.setFill()
             shape.fill()
             NSGraphicsContext.restoreGraphicsState()
             // A darker floor band gives the tile a little physical depth.
             NSGraphicsContext.saveGraphicsState()
             shape.addClip()
-            NSColor(hex: 0xE6E1D7).setFill()
+            BrandPalette.iconFloor.setFill()
             NSRect(x: 100, y: 100, width: 824, height: 210).fill()
             NSGraphicsContext.restoreGraphicsState()
-            NSColor(hex: 0xD3CDC1).setStroke()
+            BrandPalette.iconStroke.setStroke()
             shape.lineWidth = 3
             shape.stroke()
             // Coco, feet on the floor band.
@@ -220,6 +221,25 @@ enum SnapshotRenderer {
             Frame(label: "compact", pose: pose(.idle), scale: CharacterLayout.compactScale),
             Frame(label: "focused small", pose: pose(.focused), progress: 0.25, scale: CharacterLayout.compactScale),
         ]
+    }
+
+    /// Coco's states as SVG, straight from her layers — the source for the Figma Mascot page.
+    static func exportMascot(to folder: URL) {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let art = CocoLayerView(frame: NSRect(x: 0, y: 0, width: 192, height: 228))
+        let window = NSWindow(contentRect: NSRect(x: -20_000, y: -20_000, width: 192, height: 228),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.contentView = art
+        window.orderFrontRegardless()
+        for frame in characterFrames() where frame.scale == 1 {
+            art.layoutSubtreeIfNeeded()
+            art.render(frame.pose, focusProgress: frame.progress)
+            let name = frame.label.replacingOccurrences(of: " 60%", with: "").replacingOccurrences(of: " ", with: "-")
+            try? LayerSVGExporter.svg(of: art).write(to: folder.appendingPathComponent("coco-\(name).svg"), atomically: true, encoding: .utf8)
+        }
+        window.orderOut(nil)
     }
 
     private static func characterSheet(background: NSColor) -> NSImage {

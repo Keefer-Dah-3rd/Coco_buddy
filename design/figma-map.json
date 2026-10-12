@@ -1,0 +1,519 @@
+{
+  "$description": "Figma component ↔ Swift code mapping for the Coco design system. Code Connect needs a Figma Organization/Enterprise seat, so this file is the mapping; scripts/tokens/check_figma_map.py verifies every entry still points at real code. Node ids and keys come from the Figma file.",
+  "figmaFile": "https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco",
+  "components": [
+    {
+      "figma": {
+        "name": "Mono Label",
+        "nodeId": "7:11",
+        "key": "7fc6bc7971385d79f1fa5f5e3f1404cdc53248a4"
+      },
+      "swift": {
+        "symbol": "MonoLabel",
+        "file": "DesktopBuddy/Panel/Theme.swift",
+        "anchor": "struct MonoLabel"
+      }
+    },
+    {
+      "figma": {
+        "name": "Checkbox",
+        "nodeId": "7:16",
+        "key": "ba6f37a6467c2cc765a88d90dd687dc1882c6435"
+      },
+      "swift": {
+        "symbol": "CheckSquare",
+        "file": "DesktopBuddy/Panel/TaskRow.swift",
+        "anchor": "struct CheckSquare"
+      }
+    },
+    {
+      "figma": {
+        "name": "Keycap",
+        "nodeId": "7:21",
+        "key": "c752926a3fa9e1ca3e48e0a2f2575c208d39d476"
+      },
+      "swift": {
+        "symbol": "ESC key + ShortcutRow keys",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "Text(\"ESC\")"
+      },
+      "notes": "Size=Regular is the key cap in ShortcutRow (OnboardingView.swift)."
+    },
+    {
+      "figma": {
+        "name": "Row Icon Button",
+        "nodeId": "7:28",
+        "key": "c9b090d5f560a077202b864ce3fba5893ec22258"
+      },
+      "swift": {
+        "symbol": "RowIconButton",
+        "file": "DesktopBuddy/Panel/TaskRow.swift",
+        "anchor": "struct RowIconButton"
+      }
+    },
+    {
+      "figma": {
+        "name": "Key Button",
+        "nodeId": "8:101",
+        "key": "162619cc3148d60e5ef1d8fa93bc7c97a684a05f"
+      },
+      "swift": {
+        "symbol": "KeyButtonStyle",
+        "file": "DesktopBuddy/Panel/Theme.swift",
+        "anchor": "struct KeyButtonStyle"
+      },
+      "notes": "Kind → kind (.primary/.secondary/.quiet), Size=Compact → compact: true. Hover/Pressed/Disabled are runtime states."
+    },
+    {
+      "figma": {
+        "name": "Segment Item",
+        "nodeId": "9:14",
+        "key": "8c03949dd2467e5ac6afff39e79d3682a5a098de"
+      },
+      "swift": {
+        "symbol": "KeySegment.Item",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "struct Item"
+      }
+    },
+    {
+      "figma": {
+        "name": "Key Segment",
+        "nodeId": "9:105",
+        "key": "3ceef967ea5ef659477eb7974f51ffe9ffb2602c"
+      },
+      "swift": {
+        "symbol": "KeySegment",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "struct KeySegment"
+      },
+      "notes": "Size=Regular → height 28 (tabs, 26 in Focus); Size=Small → height: 22 (Settings)."
+    },
+    {
+      "figma": {
+        "name": "Meter Segment",
+        "nodeId": "11:62",
+        "key": "7b01c45488dc170105c98d5953452dd9ee841cc8"
+      },
+      "swift": {
+        "symbol": "SegmentMeter",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "struct SegmentMeter"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task Row",
+        "nodeId": "11:179",
+        "key": "19c91060dab3f973aac272d8aa7c0e527cec6eab"
+      },
+      "swift": {
+        "symbol": "TaskRow",
+        "file": "DesktopBuddy/Panel/TaskRow.swift",
+        "anchor": "struct TaskRow"
+      },
+      "notes": "State=Selected ↔ isSelected; Done ↔ task.isCompleted."
+    },
+    {
+      "figma": {
+        "name": "Quick Add Field",
+        "nodeId": "11:198",
+        "key": "87177c8d429620d198073a3b7d61bcb66f8b7de3"
+      },
+      "swift": {
+        "symbol": "TodayView.quickAdd + MicButton",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private var quickAdd"
+      }
+    },
+    {
+      "figma": {
+        "name": "Up Next Card",
+        "nodeId": "11:199",
+        "key": "12b8f732a7063e424eb8da9e747486efdfdf78ba"
+      },
+      "swift": {
+        "symbol": "UpNextCard",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "struct UpNextCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Leftovers Banner",
+        "nodeId": "11:210",
+        "key": "86cf93b554f1f1a9f82569b10a24d04a4c3053bb"
+      },
+      "swift": {
+        "symbol": "LeftoversBanner",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "struct LeftoversBanner"
+      }
+    },
+    {
+      "figma": {
+        "name": "Panel Header",
+        "nodeId": "14:203",
+        "key": "d7153cf751ef2bc8c4dcf21c00a04ecc9ae9c153"
+      },
+      "swift": {
+        "symbol": "PanelRootView.header",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "private var header"
+      }
+    },
+    {
+      "figma": {
+        "name": "Countdown Chip",
+        "nodeId": "14:213",
+        "key": "7d09ef6c516e95a4dd868b2ca50cd4b57d18ed72"
+      },
+      "swift": {
+        "symbol": "CountdownChipView",
+        "file": "DesktopBuddy/Character/CharacterView.swift",
+        "anchor": "struct CountdownChipView"
+      }
+    },
+    {
+      "figma": {
+        "name": "Speech Bubble",
+        "nodeId": "14:232",
+        "key": "156dfc098a470c00c62a3d3002b7535b07a7c03b"
+      },
+      "swift": {
+        "symbol": "SpeechBubbleView",
+        "file": "DesktopBuddy/Windows/BubbleWindowController.swift",
+        "anchor": "struct SpeechBubbleView"
+      },
+      "notes": "Tail ↔ SpeechBubbleView.Tail (.bottom/.leading/.trailing)."
+    },
+    {
+      "figma": {
+        "name": "Chat / User Message",
+        "nodeId": "14:233",
+        "key": "d4a93b7ac33123a5ecaf638a6a6ff692adbded4a"
+      },
+      "swift": {
+        "symbol": "TurnView (.user)",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "struct TurnView"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat / Coco Message",
+        "nodeId": "14:264",
+        "key": "14aede00935da062f368b689a7190c101f36c1ef"
+      },
+      "swift": {
+        "symbol": "TurnView (.coco) + ThinkingDots",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "struct ThinkingDots"
+      }
+    },
+    {
+      "figma": {
+        "name": "Switch",
+        "nodeId": "16:157",
+        "key": "235b618b32f1bd076a030e5a20be6b8fbbc0dc65"
+      },
+      "swift": {
+        "symbol": "Toggle (native .switch)",
+        "file": "DesktopBuddy/Panel/SettingsView.swift",
+        "anchor": ".toggleStyle(.switch)"
+      },
+      "notes": "Stand-in for the native control; not restyled in code."
+    },
+    {
+      "figma": {
+        "name": "Stepper",
+        "nodeId": "16:158",
+        "key": "c698c57b3c8bd87828fd85b05390a780bc5728cb"
+      },
+      "swift": {
+        "symbol": "Stepper (native)",
+        "file": "DesktopBuddy/Panel/SettingsView.swift",
+        "anchor": "Stepper("
+      },
+      "notes": "Stand-in for the native control."
+    },
+    {
+      "figma": {
+        "name": "Settings / Toggle Row",
+        "nodeId": "16:173",
+        "key": "10dab66dafd68b961e260dcf5c30144489882b38"
+      },
+      "swift": {
+        "symbol": "ToggleRow",
+        "file": "DesktopBuddy/Panel/SettingsView.swift",
+        "anchor": "struct ToggleRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "Settings / Row",
+        "nodeId": "16:199",
+        "key": "e5e7c9d167e79496c2ebee9b95d856db9f748c7c"
+      },
+      "swift": {
+        "symbol": "Row / MinutesRow",
+        "file": "DesktopBuddy/Panel/SettingsView.swift",
+        "anchor": "struct MinutesRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome / Extra Card",
+        "nodeId": "16:221",
+        "key": "7af4164ff72bea945c6f5ce1c6077fa0dc94f11e"
+      },
+      "swift": {
+        "symbol": "Extra",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "struct Extra"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome / Shortcut Row",
+        "nodeId": "16:222",
+        "key": "59940ba3b30821e961f25044efd70ddf092b9255"
+      },
+      "swift": {
+        "symbol": "ShortcutRow",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "struct ShortcutRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome / Step Dots",
+        "nodeId": "16:247",
+        "key": "955df81f33b8e096d5b935a465161cf288ecb747"
+      },
+      "swift": {
+        "symbol": "OnboardingView footer dots",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "of \\(steps)"
+      }
+    },
+    {
+      "figma": {
+        "name": "Mascot / Coco",
+        "nodeId": "17:910",
+        "key": "205cbff5369877291556cfb44e5859124e9c0fc8"
+      },
+      "swift": {
+        "symbol": "CocoLayerView",
+        "file": "DesktopBuddy/Character/CocoLayerView.swift",
+        "anchor": "final class CocoLayerView"
+      },
+      "notes": "Vectors exported from the code (SnapshotRenderer.exportMascot); State ↔ CharacterState + idle events/reactions."
+    },
+    {
+      "figma": {
+        "name": "Brand / App Icon",
+        "nodeId": "17:912",
+        "key": "d0d892e9e4348dd85f2b2c84e12dbd538e41b83c"
+      },
+      "swift": {
+        "symbol": "AppIcon (asset catalog)",
+        "file": "DesktopBuddy/App/SnapshotRenderer.swift",
+        "anchor": "static func renderIcon"
+      },
+      "notes": "Rendered by SnapshotRenderer.renderIcon into Resources/Assets.xcassets/AppIcon.appiconset."
+    }
+  ],
+  "icons": [
+    {
+      "figma": {
+        "name": "Icon/checkmark",
+        "nodeId": "6:4",
+        "key": "4e7f3e7e119ffefe3f40065439e860bd74a3f24d"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"checkmark\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/xmark",
+        "nodeId": "6:7",
+        "key": "406b8f1777b406db19144154950bbbe1cdc47a9c"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"xmark\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/plus",
+        "nodeId": "6:10",
+        "key": "8ca53c0957559aa1bc203cdb2bd2b9e568b4a33e"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"plus\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/minus",
+        "nodeId": "6:13",
+        "key": "8c11c9426dabedc818e0fc2f6363a755e7db6142"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"minus\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/play.fill",
+        "nodeId": "6:16",
+        "key": "0d8297e89841a6a321c90dc65d38c9e085b39b82"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"play.fill\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/pause.fill",
+        "nodeId": "6:19",
+        "key": "b96401f72d82203ea614156416270bf8bcdd9523"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"pause.fill\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/stop.fill",
+        "nodeId": "6:22",
+        "key": "963561b865c8c80f38ef3bfe57d73dce184003c6"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"stop.fill\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/mic.fill",
+        "nodeId": "6:25",
+        "key": "5f1d70d29aa4c7993b00ee3fab855adf29560d33"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"mic.fill\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/waveform",
+        "nodeId": "6:28",
+        "key": "c92a5e0666834268802fa71833fe37fcd0120d1e"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"waveform\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/speaker.wave.2.fill",
+        "nodeId": "6:31",
+        "key": "9c54486279c74e6cc09e06d48f4ca89c56f44ec1"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"speaker.wave.2.fill\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/speaker.slash",
+        "nodeId": "6:34",
+        "key": "84c8f584ade68a455fa5c7356228d447dca33a07"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"speaker.slash\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/link",
+        "nodeId": "6:37",
+        "key": "5c3076a0b3be0c687f109e07bf6ffd23ef66737c"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"link\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/calendar",
+        "nodeId": "6:40",
+        "key": "403708ef3387418d49dfe24e668f183702b9d086"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"calendar\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/bubble.left",
+        "nodeId": "6:43",
+        "key": "d3a3f9e8e02a59acf6b2217fdda0f2e604f27f0e"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"bubble.left\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/text.alignleft",
+        "nodeId": "6:46",
+        "key": "32c133c47cfb9b61b3e04374c1f2ba44a087fb6e"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"text.alignleft\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/chevron.right",
+        "nodeId": "6:49",
+        "key": "4afc266e926fec8c026116706f467da7bb7614c2"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"chevron.right\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/arrow.up",
+        "nodeId": "6:52",
+        "key": "a1899830cc770afcaa66531e1a793a6288c49c97"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"arrow.up\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/arrow.up.right",
+        "nodeId": "6:55",
+        "key": "ed6f03bb22ef2b287735d44c7e32372e0658c1ea"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"arrow.up.right\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/checkmark.circle.fill",
+        "nodeId": "6:58",
+        "key": "a06d85a166cc30bd9eaa4b1eafbd9d7fa4ce7bec"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"checkmark.circle.fill\")"
+      }
+    }
+  ]
+}

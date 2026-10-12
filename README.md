@@ -166,15 +166,32 @@ They join every Space, follow display changes and stay on a visible screen. Sett
   - the calendar sign-in (revoked with Google) and its cache;
   - the Claude key, the chat, settings and scheduled notifications.
 
+## Design system
+
+Coco has a full design system in [Figma](https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco):
+- foundations: variables in light and dark, plus text styles;
+- 26 components and 19 SF Symbol icons, each mapped to its SwiftUI source;
+- Coco's 14 poses as vectors exported from her real artwork;
+- screens built from instances.
+
+Tokens live in one file, [design/tokens.json](design/tokens.json). It generates both the Swift constants the app uses (`Theme`, `Space`, `Radius`, `TypeStyle`, `BrandPalette`) and the Figma variables. A design change in Figma comes back with one command, which shows a pixel diff of every screen:
+
+```bash
+scripts/sync-design-tokens.sh ~/Downloads/coco-tokens.json
+```
+
+How it works, what syncs and what doesn't: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
+
 ## Docs
 
+- [Design system](docs/DESIGN_SYSTEM.md): Figma ↔ code tokens, components, mascot assets and the sync workflow.
 - [Integrations setup](docs/INTEGRATIONS_SETUP.md): Google Calendar (personal OAuth client) and the Claude API key.
 - [QA checklist](docs/QA_CHECKLIST.md): manual checks for displays, Spaces, sleep, offline, date change, keyboard and VoiceOver.
 - [Demo script](docs/DEMO_SCRIPT.md): a 60-second screen recording, shot by shot.
 
 ## Debug tools
 
-- `--snapshots <folder>` (Debug builds) renders every character state, the panels, Settings, the welcome steps and the app icon to PNGs. The images above come from it. Run it from an unsandboxed, locally signed build:
+- `--snapshots <folder>` (Debug builds) renders every character state, the panels, Settings, the welcome steps and the app icon to PNGs, and writes Coco's poses as SVG (`mascot/`) for Figma. The images above come from it. Run it from an unsandboxed, locally signed build:
 
   ```bash
   xcodebuild -project DesktopBuddy.xcodeproj -scheme DesktopBuddy -configuration Debug -derivedDataPath build-snap ENABLE_APP_SANDBOX=NO CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= build

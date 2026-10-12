@@ -8,7 +8,7 @@ final class InteractionPanel: NSPanel {
 
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: Theme.panelWidth, height: Theme.panelHeight),
+            contentRect: NSRect(x: 0, y: 0, width: Metrics.panelWidth, height: Metrics.panelHeight),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: true
@@ -41,7 +41,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         super.init()
         let hosting = NSHostingView(rootView: PanelRootView(model: model))
         hosting.sizingOptions = []
-        hosting.frame = NSRect(x: 0, y: 0, width: Theme.panelWidth, height: Theme.panelHeight)
+        hosting.frame = NSRect(x: 0, y: 0, width: Metrics.panelWidth, height: Metrics.panelHeight)
         window.contentView = hosting
         window.delegate = self
         window.onEscape = { [weak self] in self?.close() }

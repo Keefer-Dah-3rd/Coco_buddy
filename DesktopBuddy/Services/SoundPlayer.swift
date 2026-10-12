@@ -42,7 +42,7 @@ final class SoundPlayer {
             var index = Int.random(in: 0..<barks.count)
             if index == lastBark, barks.count > 1 { index = (index + 1) % barks.count }
             lastBark = index
-            nonisolated(unsafe) let sound = barks[index]
+            let sound = barks[index]
             audio.async {
                 sound.stop()
                 sound.volume = 0.55
@@ -50,8 +50,7 @@ final class SoundPlayer {
             }
             return
         }
-        guard let name = cue.systemName, let copy = NSSound(named: name)?.copy() as? NSSound else { return }
-        nonisolated(unsafe) let sound = copy
+        guard let name = cue.systemName, let sound = NSSound(named: name)?.copy() as? NSSound else { return }
         audio.async {
             sound.volume = 0.4
             sound.play()

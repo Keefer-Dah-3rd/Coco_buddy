@@ -134,6 +134,9 @@ final class AppModel {
         }
         voiceIn.onFinish = { [weak self] transcript in self?.handleTranscript(transcript) }
         voiceOut.onSpeakingChanged = { [weak self] speaking in self?.character.setVoiceActive(speaking) }
+        track({ [weak self] in self?.preferences.voiceEnabled ?? false }) { [weak self] enabled in
+            if enabled { self?.voiceOut.prepare() }
+        }
 
         track({ [weak self] in self?.characterSync }) { [weak self] sync in
             guard let self, let sync else { return }

@@ -32,7 +32,28 @@ DesktopBuddy/Generated/DesignTokens.generated.swift  →  Theme.*, Space, Radius
 | Foundations | Every variable and text style, with Light and Dark side by side (the same variables, each frame pinned to a mode), primitives, Coco's palette, type specimens, space and radius. |
 | Components | 40 components and 20 icons, in sections in dependency order: Icons → Atoms → Key Button → Key Segment → Today → Panel, Bubble & Chat → Settings & Welcome → Editor, Review & Focus → Editor, Chat & Connections. |
 | Mascot | `Mascot / Coco` (14 poses) and `Brand / App Icon`. |
-| Screens | Every window and panel state the app has: Today (Light and Dark), editing a task, voice review, Focus, Focus session complete, Chat, Settings, Connections, Welcome steps 1–4, and a desktop focus scene (Coco, her bubble, the LCD). Built only from component instances. |
+| Screens | Every window and panel state the app has: Today (Light and Dark), editing a task, voice review, Focus, Focus session complete, Chat, Settings, Connections, Welcome steps 1–4, and a desktop focus scene (Coco, her bubble, the LCD). Each screen is a `Screen / …` component built only from library instances. |
+| Prototype | A clickable prototype of the whole user flow: 16 desktop scenes (1280 × 800) showing the screens in place on a Mac desktop, with Coco, her bubbles and the menu-bar menu. Two flows: **Onboarding** (welcome → desktop) and **Daily use** (desktop → panel, editing, voice review, focus session, chat, Settings, Connections). |
+
+### The prototype
+
+**Links:**
+- [Onboarding](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-241&starting-point-node-id=40%3A241)
+- [Daily use](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-1378&starting-point-node-id=40%3A1378)
+
+To show it to someone without file access, use **Share prototype** in Figma's presentation view and choose who can view.
+
+**What's interactive:**
+- Every visible button that leads somewhere: welcome Next/Back/Start and the extras' setup buttons, the tabs, task editing, the mic, Up next › Focus, voice review, Start focus, the session-complete answers, Settings › Connections and *Show welcome again*.
+- Clicking Coco opens and closes the panel. Her menu-bar item opens her real menu.
+- ESC and the Esc key close the panel. Window close buttons and Esc close Settings and Connections.
+- A focus session "ends" after 2.5 seconds.
+- Settings and Connections scroll inside their 680 pt windows, as in the app.
+
+**How it's built, and keeping it current:**
+- Scenes contain *instances* of the `Screen / …` components, so editing a screen updates the prototype.
+- Clicks are transparent `hotspot · …` frames over the real controls. If a screen's layout changes, run [design/figma/prototype-wiring.js](../design/figma/prototype-wiring.js) through the Figma MCP (`use_figma`). It removes its own hotspots and rebuilds every interaction from the table at its bottom; a re-run was verified to reproduce the same 74 interactions.
+- The desktop wallpaper, menu bar and menu (`Prototype / Desktop`) are prototype props, not app UI.
 
 ## 2. Naming
 
@@ -82,6 +103,7 @@ Swift names come from the code and travel with the token. Each variable's **iOS 
 - After a font change, re-measure text that has fill width.
 - Rebinding an existing shape's paint can leave a stale color on screen. If a re-bound color looks wrong, replace the shape.
 - Roboto Mono, the stand-in for SF Mono, has no ↩ glyph. Set just that character to Inter, as the Welcome step 4 keycap does.
+- A prototype interaction can't point at the frame it's on (Figma rejects self-navigation), and "after delay" timeouts are in milliseconds.
 
 ## 5. Mascot and brand assets
 
@@ -139,6 +161,7 @@ What actually syncs automatically: **variables and text styles**, meaning colors
 | `design/figma/tokens-bridge.js` | Hand-written: Figma import/export logic | Yes; then rebuild the plugin. |
 | `design/figma/plugin/manifest.json`, `ui.html` | Hand-written | Yes. |
 | `design/figma-map.json` | Hand-maintained; checked by `check_figma_map.py` | Yes, when components change. |
+| `design/figma/prototype-wiring.js` | Hand-written: the prototype's interactions | Yes; re-run it in Figma after a screen's layout or a button label changes. |
 | `DesktopBuddy/Panel/Theme.swift` | Hand-written: `TypeStyle`, `MonoLabel`, `KeyButtonStyle`, color helper | Yes. |
 | `DesktopBuddy/App/LayerSVGExporter.swift`, `SnapshotRenderer.swift` | Hand-written dev tools (Debug only) | Yes. |
 | `scripts/visual-diff.swift`, `scripts/sync-design-tokens.sh`, `scripts/tokens/*.py` | Hand-written tooling | Yes. |

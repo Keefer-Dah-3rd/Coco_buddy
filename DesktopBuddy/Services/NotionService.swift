@@ -48,11 +48,15 @@ final class NotionService {
     init(persistent: Bool = true, defaults: UserDefaults = .standard) {
         self.persistent = persistent
         self.defaults = defaults
-        guard persistent, let saved = Keychain.string(for: Key.token) else { return }
-        token = saved
-        status = .connected
-        identity = defaults.string(forKey: Key.identity)
-        mapping = defaults.data(forKey: Key.mapping).flatMap { try? JSONDecoder().decode(NotionMapping.self, from: $0) }
+        // Notion is paused (Features.notion), so don't touch the Keychain for it at launch.
+        guard persistent, Features.notion else { return }
+        Task { [weak self] in
+            guard let saved = await Keychain.stringInBackground(for: Key.token), let self, self.token == nil else { return }
+            self.token = saved
+            self.status = .connected
+            self.identity = defaults.string(forKey: Key.identity)
+            self.mapping = defaults.data(forKey: Key.mapping).flatMap { try? JSONDecoder().decode(NotionMapping.self, from: $0) }
+        }
     }
 
     // MARK: - Connect

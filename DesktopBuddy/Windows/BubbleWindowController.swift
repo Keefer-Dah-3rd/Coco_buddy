@@ -75,8 +75,10 @@ final class BubbleWindowController {
     }
 
     private func measure(_ text: String, tail: SpeechBubbleView.Tail) -> NSSize {
-        hosting.rootView = SpeechBubbleView(text: text, tail: tail, tailAnchor: 0.5)
-        let size = hosting.fittingSize
+        // Ask for the size at a generous width: `fittingSize` can report the text's minimum
+        // (one-word-per-line) width, which squeezed the bubble into a tall sliver at launch.
+        let measuring = NSHostingController(rootView: SpeechBubbleView(text: text, tail: tail, tailAnchor: 0.5))
+        let size = measuring.sizeThatFits(in: NSSize(width: 280, height: 10_000))
         return NSSize(width: ceil(size.width), height: ceil(size.height))
     }
 }

@@ -4,11 +4,21 @@ import Security
 /// Credentials live in the user's login Keychain, readable only by this app's signature —
 /// never in files, UserDefaults or logs.
 enum Keychain {
-    private static let service = "com.keefer.DesktopBuddy"
+    nonisolated private static let service = "com.keefer.DesktopBuddy"
     /// Result of the last write, for diagnostics (never includes the secret).
     private(set) static var lastStatus: OSStatus = errSecSuccess
 
-    static func data(for account: String) -> Data? {
+    /// Reads off the main thread. Keychain lookups wait on the lower-priority security
+    /// daemon, which blocks (and flags as a hang risk) when done on the main thread.
+    nonisolated static func dataInBackground(for account: String) async -> Data? {
+        await Task.detached(priority: .utility) { data(for: account) }.value
+    }
+
+    nonisolated static func stringInBackground(for account: String) async -> String? {
+        await dataInBackground(for: account).flatMap { String(data: $0, encoding: .utf8) }
+    }
+
+    nonisolated static func data(for account: String) -> Data? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

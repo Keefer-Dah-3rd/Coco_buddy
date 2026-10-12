@@ -62,9 +62,11 @@ final class AssistantService {
 
     init(persistent: Bool = true) {
         self.persistent = persistent
-        if persistent, let saved = Keychain.string(for: Self.keyAccount) {
-            apiKey = saved
-            keyStatus = .ready
+        guard persistent else { return }
+        Task { [weak self] in
+            guard let saved = await Keychain.stringInBackground(for: Self.keyAccount), let self, self.apiKey == nil else { return }
+            self.apiKey = saved
+            self.keyStatus = .ready
         }
     }
 

@@ -20,6 +20,9 @@ final class SoundPlayer {
     }
 
     private let preferences: Preferences
+    /// Sounds start here, not on the main thread: starting playback waits on the audio
+    /// system's default-priority threads, which Xcode flags as a hang risk on the main thread.
+    private let audio = DispatchQueue(label: "com.keefer.DesktopBuddy.sound", qos: .default)
     /// Four single-bark cuts from the bark recording, bundled as short WAVs.
     private let barks: [NSSound]
     private var lastBark = -1
@@ -39,14 +42,19 @@ final class SoundPlayer {
             var index = Int.random(in: 0..<barks.count)
             if index == lastBark, barks.count > 1 { index = (index + 1) % barks.count }
             lastBark = index
-            let sound = barks[index]
-            sound.stop()
-            sound.volume = 0.55
-            sound.play()
+            nonisolated(unsafe) let sound = barks[index]
+            audio.async {
+                sound.stop()
+                sound.volume = 0.55
+                sound.play()
+            }
             return
         }
-        guard let name = cue.systemName, let sound = NSSound(named: name)?.copy() as? NSSound else { return }
-        sound.volume = 0.4
-        sound.play()
+        guard let name = cue.systemName, let copy = NSSound(named: name)?.copy() as? NSSound else { return }
+        nonisolated(unsafe) let sound = copy
+        audio.async {
+            sound.volume = 0.4
+            sound.play()
+        }
     }
 }

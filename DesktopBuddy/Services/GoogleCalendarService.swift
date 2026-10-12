@@ -46,6 +46,7 @@ final class GoogleCalendarService {
     @ObservationIgnored private var authSession: ASWebAuthenticationSession?
     @ObservationIgnored private var anchor: AuthAnchor?
     @ObservationIgnored private var refreshTimer: Timer?
+    @ObservationIgnored private var savedSignIn: Task<Void, Never>?
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let cache: JSONFileStore<CachedDay>?
     @ObservationIgnored private let persistent: Bool
@@ -71,18 +72,27 @@ final class GoogleCalendarService {
         clientID = defaults.string(forKey: Key.clientID) ?? ""
         reminderMinutes = defaults.object(forKey: Key.reminder) as? Int ?? 5
 
-        if persistent, let data = Keychain.data(for: Key.tokens),
-           let saved = try? JSONDecoder().decode(OAuthTokens.self, from: data) {
-            tokens = saved
-            status = .connected
-            if let cached = try? cache?.load(), Calendar.current.isDateInToday(cached.day) {
-                schedule = DaySchedule(events: cached.events)
-                accountName = cached.accountName
-                lastUpdated = cached.fetchedAt
+        status = client == nil ? .needsClientID : .disconnected
+        // The saved sign-in is read off the main thread; refresh() waits for it.
+        if persistent {
+            savedSignIn = Task { [weak self] in
+                guard let data = await Keychain.dataInBackground(for: Key.tokens) else { return }
+                self?.restore(data)
             }
-        } else {
-            status = client == nil ? .needsClientID : .disconnected
         }
+    }
+
+    private func restore(_ data: Data) {
+        guard tokens == nil, let saved = try? JSONDecoder().decode(OAuthTokens.self, from: data) else { return }
+        tokens = saved
+        status = .connected
+        if let cached = try? cache?.load(), Calendar.current.isDateInToday(cached.day) {
+            schedule = DaySchedule(events: cached.events)
+            accountName = cached.accountName
+            lastUpdated = cached.fetchedAt
+            onScheduleChanged?()
+        }
+        startAutoRefresh()
     }
 
     // MARK: - Connect / disconnect
@@ -154,6 +164,7 @@ final class GoogleCalendarService {
 
     /// Fetches today's events. On failure the previous schedule stays, with a note.
     func refresh() async {
+        await savedSignIn?.value
         guard status == .connected, !isRefreshing else { return }
         isRefreshing = true
         defer { isRefreshing = false }

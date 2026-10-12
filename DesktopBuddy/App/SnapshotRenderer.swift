@@ -16,6 +16,7 @@ enum SnapshotRenderer {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         renderIcon(to: folder.appendingPathComponent("icon-1024.png"))
         exportMascot(to: folder.appendingPathComponent("mascot"))
+        renderBubbleWindow(to: folder.appendingPathComponent("bubble-window.png"))
         for (name, background) in [("light", NSColor(hex: 0xD9E0E6)), ("dark", NSColor(hex: 0x1E252D))] {
             write(characterSheet(background: background), to: folder.appendingPathComponent("character-\(name).png"))
         }
@@ -221,6 +222,25 @@ enum SnapshotRenderer {
             Frame(label: "compact", pose: pose(.idle), scale: CharacterLayout.compactScale),
             Frame(label: "focused small", pose: pose(.focused), progress: 0.25, scale: CharacterLayout.compactScale),
         ]
+    }
+
+    /// The real bubble window path (measure → size → place), as the app shows it at launch.
+    static func renderBubbleWindow(to url: URL) {
+        let parent = NSWindow(contentRect: NSRect(x: 600, y: 200, width: 124, height: 140), styleMask: .borderless, backing: .buffered, defer: false)
+        parent.backgroundColor = .clear
+        parent.orderFrontRegardless()
+        let bubble = BubbleWindowController(parent: parent)
+        bubble.show(BuddyVoice.greeting(), near: parent.frame, on: NSScreen.main)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+        if let window = parent.childWindows?.first, let view = window.contentView {
+            print("bubble window: \(Int(window.frame.width)) × \(Int(window.frame.height))")
+            let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+            view.cacheDisplay(in: view.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: url)
+        } else {
+            print("bubble window: not shown")
+        }
+        parent.orderOut(nil)
     }
 
     /// Coco's states as SVG, straight from her layers — the source for the Figma Mascot page.

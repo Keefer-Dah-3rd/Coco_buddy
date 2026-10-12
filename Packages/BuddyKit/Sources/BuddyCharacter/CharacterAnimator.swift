@@ -39,6 +39,9 @@ public struct CharacterAnimator: Sendable {
     private var carried = false
     private var carriedChangedAt: TimeInterval = -.greatestFiniteMagnitude
 
+    /// Running somewhere she was called to.
+    public private(set) var dash: Dash?
+
     public init() {}
 
     // MARK: - Inputs
@@ -72,6 +75,11 @@ public struct CharacterAnimator: Sendable {
         guard isCarried != carried else { return }
         carried = isCarried
         carriedChangedAt = t
+    }
+
+    /// Starts, redirects or (with nil) ends a dash.
+    public mutating func setDash(_ newDash: Dash?) {
+        dash = newDash
     }
 
     // MARK: - Output
@@ -117,6 +125,10 @@ public struct CharacterAnimator: Sendable {
             }
         }
 
+        if let dash, t < dash.endTime {
+            Self.apply(dash, at: t, to: &p)
+        }
+
         if reduceMotion {
             p.lift = 0
             p.squash = 0
@@ -151,6 +163,7 @@ public struct CharacterAnimator: Sendable {
         case .idle, .focused, .sleeping, .thinking, .listening: break
         }
         if t - stateChangedAt < Self.transitionDuration { return fast }
+        if let dash, t < dash.endTime { return fast }
         if reactions.contains(where: { t >= $0.start && t - $0.start < $0.kind.duration }) { return fast }
         if carried || t - carriedChangedAt < 0.25 { return fast }
         if t - gazeChangedAt < Self.gazeEase || t - hoverChangedAt < Self.hoverFade { return fast }
@@ -314,6 +327,44 @@ extension CharacterAnimator {
             p.eyeScale += 0.1 * exp(-dt * 6)
             p.lift += 2.5 * sin(min(1, dt / 0.3) * .pi)
             p.tail += 0.45 * exp(-dt * 2.5) * sin(dt * 18)
+        }
+    }
+
+    /// Called somewhere: eyes on the spot and a crouch, then bounding along leaning
+    /// into the run, then a little landing wobble.
+    static func apply(_ dash: Dash, at t: TimeInterval, to p: inout CharacterPose) {
+        let heading = dash.direction(at: t)
+        switch dash.phase(at: t) {
+        case .ready(let k):
+            let crouch = ease(k / 0.6)
+            p.earPerk = 1
+            p.eyeScale += 0.12
+            p.gazeX = heading.x
+            p.gazeY = -heading.y
+            p.squash += 0.07 * crouch
+            p.tail += 0.35 * sin(t * 24) * crouch
+        case .running:
+            let effort = dash.effort(at: t)
+            let bound = abs(sin(dash.strides(at: t) * .pi))
+            p.lift += (2 + 6 * effort) * bound
+            p.squash += 0.05 * effort * (0.5 - bound)
+            p.tilt += 0.2 * heading.x * effort
+            p.gazeX = heading.x
+            p.gazeY = -heading.y
+            p.earPerk = 0.45
+            p.earLeft += 0.3 * effort
+            p.earRight += 0.3 * effort
+            p.eyeSmile = max(p.eyeSmile, 0.6)
+            p.mouthOpen = max(p.mouthOpen, 0.5)
+            p.mouthCurve = 0.8
+            p.tongue = 1
+            p.tail += 0.5 * sin(t * 22)
+        case .settling(let k):
+            p.squash += 0.1 * exp(-k * 5) * cos(k * 14)
+            p.tongue = max(p.tongue, 1 - k)
+            p.mouthOpen = max(p.mouthOpen, 0.45 * (1 - k))
+        case .finished:
+            break
         }
     }
 }

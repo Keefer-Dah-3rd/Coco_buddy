@@ -38,6 +38,8 @@ struct SettingsView: View {
                     if model.shortcutUnavailable {
                         Caption("Another app is already using \(GlobalShortcut.displayName), so it isn't active. Quit that app or change its shortcut, then switch this off and on.")
                     }
+                    ToggleRow("Call \(Buddy.name) over: hold \(CallKeyMonitor.displayName) and click", isOn: $preferences.callKeyEnabled)
+                    Caption("While you hold the right-hand Option key, a circle shows where she'll go. Click and she runs there.")
                     ToggleRow("Open at login", isOn: Binding(get: { launchAtLogin }, set: { setLaunchAtLogin($0) }))
                     if let loginNote { Caption(loginNote) }
                 }

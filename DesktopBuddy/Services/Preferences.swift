@@ -58,6 +58,8 @@ final class Preferences {
     var workdayEndHour: Int { didSet { defaults.set(workdayEndHour, forKey: Key.workdayEnd) } }
     /// ⌃⌥C opens Coco's panel from any app.
     var globalShortcutEnabled: Bool { didSet { defaults.set(globalShortcutEnabled, forKey: Key.shortcut) } }
+    /// Hold right Option and click anywhere to call Coco over.
+    var callKeyEnabled: Bool { didSet { defaults.set(callKeyEnabled, forKey: Key.callKey) } }
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -80,13 +82,15 @@ final class Preferences {
         barksEnabled = true
         workdayEndHour = 18
         globalShortcutEnabled = true
+        callKeyEnabled = true
         onboardingCompleted = false
     }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [Key.visible: true, Key.onTop: true, Key.muted: false,
-                                     Key.barks: true, Key.workdayEnd: 18, Key.shortcut: true])
+                                     Key.barks: true, Key.workdayEnd: 18, Key.shortcut: true,
+                                     Key.callKey: true])
 
         isBuddyVisible = defaults.bool(forKey: Key.visible)
         alwaysOnTop = defaults.bool(forKey: Key.onTop)
@@ -104,6 +108,7 @@ final class Preferences {
         barksEnabled = defaults.bool(forKey: Key.barks)
         workdayEndHour = min(23, max(1, defaults.integer(forKey: Key.workdayEnd)))
         globalShortcutEnabled = defaults.bool(forKey: Key.shortcut)
+        callKeyEnabled = defaults.bool(forKey: Key.callKey)
         onboardingCompleted = defaults.bool(forKey: Key.onboarding)
     }
 
@@ -120,6 +125,7 @@ final class Preferences {
         static let barks = "buddy.barksEnabled"
         static let workdayEnd = "calendar.workdayEndHour"
         static let shortcut = "buddy.globalShortcut"
+        static let callKey = "buddy.callKey"
         static let onboarding = "buddy.onboardingCompleted"
     }
 }

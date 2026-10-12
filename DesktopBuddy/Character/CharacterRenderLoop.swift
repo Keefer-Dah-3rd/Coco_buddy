@@ -19,6 +19,10 @@ final class CharacterRenderLoop: NSObject {
         didSet { if isPaused != oldValue { reschedule() } }
     }
 
+    /// Runs just before each frame is drawn, with the frame's time — used to move the
+    /// window in step with the drawing while she runs.
+    var onFrame: ((TimeInterval) -> Void)?
+
     private var lowPower = false
 
     init(model: CharacterModel, view: CocoLayerView) {
@@ -61,7 +65,9 @@ final class CharacterRenderLoop: NSObject {
 
     private func renderNow() {
         guard !isPaused, let view else { return }
-        view.render(model.animator.pose(at: CharacterModel.clock), focusProgress: model.focusProgress)
+        let now = CharacterModel.clock
+        onFrame?(now)
+        view.render(model.animator.pose(at: now), focusProgress: model.focusProgress)
         #if DEBUG
         FrameStats.shared.count()
         #endif

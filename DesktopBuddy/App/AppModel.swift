@@ -308,6 +308,13 @@ final class AppModel {
         setPanelOpen(!isPanelOpen)
     }
 
+    /// Called over with the call key: she wakes up if she was dozing, and the panel
+    /// closes since she's leaving it behind.
+    func buddyCalled() {
+        if isUserAway { userAwayChanged(false) }
+        setPanelOpen(false)
+    }
+
     /// One bark, with Coco's mouth in sync. Rate-limited so she's never yappy;
     /// silent when sounds are muted (the mouth still moves).
     func bark(minimumGap: TimeInterval = 1.5) {

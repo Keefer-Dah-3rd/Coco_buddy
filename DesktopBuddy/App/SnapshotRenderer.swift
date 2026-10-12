@@ -17,6 +17,7 @@ enum SnapshotRenderer {
         renderIcon(to: folder.appendingPathComponent("icon-1024.png"))
         exportMascot(to: folder.appendingPathComponent("mascot"))
         renderBubbleWindow(to: folder.appendingPathComponent("bubble-window.png"))
+        write(callTargetSheet(), to: folder.appendingPathComponent("call-target.png"))
         for (name, background) in [("light", NSColor(hex: 0xD9E0E6)), ("dark", NSColor(hex: 0x1E252D))] {
             write(characterSheet(background: background), to: folder.appendingPathComponent("character-\(name).png"))
         }
@@ -241,6 +242,41 @@ enum SnapshotRenderer {
             print("bubble window: not shown")
         }
         parent.orderOut(nil)
+    }
+
+    /// The call circle while aiming (left of each pair) and as the destination marker,
+    /// on a light, a dark and a bright wallpaper.
+    static func callTargetSheet() -> NSImage {
+        let tile: CGFloat = 120
+        let walls = [NSColor(hex: 0xD9E0E6), NSColor(hex: 0x1E252D), NSColor(hex: 0xF2A65A)]
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: tile * CGFloat(walls.count), height: tile))
+        view.wantsLayer = true
+        for (index, wall) in walls.enumerated() {
+            let x = CGFloat(index) * tile
+            let background = CALayer()
+            background.frame = CGRect(x: x, y: 0, width: tile, height: tile)
+            background.backgroundColor = wall.cgColor
+            view.layer?.addSublayer(background)
+            let aim = CallTarget()
+            aim.layer.position = CGPoint(x: x + 38, y: tile / 2)
+            view.layer?.addSublayer(aim.layer)
+            let marker = CallTarget()
+            marker.layer.position = CGPoint(x: x + 88, y: tile / 2)
+            marker.layer.opacity = 0.6
+            marker.layer.transform = CATransform3DMakeScale(0.8, 0.8, 1)
+            view.layer?.addSublayer(marker.layer)
+        }
+        let window = NSWindow(contentRect: NSRect(origin: NSPoint(x: -20_000, y: -20_000), size: view.frame.size),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.contentView = view
+        window.orderFrontRegardless()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+        view.cacheDisplay(in: view.bounds, to: rep)
+        window.orderOut(nil)
+        let image = NSImage(size: view.bounds.size)
+        image.addRepresentation(rep)
+        return image
     }
 
     /// Coco's states as SVG, straight from her layers — the source for the Figma Mascot page.

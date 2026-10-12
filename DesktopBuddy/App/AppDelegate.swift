@@ -14,6 +14,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settings: HostedWindowController!
     private var onboarding: HostedWindowController!
     private let shortcut = GlobalShortcut()
+    private let callKey = CallKeyMonitor()
+    private let callOverlay = CallOverlayController()
     private var isOccluded = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -23,6 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let read = Keychain.string(for: "selftest")
             Keychain.remove("selftest")
             print("keychain selftest: saved=\(saved) readBack=\(read == "selftest") status=\(Keychain.lastStatus)")
+            exit(0)
+        }
+        if CommandLine.arguments.contains("--dash-selftest") {
+            DashSelfTest.run()
             exit(0)
         }
         if let index = CommandLine.arguments.firstIndex(of: "--snapshots"), index + 1 < CommandLine.arguments.count {
@@ -54,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         connectCharacterWindow()
         connectPanel()
+        connectCalling()
         observeSystemSettings()
 
         model.start()
@@ -105,17 +112,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    /// Hold right Option and click anywhere: Coco runs to the spot.
+    private func connectCalling() {
+        callKey.onChange = { [weak self] held in self?.callKeyChanged(held) }
+        callOverlay.onCall = { [weak self] point in self?.call(to: point) }
+        // The cursor is over the overlay while aiming, so pass its moves on to her eyes.
+        callOverlay.onCursorMoved = { [weak self] in self?.character.cursorMoved() }
+        character.onDashFinished = { [weak self] in self?.dashFinished() }
+    }
+
+    private func callKeyChanged(_ held: Bool) {
+        let aiming = held && model.preferences.isBuddyVisible
+        if aiming {
+            callOverlay.show()
+        } else {
+            callOverlay.hide()
+        }
+        character.isWatchingAim = aiming
+    }
+
+    private func call(to point: CGPoint) {
+        guard model.preferences.isBuddyVisible else { return }
+        model.buddyCalled()
+        bubble.hide()
+        callOverlay.showMarker(at: character.destination(forClickAt: point), below: character.window)
+        character.call(to: point)
+    }
+
+    private func dashFinished() {
+        callOverlay.hideMarker()
+        // Anything she was saying when she set off reappears above her new spot.
+        if let speech = model.character.speech {
+            bubble.show(speech.text, near: character.characterFrame, on: character.screen)
+        }
+    }
+
     private func observeModel() {
         let model = model
         track({ model.preferences.isBuddyVisible }) { [weak self] visible in
             guard let self else { return }
             self.character.setVisible(visible)
-            if !visible { self.bubble.hide() }
+            if !visible {
+                self.bubble.hide()
+                self.callOverlay.hide()
+            }
             self.updateRenderingPause()
         }
         track({ model.preferences.globalShortcutEnabled }) { [weak self] enabled in
             guard let self else { return }
             self.model.shortcutUnavailable = !self.shortcut.setEnabled(enabled)
+        }
+        track({ model.preferences.callKeyEnabled }) { [weak self] enabled in
+            self?.callKey.setEnabled(enabled)
         }
         track({ model.preferences.alwaysOnTop }) { [weak self] onTop in
             self?.character.setAlwaysOnTop(onTop)
@@ -126,6 +174,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         track({ model.character.speech }) { [weak self] speech in
             guard let self else { return }
             if let speech {
+                // Mid-run the bubble waits; it shows when she arrives.
+                guard !self.character.isDashing else { return }
                 self.bubble.show(speech.text, near: self.character.characterFrame, on: self.character.screen)
             } else {
                 self.bubble.hide()

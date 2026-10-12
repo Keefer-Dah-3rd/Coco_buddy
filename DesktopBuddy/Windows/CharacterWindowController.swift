@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import BuddyCharacter
 
 /// A borderless, transparent panel that never takes keyboard focus or activates
 /// the app, so clicking the buddy doesn't pull you out of what you're doing.
@@ -40,8 +41,14 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
     var onGaze: ((SIMD2<Double>?) -> Void)?
     var onMoved: ((CGPoint) -> Void)?
     var onOcclusionChanged: ((Bool) -> Void)?
+    /// She has arrived (or been stopped) after being called somewhere.
+    var onDashFinished: (() -> Void)?
     /// Whether the eyes should follow a nearby cursor at all (interactive presence).
     var followsCursor = true
+    /// While you aim where to call her, she watches the cursor wherever it is.
+    var isWatchingAim = false {
+        didSet { if isWatchingAim != oldValue { cursorMoved() } }
+    }
 
     private let model: CharacterModel
     private let interaction = InteractionView()
@@ -68,6 +75,8 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         window.contentView = container
         window.delegate = self
 
+        // Grabbing her mid-run stops her where she is.
+        interaction.onMouseDown = { [weak self] in self?.stopDash() }
         interaction.onClick = { [weak self] in self?.onClick?() }
         interaction.onRightClick = { [weak self] event, view in self?.onRightClick?(event, view) }
         interaction.onDragChanged = { [weak self] dragging in
@@ -85,7 +94,10 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.settleOnScreen(animated: false) }
+            MainActor.assumeIsolated {
+                self?.stopDash(atDestination: true)
+                self?.settleOnScreen(animated: false)
+            }
         }
         connectRendering()
     }
@@ -95,7 +107,10 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         let model = model, art = art, renderLoop = renderLoop
         track({ (model.animator, model.focusProgress) }) { _ in renderLoop.setNeedsFrame() }
         track({ model.scale }) { art.characterScale = $0 }
-        track({ model.isRenderingPaused }) { renderLoop.isPaused = $0 }
+        // A covered buddy normally stops drawing, but one that's running has to keep
+        // going — she's on her way out from under whatever covers her.
+        track({ (model.isRenderingPaused, model.dash != nil) }) { renderLoop.isPaused = $0 && !$1 }
+        renderLoop.onFrame = { [weak self] t in self?.followDash(at: t) }
         track({ model.isLowPower }) { renderLoop.applyPowerMode(lowPower: $0) }
         track({ model.isDimmed }) { dimmed in
             NSAnimationContext.runAnimationGroup { context in
@@ -111,6 +126,7 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         if visible {
             window.orderFrontRegardless()
         } else {
+            stopDash(atDestination: true)
             window.orderOut(nil)
         }
     }
@@ -122,11 +138,20 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
     // MARK: - Geometry
 
     /// The drawn character's rect in screen coordinates (used to place the bubble and panel).
-    var characterFrame: NSRect {
+    var characterFrame: NSRect { characterFrame(at: window.frame.origin) }
+
+    private func characterFrame(at origin: NSPoint) -> NSRect {
         let art = CharacterLayout.artFrame
         let size = art.width * model.scale
         let local = NSRect(x: art.midX - size / 2, y: art.minY, width: size, height: size)
-        return local.offsetBy(dx: window.frame.minX, dy: window.frame.minY)
+        return local.offsetBy(dx: origin.x, dy: origin.y)
+    }
+
+    /// Where her paws touch the ground, relative to the window origin (the art's ground
+    /// line sits 7% up from the bottom of its box).
+    private var pawOffset: CGPoint {
+        let art = CharacterLayout.artFrame
+        return CGPoint(x: art.midX, y: art.minY + art.height * 0.07 * model.scale)
     }
 
     var screen: NSScreen? {
@@ -152,24 +177,8 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
     /// Nudges the window so the whole character is on a display, e.g. after a drag
     /// or when a monitor is unplugged.
     func settleOnScreen(animated: Bool) {
-        let character = characterFrame
-        let screens = NSScreen.screens
-        guard !screens.isEmpty else { return }
-        let target = screens.first { $0.visibleFrame.contains(character.center) }
-            ?? screens.min { $0.visibleFrame.center.distance(to: character.center) < $1.visibleFrame.center.distance(to: character.center) }!
-        let bounds = target.visibleFrame
-
-        var dx: CGFloat = 0
-        var dy: CGFloat = 0
-        if character.minX < bounds.minX { dx = bounds.minX - character.minX }
-        if character.maxX > bounds.maxX { dx = bounds.maxX - character.maxX }
-        // The art box has a little headroom above the antenna, so allow some overlap at the top.
-        let headroom = character.height * 0.12
-        if character.minY < bounds.minY { dy = bounds.minY - character.minY }
-        if character.maxY - headroom > bounds.maxY { dy = bounds.maxY - (character.maxY - headroom) }
-
-        let origin = NSPoint(x: window.frame.minX + dx, y: window.frame.minY + dy)
-        if dx != 0 || dy != 0 {
+        let origin = onScreenOrigin(near: window.frame.origin)
+        if origin != window.frame.origin {
             if animated {
                 NSAnimationContext.runAnimationGroup { context in
                     context.duration = 0.22
@@ -183,15 +192,111 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         onMoved?(origin)
     }
 
+    /// The closest window origin that keeps the whole character on a display.
+    private func onScreenOrigin(near origin: NSPoint) -> NSPoint {
+        let character = characterFrame(at: origin)
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else { return origin }
+        let target = screens.first { $0.visibleFrame.contains(character.center) }
+            ?? screens.min { $0.visibleFrame.center.distance(to: character.center) < $1.visibleFrame.center.distance(to: character.center) }!
+        let bounds = target.visibleFrame
+
+        var dx: CGFloat = 0
+        var dy: CGFloat = 0
+        if character.minX < bounds.minX { dx = bounds.minX - character.minX }
+        if character.maxX > bounds.maxX { dx = bounds.maxX - character.maxX }
+        // The art box has a little headroom above the antenna, so allow some overlap at the top.
+        let headroom = character.height * 0.12
+        if character.minY < bounds.minY { dy = bounds.minY - character.minY }
+        if character.maxY - headroom > bounds.maxY { dy = bounds.maxY - (character.maxY - headroom) }
+        return NSPoint(x: origin.x + dx, y: origin.y + dy)
+    }
+
+    // MARK: - Being called
+
+    var isDashing: Bool { model.dash != nil }
+
+    /// Where she'll actually stand for a click at `point`: her paws on it, or as close as
+    /// she can get while staying fully on a display (not on the menu bar or Dock).
+    func destination(forClickAt point: CGPoint) -> CGPoint {
+        let paws = pawOffset
+        let origin = onScreenOrigin(near: NSPoint(x: point.x - paws.x, y: point.y - paws.y))
+        return CGPoint(x: origin.x + paws.x, y: origin.y + paws.y)
+    }
+
+    /// Sends her running to a click at `point`. A second call mid-run changes course.
+    func call(to point: CGPoint) {
+        guard window.isVisible, !interaction.isDragging else { return }
+        let target = destination(forClickAt: point)
+        let paws = CGPoint(x: window.frame.minX + pawOffset.x, y: window.frame.minY + pawOffset.y)
+        let now = CharacterModel.clock
+        if model.animator.reduceMotion {
+            fade(toPaws: target)
+        } else if let dash = model.dash {
+            model.setDash(dash.redirected(to: SIMD2(target.x, target.y), at: now))
+        } else if paws.distance(to: target) < 6 {
+            // Already there: a happy perk instead of a run.
+            model.react(.perk)
+            onDashFinished?()
+        } else {
+            model.setDash(Dash(from: SIMD2(paws.x, paws.y), to: SIMD2(target.x, target.y), at: now))
+        }
+    }
+
+    /// Every frame of a dash: put the window where the dash says she is.
+    private func followDash(at t: TimeInterval) {
+        guard let dash = model.dash else { return }
+        let paws = dash.position(at: t)
+        window.setFrameOrigin(NSPoint(x: paws.x - pawOffset.x, y: paws.y - pawOffset.y))
+        if t >= dash.endTime { stopDash() }
+    }
+
+    /// Ends a dash where she is, or (when she can't be watched running) at the destination.
+    func stopDash(atDestination: Bool = false) {
+        guard let dash = model.dash else { return }
+        if atDestination {
+            window.setFrameOrigin(NSPoint(x: dash.end.x - pawOffset.x, y: dash.end.y - pawOffset.y))
+        }
+        model.setDash(nil)
+        onMoved?(window.frame.origin)
+        onDashFinished?()
+    }
+
+    /// Reduce Motion: no run across the screen — she fades out and back in at the spot.
+    private func fade(toPaws target: CGPoint) {
+        let window = window
+        let origin = NSPoint(x: target.x - pawOffset.x, y: target.y - pawOffset.y)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            window.animator().alphaValue = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { [weak self] in
+            window.setFrameOrigin(origin)
+            self?.onMoved?(origin)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                window.animator().alphaValue = 1
+            }
+            self?.onDashFinished?()
+        }
+    }
+
     // MARK: - Cursor following
 
-    private func cursorMoved() {
-        guard window.isVisible, followsCursor, !interaction.isDragging else {
+    func cursorMoved() {
+        let face = characterFrame.center.offsetBy(dy: characterFrame.height * 0.12)
+        let mouse = NSEvent.mouseLocation
+        if isWatchingAim, window.isVisible, !isDashing {
+            // Eyes on the spot you're pointing at, however far away.
+            let reach = max(140, face.distance(to: mouse))
+            cursorIsNear = true
+            onGaze?(SIMD2((mouse.x - face.x) / reach, -(mouse.y - face.y) / reach))
+            return
+        }
+        guard window.isVisible, followsCursor, !interaction.isDragging, !isDashing else {
             if cursorIsNear { cursorIsNear = false; onGaze?(nil) }
             return
         }
-        let face = characterFrame.center.offsetBy(dy: characterFrame.height * 0.12)
-        let mouse = NSEvent.mouseLocation
         let distance = face.distance(to: mouse)
         // Hysteresis so the eyes don't flicker at the boundary.
         let near = cursorIsNear ? distance < 260 : distance < 220
@@ -214,6 +319,7 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
 /// Transparent overlay that tells clicks from drags and moves the window by hand,
 /// which gives exact drag-start/drag-end moments for the "being carried" pose.
 private final class InteractionView: NSView {
+    var onMouseDown: (() -> Void)?
     var onClick: (() -> Void)?
     var onRightClick: ((NSEvent, NSView) -> Void)?
     var onDragChanged: ((Bool) -> Void)?
@@ -238,6 +344,7 @@ private final class InteractionView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        onMouseDown?()
         mouseDownLocation = NSEvent.mouseLocation
         windowOriginAtMouseDown = window?.frame.origin ?? .zero
         isDragging = false

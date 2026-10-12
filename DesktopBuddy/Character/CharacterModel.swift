@@ -78,6 +78,13 @@ final class CharacterModel {
         animator.reduceMotion = reduce
     }
 
+    /// Running somewhere she was called to; the window follows `dash.position(at:)`.
+    var dash: Dash? { animator.dash }
+
+    func setDash(_ dash: Dash?) {
+        animator.setDash(dash)
+    }
+
     /// Shows a speech bubble. The mouth moves for the start of the line, as if spoken.
     func say(_ text: String) {
         let duration = min(7, max(2.8, 1.8 + Double(text.count) * 0.05))

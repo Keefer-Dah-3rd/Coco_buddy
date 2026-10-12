@@ -112,7 +112,7 @@
         "file": "DesktopBuddy/Panel/TaskRow.swift",
         "anchor": "struct TaskRow"
       },
-      "notes": "State=Selected ↔ isSelected; Done ↔ task.isCompleted."
+      "notes": "State=Selected ↔ isSelected; Done ↔ task.isCompleted. Title and metadata live on the exposed Text / Task Title instance."
     },
     {
       "figma": {
@@ -136,7 +136,8 @@
         "symbol": "UpNextCard",
         "file": "DesktopBuddy/Panel/TodayView.swift",
         "anchor": "struct UpNextCard"
-      }
+      },
+      "notes": "Reason and title live on the exposed Text / Label & Title instance (“text”)."
     },
     {
       "figma": {
@@ -160,7 +161,8 @@
         "symbol": "PanelRootView.header",
         "file": "DesktopBuddy/Panel/PanelRootView.swift",
         "anchor": "private var header"
-      }
+      },
+      "notes": "Top row is the exposed Panel / Status Bar (“status”); Coco's line is the exposed Text / Prompt Line (“speech”)."
     },
     {
       "figma": {
@@ -271,7 +273,8 @@
         "symbol": "Extra",
         "file": "DesktopBuddy/Panel/OnboardingView.swift",
         "anchor": "struct Extra"
-      }
+      },
+      "notes": "Title and detail live on the exposed Text / Title & Detail (Small) instance (“text”)."
     },
     {
       "figma": {
@@ -497,6 +500,160 @@
         "file": "DesktopBuddy/Panel/OnboardingView.swift",
         "anchor": "checkmark.circle.fill"
       }
+    },
+    {
+      "figma": {
+        "name": "Text / Prompt Line",
+        "nodeId": "50:439",
+        "key": "70c3d5028d9345a22d30ca39b0c23dd6c53e446b"
+      },
+      "swift": {
+        "symbol": "Coco's line: “›” + text",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "Text(\"›\")"
+      },
+      "notes": "Size=Panel is the panel header line (PanelRootView.header); Size=Chat is her reply in TurnView (.coco) in ChatView.swift; Content=Thinking is ThinkingDots. Exposed inside Panel Header and Chat / Coco Message."
+    },
+    {
+      "figma": {
+        "name": "Text / Task Title",
+        "nodeId": "50:461",
+        "key": "aa840e92d34807a2e3aebb4d9a264c12f77780b8"
+      },
+      "swift": {
+        "symbol": "TaskRow title + meta",
+        "file": "DesktopBuddy/Panel/TaskRow.swift",
+        "anchor": "Text(task.title)"
+      },
+      "notes": "Exposed inside Task Row as “content”; holds the title and meta properties."
+    },
+    {
+      "figma": {
+        "name": "Text / Title & Detail",
+        "nodeId": "53:489",
+        "key": "e427556d3804462a83c1b35fe67027d7eb8b7c64"
+      },
+      "swift": {
+        "symbol": "Extra title/detail; StepTitle + StepText",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "struct StepTitle"
+      },
+      "notes": "Size=Small is the Extra card's title and detail (exposed as “text”); Size=Large is a welcome step's heading and intro."
+    },
+    {
+      "figma": {
+        "name": "Text / Label & Title",
+        "nodeId": "53:494",
+        "key": "2b55e14c350838e7740024eaf7acdcc47718598c"
+      },
+      "swift": {
+        "symbol": "UpNextCard label + title",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "struct UpNextCard"
+      },
+      "notes": "Exposed inside Up Next Card as “text”."
+    },
+    {
+      "figma": {
+        "name": "Panel / Status Bar",
+        "nodeId": "53:521",
+        "key": "e00eba0d770496b740134217830e96eaf6221886"
+      },
+      "swift": {
+        "symbol": "PanelRootView.header top row",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "model.focus.timer.isRunning ? Theme.accent"
+      },
+      "notes": "Focus=Running ↔ focus.timer.isRunning. Exposed inside Panel Header as “status”."
+    },
+    {
+      "figma": {
+        "name": "Text / Activity",
+        "nodeId": "53:531",
+        "key": "7148062bbd7b02365d1551b6fed2fc126a7e77d3"
+      },
+      "swift": {
+        "symbol": "TurnView activities",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "turn.activities"
+      },
+      "notes": "Exposed inside Chat / Coco Message as “activity”."
+    },
+    {
+      "figma": {
+        "name": "Today / Summary",
+        "nodeId": "53:532",
+        "key": "a09f502ffcfac9c3ea26a5f56f1b4c389417a1f1"
+      },
+      "swift": {
+        "symbol": "TodayView.summary + SegmentMeter",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private func summary"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections / Card Header",
+        "nodeId": "53:551",
+        "key": "d102803abe105e6777a926316e19385eb2c8711d"
+      },
+      "swift": {
+        "symbol": "Card title + status",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct Card"
+      }
+    },
+    {
+      "figma": {
+        "name": "Pip",
+        "nodeId": "56:557",
+        "key": "ea05f2c250ed3bf3a07a91b2aa3f7ceab69a76a9"
+      },
+      "swift": {
+        "symbol": "ThinkingDots",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private struct ThinkingDots"
+      },
+      "notes": "Kind ↔ where the dot is used: Step = OnboardingView step dots, Status = PanelRootView header + ConnectionsView, Activity = ChatView activities, Thinking = ThinkingDots (Off = 0.3 opacity), Listening = TodayView ListeningDot. Bars are Meter Segment."
+    },
+    {
+      "figma": {
+        "name": "Mic Key",
+        "nodeId": "56:567",
+        "key": "4641b4549d99c1cb69c93ec35a1ddcd14513ff91"
+      },
+      "swift": {
+        "symbol": "MicButton",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private struct MicButton"
+      },
+      "notes": "State=Listening ↔ voice.isListening (accent stop key). Used inside Quick Add."
+    },
+    {
+      "figma": {
+        "name": "Panel / Header Key",
+        "nodeId": "56:574",
+        "key": "4fb56489044063d0396f048752cf3b425712153a"
+      },
+      "swift": {
+        "symbol": "PanelRootView.header buttons",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": ".frame(width: 22, height: 18)"
+      },
+      "notes": "Active ↔ calendar.isConnected (link) / preferences.voiceEnabled (speaker.wave.2.fill vs speaker.slash). Exposed inside Panel / Status Bar as “connections” and “voice”."
+    },
+    {
+      "figma": {
+        "name": "Text Button",
+        "nodeId": "56:579",
+        "key": "f56959a0f1bba005fc0f395eaa0a2c528cf1ee52"
+      },
+      "swift": {
+        "symbol": "Button(\"New chat\")",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "Button(\"New chat\")"
+      },
+      "notes": "State=Disabled ↔ assistant.turns.isEmpty. Exposed inside Chat / Composer as “new chat”."
     }
   ],
   "icons": [

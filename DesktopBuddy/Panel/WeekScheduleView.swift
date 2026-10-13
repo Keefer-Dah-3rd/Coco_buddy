@@ -59,10 +59,6 @@ struct WeekScheduleView: View {
                 .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
                 .help("Next week (⇧→)")
                 .accessibilityLabel("Next week")
-            Button { model.scheduleExpanded = false } label: { Image(systemName: "chevron.up") }
-                .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
-                .help("Show just today")
-                .accessibilityLabel("Collapse week")
         }
     }
 
@@ -310,7 +306,7 @@ struct DayAgenda: View {
     }
 }
 
-private struct EventRow: View {
+struct EventRow: View {
     let event: CalendarEvent
     let day: DateInterval
     let now: Date

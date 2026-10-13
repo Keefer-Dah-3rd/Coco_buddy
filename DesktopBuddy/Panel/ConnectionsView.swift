@@ -44,7 +44,7 @@ private struct AssistantSection: View {
 
     var body: some View {
         Card(title: "Claude (chat)", status: statusLabel) {
-            Text("Powers the Chat tab. Sent to Anthropic: your chat messages, and — only when \(Buddy.name) needs them to answer — today's tasks, focus timer and calendar events. The chat marks each time that happens. Usage is billed to your Anthropic account.")
+            Text("Powers the Chat tab. Sent to Anthropic: your chat messages, and — only when \(Buddy.name) needs them to answer — your tasks, focus timer and the calendar days it needs. The chat marks each time that happens. Usage is billed to your Anthropic account.")
                 .bodyStyle()
             Row("Model") { Text("Claude Opus 5.5 · low effort").valueStyle() }
 
@@ -100,7 +100,7 @@ private struct CalendarSection: View {
 
     var body: some View {
         Card(title: "Google Calendar", status: statusLabel) {
-            Text("Reads today's events from your primary calendar — titles, times, location and meeting links — to show your schedule, free time and meeting reminders. It can't change anything.")
+            Text("Reads your primary calendar for the days you look at — titles, times, location, colour and meeting links — to show your week, find open time and remind you of meetings. \(Buddy.name) only adds, moves or deletes an event after you confirm it, and Google asks you once for that permission. \(model.calendar.canChangeEvents ? "Event changes: allowed." : "Event changes: not allowed yet.")")
                 .bodyStyle()
 
             switch service.status {

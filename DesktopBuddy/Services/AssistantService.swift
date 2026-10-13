@@ -44,6 +44,9 @@ final class AssistantService {
     @ObservationIgnored var performAction: ((AssistantAction) async -> ToolOutcome)?
     @ObservationIgnored var onPhaseChanged: ((Phase) -> Void)?
     @ObservationIgnored var onReplyFinished: ((String) -> Void)?
+    /// The day the schedule card is showing, when it's open — mentioned in each message's note.
+    @ObservationIgnored var viewingDay: (() -> Date?)?
+    @ObservationIgnored var onChatCleared: (() -> Void)?
 
     @ObservationIgnored private var apiKey: String?
     @ObservationIgnored private var history: [JSONValue] = []
@@ -119,6 +122,7 @@ final class AssistantService {
         turns = []
         pendingNotes = []
         chatCost = 0
+        onChatCleared?()
     }
 
     func stop() {
@@ -131,7 +135,7 @@ final class AssistantService {
         turns.append(Turn(role: .user, text: text))
 
         let blocks: [JSONValue] = [
-            ["type": "text", "text": .string(AssistantPrompt.turnNote(now: .now, events: pendingNotes))],
+            ["type": "text", "text": .string(AssistantPrompt.turnNote(now: .now, events: pendingNotes, viewing: viewingDay?()))],
             ["type": "text", "text": .string(text)],
         ]
         pendingNotes = []

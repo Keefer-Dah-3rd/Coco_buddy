@@ -72,6 +72,34 @@ final class AppModel {
     /// Where the current drafts came from, for the review card's label.
     private(set) var draftOrigin: DraftOrigin = .voice
 
+    /// The day the week browser shows. Kept while you switch tabs or chat.
+    private(set) var scheduleDay = Calendar.current.startOfDay(for: .now)
+    /// The Today card's calendar is opened out into the week browser.
+    var scheduleExpanded = false {
+        didSet { if scheduleExpanded { calendar.prefetch(around: scheduleDay) } }
+    }
+    /// Event changes the assistant proposed — nothing happens to the calendar unless confirmed.
+    private(set) var eventRequests: [EventRequest] = []
+
+    struct EventRequest: Identifiable, Equatable {
+        enum Kind: Equatable {
+            case create(EventDraft)
+            case change(CalendarEvent, EventChanges)
+            case delete(CalendarEvent)
+        }
+        enum State: Equatable { case waiting, working, failed(String), done(String) }
+        let id = UUID()
+        var kind: Kind
+        /// Busy events the proposed time would overlap.
+        var conflicts: [CalendarEvent]
+        var state: State = .waiting
+    }
+
+    /// Working hours for open time and slot finding.
+    var workingHours: WorkingHours {
+        WorkingHours(startHour: preferences.workdayStartHour, endHour: preferences.workdayEndHour)
+    }
+
     enum DraftOrigin { case voice, chat }
 
     #if DEBUG
@@ -121,6 +149,11 @@ final class AppModel {
         assistant.performAction = { [weak self] action in
             await self?.perform(action) ?? AssistantService.ToolOutcome(result: "Unavailable.", isError: true)
         }
+        assistant.viewingDay = { [weak self] in
+            guard let self, self.scheduleExpanded else { return nil }
+            return self.scheduleDay
+        }
+        assistant.onChatCleared = { [weak self] in self?.eventRequests = [] }
         assistant.onPhaseChanged = { [weak self] phase in
             switch phase {
             case .idle: self?.character.release()
@@ -176,6 +209,8 @@ final class AppModel {
         tasks.eraseAll()
         taskDrafts = []
         pendingCompletions = []
+        eventRequests = []
+        scheduleExpanded = false
         recentlyRemoved = nil
         editingTaskID = nil
         completionPrompt = nil
@@ -215,6 +250,8 @@ final class AppModel {
             MainActor.assumeIsolated {
                 self?.dayToken += 1
                 self?.remindedEventIDs = []
+                // If the week browser was on "today", it moves on with the date.
+                if let self, self.scheduleDay < Calendar.current.startOfDay(for: .now) { self.showScheduleDay(.now) }
                 self?.refreshConnections()
             }
         }
@@ -341,6 +378,9 @@ final class AppModel {
             panelOpenCount += 1
             character.dismissSpeech()
             character.react(.perk)
+            // Pick up changes made in Google Calendar since the last look (stale weeks only).
+            calendar.prefetch(around: .now)
+            if scheduleExpanded { calendar.prefetch(around: scheduleDay) }
         }
     }
 
@@ -594,8 +634,249 @@ final class AppModel {
             if !pendingCompletions.contains(uuid) { pendingCompletions.append(uuid) }
             return .init(result: "Asked the user to confirm marking “\(task.title)” done. It is NOT done unless they confirm.",
                          activity: "Asked you to confirm “\(BuddyVoice.short(task.title))”")
+
+        case .getSchedule, .findFreeTime, .proposeEvent, .proposeEventChange, .proposeEventDeletion:
+            return await performCalendar(action)
         }
     }
+
+    // MARK: - Calendar (chat)
+
+    private func performCalendar(_ action: AssistantAction) async -> AssistantService.ToolOutcome {
+        let cal = Calendar.current
+        guard calendar.isConnected else {
+            return .init(result: "Google Calendar isn't connected, so you can't see or change their schedule. "
+                         + "They can connect it in Connections.", isError: true)
+        }
+        func load(_ from: Date, _ to: Date) async -> String? {
+            do {
+                try await calendar.ensureLoaded(from: from, to: to)
+                return nil
+            } catch let error as IntegrationError {
+                return "Couldn't load the calendar: \(error.userMessage)"
+            } catch {
+                return "Couldn't load the calendar."
+            }
+        }
+        func days(_ from: Date, _ to: Date) -> [Date] {
+            var list: [Date] = []
+            var day = from
+            while day <= to, list.count < 31 {
+                list.append(day)
+                guard let next = cal.date(byAdding: .day, value: 1, to: day) else { break }
+                day = next
+            }
+            return list
+        }
+        func events(_ days: [Date]) -> [CalendarEvent] {
+            var seen = Set<String>()
+            return days.flatMap { calendar.events(on: $0) ?? [] }.filter { seen.insert($0.id).inserted }
+        }
+
+        switch action {
+        case .getSchedule(let from, let to):
+            guard let start = from.date(in: cal), let end = to.date(in: cal) else {
+                return .init(result: "Those aren't real dates.", isError: true)
+            }
+            if let problem = await load(start, end) { return .init(result: problem, isError: true) }
+            let range = days(start, end)
+            let text = AssistantPrompt.schedule(days: range, events: events(range), hours: workingHours, now: .now, calendar: cal)
+            let label = range.count == 1 ? Self.shortDay(start) : "\(Self.shortDay(start))–\(Self.shortDay(end))"
+            return .init(result: text, activity: "Looked at your calendar for \(label)")
+
+        case .findFreeTime(let request):
+            guard let start = request.from.date(in: cal), let end = request.to.date(in: cal) else {
+                return .init(result: "Those aren't real dates.", isError: true)
+            }
+            if let problem = await load(start, end) { return .init(result: problem, isError: true) }
+            let range = days(start, end)
+            let hours = WorkingHours(start: request.earliest?.minutes ?? workingHours.start, end: request.latest?.minutes ?? workingHours.end)
+            let slots = Availability.slots(duration: TimeInterval(request.durationMinutes * 60), days: range, events: events(range),
+                                           hours: hours, notBefore: .now, calendar: cal)
+            return .init(result: AssistantPrompt.freeTime(slots: slots, durationMinutes: request.durationMinutes,
+                                                          from: start, to: end, hours: hours, calendar: cal),
+                         activity: "Looked for \(request.durationMinutes) free minutes")
+
+        case .proposeEvent(let proposal):
+            guard let day = proposal.date.date(in: cal) else { return .init(result: "That isn't a real date.", isError: true) }
+            let draft: EventDraft
+            if proposal.allDay {
+                draft = EventDraft(title: proposal.title, start: day, end: cal.date(byAdding: .day, value: 1, to: day) ?? day,
+                                   isAllDay: true, location: proposal.location, notes: proposal.notes)
+            } else {
+                guard let time = proposal.start, let minutes = proposal.durationMinutes,
+                      let start = cal.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: day) else {
+                    return .init(result: "A start time and length are needed.", isError: true)
+                }
+                draft = EventDraft(title: proposal.title, start: start, end: start.addingTimeInterval(TimeInterval(minutes * 60)),
+                                   location: proposal.location, notes: proposal.notes)
+            }
+            if !draft.isAllDay, draft.start < Date.now.addingTimeInterval(-60) {
+                return .init(result: "That time has already passed — ask for a later one.", isError: true)
+            }
+            if let problem = await load(draft.start, draft.end) { return .init(result: problem, isError: true) }
+            let conflicts = draft.isAllDay ? [] : Availability.conflicts(with: DateInterval(start: draft.start, end: draft.end),
+                                                                         in: events(days(cal.startOfDay(for: draft.start), draft.end)))
+            eventRequests.append(EventRequest(kind: .create(draft), conflicts: conflicts))
+            return .init(result: "Showing the user “\(draft.title)” on \(Self.describe(draft.start, draft.end, allDay: draft.isAllDay)) to confirm."
+                         + Self.conflictNote(conflicts) + " It is NOT created unless they confirm; the app will tell you if it was.",
+                         activity: "Suggested adding “\(BuddyVoice.short(draft.title))” — confirm below")
+
+        case .proposeEventChange(let change):
+            guard let event = calendar.event(id: change.eventID) else {
+                return .init(result: "No event with id \(change.eventID) in the loaded calendar. Call get_schedule for that day first.", isError: true)
+            }
+            guard event.canEdit else {
+                return .init(result: "“\(event.title)” is organised by someone else, so it can't be changed from here.", isError: true)
+            }
+            guard !event.isAllDay || (change.start == nil && change.durationMinutes == nil) else {
+                return .init(result: "All-day events can only be renamed, moved to another date or have their location changed here.", isError: true)
+            }
+            var changes = EventChanges(title: change.title, location: change.location)
+            if change.date != nil || change.start != nil || change.durationMinutes != nil {
+                let day = change.date?.date(in: cal) ?? cal.startOfDay(for: event.start)
+                let length = change.durationMinutes.map { TimeInterval($0 * 60) } ?? event.duration
+                if event.isAllDay {
+                    changes.start = day
+                    changes.end = day.addingTimeInterval(event.duration)
+                } else {
+                    let clock = change.start.map { ($0.hour, $0.minute) }
+                        ?? (cal.component(.hour, from: event.start), cal.component(.minute, from: event.start))
+                    guard let start = cal.date(bySettingHour: clock.0, minute: clock.1, second: 0, of: day) else {
+                        return .init(result: "That time doesn't exist on that day.", isError: true)
+                    }
+                    changes.start = start
+                    changes.end = start.addingTimeInterval(length)
+                }
+            }
+            var conflicts: [CalendarEvent] = []
+            if let start = changes.start, let end = changes.end {
+                if let problem = await load(start, end) { return .init(result: problem, isError: true) }
+                if !event.isAllDay {
+                    conflicts = Availability.conflicts(with: DateInterval(start: start, end: end),
+                                                       in: events(days(cal.startOfDay(for: start), end)), ignoring: event.id)
+                }
+            }
+            eventRequests.append(EventRequest(kind: .change(event, changes), conflicts: conflicts))
+            var summary = "Showing the user the change to “\(event.title)” to confirm"
+            if let start = changes.start, let end = changes.end {
+                summary += ": from \(Self.describe(event.start, event.end, allDay: event.isAllDay)) to \(Self.describe(start, end, allDay: event.isAllDay))"
+            }
+            return .init(result: summary + "." + Self.conflictNote(conflicts) + " Nothing changes unless they confirm.",
+                         activity: "Suggested changing “\(BuddyVoice.short(event.title))” — confirm below")
+
+        case .proposeEventDeletion(let id):
+            guard let event = calendar.event(id: id) else {
+                return .init(result: "No event with id \(id) in the loaded calendar. Call get_schedule for that day first.", isError: true)
+            }
+            guard event.canEdit else {
+                return .init(result: "“\(event.title)” is organised by someone else, so it can't be deleted from here.", isError: true)
+            }
+            eventRequests.append(EventRequest(kind: .delete(event), conflicts: []))
+            return .init(result: "Asked the user to confirm deleting “\(event.title)” (\(Self.describe(event.start, event.end, allDay: event.isAllDay))). "
+                         + "It is NOT deleted unless they confirm.",
+                         activity: "Asked you to confirm deleting “\(BuddyVoice.short(event.title))”")
+
+        default:
+            return .init(result: "Not a calendar action.", isError: true)
+        }
+    }
+
+    /// Carries out a confirmed event change. The assistant hears what really happened.
+    func confirmEventRequest(_ id: EventRequest.ID) {
+        guard let index = eventRequests.firstIndex(where: { $0.id == id }), eventRequests[index].state != .working else { return }
+        eventRequests[index].state = .working
+        let request = eventRequests[index]
+        Task {
+            do {
+                let outcome: String
+                let day: Date
+                switch request.kind {
+                case .create(let draft):
+                    let event = try await calendar.create(draft, presentingFrom: nil)
+                    outcome = "Added “\(event.title)” for \(Self.describe(event.start, event.end, allDay: event.isAllDay))"
+                    day = event.start
+                case .change(let event, let changes):
+                    let updated = try await calendar.update(event, with: changes, presentingFrom: nil)
+                    outcome = "Changed “\(updated.title)” to \(Self.describe(updated.start, updated.end, allDay: updated.isAllDay))"
+                    day = updated.start
+                case .delete(let event):
+                    try await calendar.delete(event, presentingFrom: nil)
+                    outcome = "Deleted “\(event.title)” (\(Self.describe(event.start, event.end, allDay: event.isAllDay)))"
+                    day = event.start
+                }
+                setEventRequest(id, state: .done(outcome))
+                showScheduleDay(day)
+                assistant.note("Google Calendar confirmed: \(outcome).")
+            } catch {
+                let message = (error as? IntegrationError)?.userMessage ?? error.localizedDescription
+                setEventRequest(id, state: .failed(message))
+                assistant.note("The calendar change failed (\(message)). Nothing was changed.")
+            }
+        }
+    }
+
+    func declineEventRequest(_ id: EventRequest.ID) {
+        guard let request = eventRequests.first(where: { $0.id == id }) else { return }
+        eventRequests.removeAll { $0.id == id }
+        let what: String
+        switch request.kind {
+        case .create(let draft): what = "adding “\(draft.title)”"
+        case .change(let event, _): what = "changing “\(event.title)”"
+        case .delete(let event): what = "deleting “\(event.title)”"
+        }
+        assistant.note("The user said no to \(what). Nothing was changed.")
+    }
+
+    func dismissEventRequest(_ id: EventRequest.ID) {
+        eventRequests.removeAll { $0.id == id }
+    }
+
+    private func setEventRequest(_ id: EventRequest.ID, state: EventRequest.State) {
+        guard let index = eventRequests.firstIndex(where: { $0.id == id }) else { return }
+        eventRequests[index].state = state
+    }
+
+    // MARK: - Week browser
+
+    func showScheduleDay(_ day: Date) {
+        scheduleDay = Calendar.current.startOfDay(for: day)
+        calendar.browsingWeek = calendar.weekStart(for: scheduleDay)
+        calendar.prefetch(around: scheduleDay)
+    }
+
+    func moveScheduleDay(by days: Int) {
+        guard let day = Calendar.current.date(byAdding: .day, value: days, to: scheduleDay) else { return }
+        showScheduleDay(day)
+    }
+
+    static func shortDay(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+    }
+
+    static func describe(_ start: Date, _ end: Date, allDay: Bool) -> String {
+        if allDay { return "\(shortDay(start)), all day" }
+        let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
+        return "\(shortDay(start)) \(time(start))–\(time(end))"
+    }
+
+    private static func conflictNote(_ conflicts: [CalendarEvent]) -> String {
+        guard !conflicts.isEmpty else { return " No conflicts." }
+        return " It overlaps: " + conflicts.map { "“\($0.title)” \(describe($0.start, $0.end, allDay: false))" }.joined(separator: ", ")
+            + " — the user sees this on the card."
+    }
+
+    #if DEBUG
+    /// Snapshot renderer only.
+    func loadPreviewEventRequests(_ requests: [EventRequest]) {
+        eventRequests = requests
+    }
+
+    /// Self-test only: runs an assistant action exactly as the chat would.
+    func performForTest(_ action: AssistantAction) async -> AssistantService.ToolOutcome {
+        await perform(action)
+    }
+    #endif
 
     func confirmCompletion(_ id: BuddyTask.ID) {
         pendingCompletions.removeAll { $0 == id }

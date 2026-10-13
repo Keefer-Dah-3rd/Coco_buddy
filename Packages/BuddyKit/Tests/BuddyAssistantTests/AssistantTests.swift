@@ -89,7 +89,7 @@ import BuddyIntegrations
         #expect(body["output_config"]?["effort"] == "low")
         #expect(body["tool_choice"] == ["type": "auto"])
         #expect(body["thinking"] == nil)  // always on for this model; effort is the control
-        #expect(body["tools"]?.array?.count == 4)
+        #expect(body["tools"]?.array?.count == AssistantTools.definitions.count)
     }
 
     @Test func encodingIsDeterministic() throws {
@@ -156,7 +156,9 @@ import BuddyIntegrations
     @Test func systemPromptCarriesTheGroundRules() {
         let prompt = AssistantPrompt.system(name: "Coco")
         #expect(prompt.contains("get_today"))
-        #expect(prompt.contains("never claim tasks were added or marked done"))
+        #expect(prompt.contains("never claim tasks were added, marked done"))
+        #expect(prompt.contains("an event was created, moved or deleted unless a later note from the app confirms it"))
+        #expect(prompt.contains("Never work out whether a time is free yourself"))
         #expect(prompt.contains("can't browse, message anyone, run commands"))
     }
 }

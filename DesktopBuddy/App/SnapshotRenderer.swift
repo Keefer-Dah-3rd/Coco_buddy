@@ -62,6 +62,27 @@ enum SnapshotRenderer {
             ],
             workspace: "Keefer's Notion")
         write(view(PanelRootView(model: connected), appearance: .aqua), to: folder.appendingPathComponent("panel-connected.png"))
+
+        // The week browser, with a sample week (snapshots only).
+        let week = demoModel()
+        let sample = sampleWeek(model: week)
+        week.calendar.loadPreview(events: sample.events, account: "keefer@example.com")
+        week.showScheduleDay(sample.busyDay)
+        week.scheduleExpanded = true
+        write(view(PanelRootView(model: week), appearance: .aqua), to: folder.appendingPathComponent("panel-week.png"))
+        week.showScheduleDay(sample.quietDay)
+        write(view(PanelRootView(model: week), appearance: .darkAqua), to: folder.appendingPathComponent("panel-week-dark.png"))
+        let asking = demoModel()
+        asking.calendar.loadPreview(events: sample.events, account: "keefer@example.com")
+        asking.panelTab = .chat
+        var found = AssistantService.Turn(role: .coco, text: "Tuesday afternoon is tight — your portfolio critique runs 2 to 3:30. 2:00 overlaps it; 3:30 is the first clear hour. Here's 2:00 as you asked:")
+        found.activities = ["Looked at your calendar for Tue", "Suggested adding “Design review” — confirm below"]
+        asking.assistant.loadPreview([AssistantService.Turn(role: .user, text: "Schedule a design review Tuesday at 2"), found], cost: 0.011)
+        let tuesday = sample.busyDay
+        asking.loadPreviewEventRequests([AppModel.EventRequest(
+            kind: .create(EventDraft(title: "Design review", start: tuesday.addingTimeInterval(14 * 3600), end: tuesday.addingTimeInterval(15 * 3600))),
+            conflicts: sample.events.filter { $0.id == "critique" })])
+        write(view(PanelRootView(model: asking), appearance: .aqua), to: folder.appendingPathComponent("panel-chat-event.png"))
         write(view(ConnectionsView(model: connected), appearance: .aqua), to: folder.appendingPathComponent("connections-connected.png"))
         write(view(ConnectionsView(model: AppModel(preview: true)), appearance: .darkAqua),
               to: folder.appendingPathComponent("connections-setup-dark.png"))
@@ -347,6 +368,31 @@ enum SnapshotRenderer {
     }
 
     // MARK: - SwiftUI views
+
+    /// A believable week: standups, back-to-back calls, someone else's meeting, an all-day
+    /// marker, a workshop that fills a day, and a late event crossing midnight.
+    private static func sampleWeek(model: AppModel) -> (events: [CalendarEvent], busyDay: Date, quietDay: Date) {
+        let calendar = Calendar.current
+        let start = model.calendar.weekStart(for: .now)
+        func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: start)! }
+        func at(_ offset: Int, _ hour: Double) -> Date { day(offset).addingTimeInterval(hour * 3600) }
+        var events: [CalendarEvent] = (0..<5).map { offset in
+            CalendarEvent(id: "standup\(offset)", title: "Standup", start: at(offset, 9), end: at(offset, 9.25), colorID: "7", isRecurring: true)
+        }
+        events += [
+            CalendarEvent(id: "lunch", title: "Lunch with Ana", start: at(0, 12.5), end: at(0, 13.5), location: "Café Lou"),
+            CalendarEvent(id: "review", title: "Design review", start: at(1, 10), end: at(1, 11),
+                          meetingLink: URL(string: "https://meet.google.com/abc"), colorID: "5"),
+            CalendarEvent(id: "client", title: "Client call", start: at(1, 11), end: at(1, 12)),
+            CalendarEvent(id: "critique", title: "Portfolio critique", start: at(1, 14), end: at(1, 15.5), canEdit: false),
+            CalendarEvent(id: "prep", title: "Offsite prep", start: day(2), end: day(3), isAllDay: true, isBusy: false),
+            CalendarEvent(id: "sam", title: "1:1 with Sam", start: at(2, 15), end: at(2, 16), colorID: "2"),
+            CalendarEvent(id: "workshop", title: "Brand workshop", start: at(3, 9.5), end: at(3, 17.5), location: "Studio B", colorID: "3"),
+            CalendarEvent(id: "launch", title: "Launch watch", start: at(4, 23), end: at(5, 1), colorID: "11"),
+            CalendarEvent(id: "park", title: "Park with Coco", start: at(6, 10), end: at(6, 11), colorID: "10"),
+        ]
+        return (events, day(1), day(5))
+    }
 
     private static func demoModel() -> AppModel {
         let model = AppModel(preview: true)

@@ -9,9 +9,11 @@ The target signs automatically with **John Keefe (Personal Team)** (`DEVELOPMENT
 - [ ] Xcode › Settings › Accounts → select the Apple ID → sign in again if prompted (the command line couldn't reuse the saved session). The first ⌘R then creates the "Apple Development" certificate.
 - Outgoing network access is enabled (Phase 3); incoming connections are not.
 
-## Google Calendar (read-only) — built, needs your client ID
+## Google Calendar — built, needs your client ID
 
-How it works: Google's guidance for macOS apps is an **iOS-type** OAuth client. Sign-in runs in the system sheet (`ASWebAuthenticationSession`) with PKCE and the reversed client ID as the redirect — **no client secret exists**, so there's nothing secret to protect. The only scope requested is `calendar.events.readonly`. Tokens live in the Keychain; today's events are cached locally so the schedule still shows (with its age) when offline. *Disconnect* revokes the token at Google and deletes the cache.
+How it works: Google's guidance for macOS apps is an **iOS-type** OAuth client. Sign-in runs in the system sheet (`ASWebAuthenticationSession`) with PKCE and the reversed client ID as the redirect — **no client secret exists**, so there's nothing secret to protect. Sign-in asks only for `calendar.events.readonly`. The first time you confirm adding, moving or deleting an event, the same sheet asks once more for `calendar.events` (events only — never the broader `calendar` scope), added to what you'd already granted (`include_granted_scopes`). Decline it and Coco stays read-only. Tokens live in the Keychain; the weeks you've looked at (last week to four weeks ahead) are cached locally so the schedule still shows, with its age, when offline. *Disconnect* revokes the token at Google and deletes the cache.
+
+If Google's sheet ever says the app isn't allowed to ask for event changes, add `.../auth/calendar.events` under [Data access](https://console.cloud.google.com/auth/scopes) in your Google Cloud project — in Testing mode that isn't normally needed.
 
 - [ ] [Create a Google Cloud project](https://console.cloud.google.com/projectcreate).
 - [ ] [Enable the Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com).

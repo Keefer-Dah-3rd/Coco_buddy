@@ -31,6 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             RunPreview.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
             exit(0)
         }
+        if CommandLine.arguments.contains("--calendar-selftest") {
+            CalendarSelfTest.run()
+            exit(0)
+        }
         if CommandLine.arguments.contains("--dash-selftest") {
             DashSelfTest.run()
             exit(0)

@@ -8,8 +8,17 @@ enum HTTP {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 20
         configuration.waitsForConnectivity = false
+        #if DEBUG
+        if let stand = standIn { configuration.protocolClasses = [stand] }
+        #endif
         return URLSession(configuration: configuration)
     }()
+
+    #if DEBUG
+    /// Self-tests only: answers every request in-process instead of the network. Must be set
+    /// before the first request.
+    nonisolated(unsafe) static var standIn: AnyClass?
+    #endif
 
     static func send(_ request: URLRequest) async throws -> Data {
         let data: Data

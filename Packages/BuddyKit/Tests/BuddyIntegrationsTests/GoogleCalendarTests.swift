@@ -42,7 +42,9 @@ import Testing
         let now = Date(timeIntervalSinceReferenceDate: 800_000_000)
         let body = #"{"access_token":"ya29.new","expires_in":3599,"scope":"https://www.googleapis.com/auth/calendar.events.readonly","token_type":"Bearer"}"#
         let tokens = try GoogleOAuth.decodeTokens(Data(body.utf8), now: now, previousRefreshToken: "1//old")
-        #expect(tokens == OAuthTokens(accessToken: "ya29.new", refreshToken: "1//old", expiresAt: now.addingTimeInterval(3599)))
+        #expect(tokens == OAuthTokens(accessToken: "ya29.new", refreshToken: "1//old", expiresAt: now.addingTimeInterval(3599),
+                                      scopes: [GoogleOAuth.scope]))
+        #expect(!tokens.canChangeEvents)
         #expect(!tokens.isExpired(at: now) && tokens.isExpired(at: now.addingTimeInterval(3550)))
     }
 

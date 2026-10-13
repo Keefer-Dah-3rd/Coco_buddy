@@ -23,12 +23,18 @@ public struct OAuthTokens: Codable, Equatable, Sendable {
     public var accessToken: String
     public var refreshToken: String?
     public var expiresAt: Date
+    /// What Google granted. nil for sign-ins saved before this was recorded (read-only).
+    public var scopes: [String]?
 
-    public init(accessToken: String, refreshToken: String?, expiresAt: Date) {
+    public init(accessToken: String, refreshToken: String?, expiresAt: Date, scopes: [String]? = nil) {
         self.accessToken = accessToken
         self.refreshToken = refreshToken
         self.expiresAt = expiresAt
+        self.scopes = scopes
     }
+
+    /// Whether the user has allowed Coco to create, change and delete events.
+    public var canChangeEvents: Bool { scopes?.contains(GoogleOAuth.changeScope) ?? false }
 
     /// Treats tokens as expired a minute early so requests don't race the deadline.
     public func isExpired(at now: Date) -> Bool {
@@ -38,12 +44,15 @@ public struct OAuthTokens: Codable, Equatable, Sendable {
 
 /// Google sign-in for a native Mac app: an **iOS**-type OAuth client (Google's guidance for
 /// macOS), the reversed client ID as the redirect scheme, PKCE, and no client secret.
-/// Read-only access to calendar events is the only scope requested.
+/// Read-only access to events is all that's asked at first; permission to change events
+/// is asked separately, the first time the user confirms a change.
 public enum GoogleOAuth {
     public static let authorizationEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
     public static let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
     public static let revokeEndpoint = URL(string: "https://oauth2.googleapis.com/revoke")!
     public static let scope = "https://www.googleapis.com/auth/calendar.events.readonly"
+    /// Create, change and delete events (and read them). Never the broader `calendar` scope.
+    public static let changeScope = "https://www.googleapis.com/auth/calendar.events"
 
     public struct Client: Equatable, Sendable {
         public let clientID: String
@@ -63,13 +72,15 @@ public enum GoogleOAuth {
         public var redirectURI: String { "\(callbackScheme):/oauth2redirect" }
     }
 
-    public static func authorizationURL(client: Client, pkce: PKCE, state: String) -> URL {
+    /// `allowChanges` asks for the change scope on top of whatever was granted before.
+    public static func authorizationURL(client: Client, pkce: PKCE, state: String, allowChanges: Bool = false) -> URL {
         var components = URLComponents(url: authorizationEndpoint, resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "client_id", value: client.clientID),
             URLQueryItem(name: "redirect_uri", value: client.redirectURI),
             URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: scope),
+            URLQueryItem(name: "scope", value: allowChanges ? changeScope : scope),
+            URLQueryItem(name: "include_granted_scopes", value: "true"),
             URLQueryItem(name: "code_challenge", value: pkce.challenge),
             URLQueryItem(name: "code_challenge_method", value: "S256"),
             URLQueryItem(name: "state", value: state),
@@ -123,12 +134,14 @@ public enum GoogleOAuth {
         guard let response = try? JSONDecoder().decode(Response.self, from: data) else {
             throw IntegrationError.invalidResponse("Couldn't read the sign-in response.")
         }
-        if let granted = response.scope, !granted.split(separator: " ").contains(Substring(scope)) {
+        let granted = response.scope.map { $0.split(separator: " ").map(String.init) }
+        if let granted, !granted.contains(scope), !granted.contains(changeScope) {
             throw IntegrationError.forbidden("Calendar access wasn't granted. Reconnect and allow viewing events.")
         }
         return OAuthTokens(accessToken: response.access_token,
                            refreshToken: response.refresh_token ?? previousRefreshToken,
-                           expiresAt: now.addingTimeInterval(response.expires_in))
+                           expiresAt: now.addingTimeInterval(response.expires_in),
+                           scopes: granted)
     }
 
     private static func formRequest(_ url: URL, _ fields: [(String, String)]) -> URLRequest {

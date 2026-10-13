@@ -44,6 +44,9 @@ struct ChatView: View {
                     if !model.taskDrafts.isEmpty, model.draftOrigin == .chat {
                         TaskDraftReviewCard(model: model)
                     }
+                    ForEach(model.eventRequests) { request in
+                        EventRequestCard(request: request, model: model)
+                    }
                     Color.clear.frame(height: 1).id("bottom")
                 }
                 .padding(Space.xl)
@@ -53,6 +56,7 @@ struct ChatView: View {
             .onChange(of: assistant.turns.count) { scrollToBottom(proxy) }
             .onChange(of: model.pendingCompletions.count) { scrollToBottom(proxy) }
             .onChange(of: model.taskDrafts.count) { scrollToBottom(proxy) }
+            .onChange(of: model.eventRequests.count) { scrollToBottom(proxy) }
         }
     }
 

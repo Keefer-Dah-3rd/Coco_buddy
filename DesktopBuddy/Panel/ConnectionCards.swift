@@ -7,10 +7,37 @@ struct ScheduleStrip: View {
     let model: AppModel
 
     var body: some View {
+        Group {
+            if model.scheduleExpanded {
+                WeekScheduleView(model: model)
+            } else {
+                HStack(alignment: .top, spacing: Space.xs) {
+                    today
+                    Button {
+                        model.showScheduleDay(model.scheduleDay)
+                        model.scheduleExpanded = true
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("Week")
+                            Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
+                        }
+                    }
+                    .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                    .help("Browse the week")
+                    .accessibilityLabel("Show the week")
+                }
+            }
+        }
+        .padding(.horizontal, Space.md)
+        .padding(.vertical, Space.sm)
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
+    }
+
+    private var today: some View {
         let service = model.calendar
         let now = Date.now
         let schedule = service.schedule
-        VStack(alignment: .leading, spacing: Space.xs) {
+        return VStack(alignment: .leading, spacing: Space.xs) {
             if let current = schedule.current(at: now) {
                 meetingLine(label: "Now", event: current,
                             detail: "until \(current.end.formatted(date: .omitted, time: .shortened))", urgent: true)
@@ -45,9 +72,6 @@ struct ScheduleStrip: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, Space.md)
-        .padding(.vertical, Space.sm)
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
     }
 
     private func meetingLine(label: String, event: CalendarEvent, detail: String, urgent: Bool) -> some View {

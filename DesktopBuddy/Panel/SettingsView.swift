@@ -67,11 +67,16 @@ struct SettingsView: View {
                 }
 
                 Section("Your day") {
+                    Row("Workday starts at") {
+                        Stepper(hourLabel(preferences.workdayStartHour), value: $preferences.workdayStartHour,
+                                in: 0...max(0, preferences.workdayEndHour - 1))
+                            .font(.style(.bodySmall))
+                    }
                     Row("Workday ends at") {
                         Stepper(hourLabel(preferences.workdayEndHour), value: $preferences.workdayEndHour, in: 12...23)
                             .font(.style(.bodySmall))
                     }
-                    Caption("Used to find free stretches for focused work.")
+                    Caption("Open time on your calendar is counted between these hours, for focused work and when Coco looks for a slot.")
                     Row("Meeting reminders") {
                         KeySegment(selection: $calendar.reminderMinutes, items: [
                             .init(0, "Off"), .init(5, "5m"), .init(10, "10m"), .init(15, "15m"),

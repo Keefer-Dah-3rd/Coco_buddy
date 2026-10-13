@@ -56,6 +56,8 @@ final class Preferences {
     var barksEnabled: Bool { didSet { defaults.set(barksEnabled, forKey: Key.barks) } }
     /// Hour the working day ends, for free-time maths (0–23).
     var workdayEndHour: Int { didSet { defaults.set(workdayEndHour, forKey: Key.workdayEnd) } }
+    /// Hour the working day starts — open time on the calendar is counted from here.
+    var workdayStartHour: Int { didSet { defaults.set(workdayStartHour, forKey: Key.workdayStart) } }
     /// ⌃⌥C opens Coco's panel from any app.
     var globalShortcutEnabled: Bool { didSet { defaults.set(globalShortcutEnabled, forKey: Key.shortcut) } }
     /// Hold right Option and click anywhere to call Coco over.
@@ -81,6 +83,7 @@ final class Preferences {
         lastGreetingDay = nil
         barksEnabled = true
         workdayEndHour = 18
+        workdayStartHour = 9
         globalShortcutEnabled = true
         callKeyEnabled = true
         onboardingCompleted = false
@@ -89,7 +92,7 @@ final class Preferences {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [Key.visible: true, Key.onTop: true, Key.muted: false,
-                                     Key.barks: true, Key.workdayEnd: 18, Key.shortcut: true,
+                                     Key.barks: true, Key.workdayEnd: 18, Key.workdayStart: 9, Key.shortcut: true,
                                      Key.callKey: true])
 
         isBuddyVisible = defaults.bool(forKey: Key.visible)
@@ -106,7 +109,9 @@ final class Preferences {
         }
         lastGreetingDay = defaults.string(forKey: Key.greeting)
         barksEnabled = defaults.bool(forKey: Key.barks)
-        workdayEndHour = min(23, max(1, defaults.integer(forKey: Key.workdayEnd)))
+        let endHour = min(23, max(1, defaults.integer(forKey: Key.workdayEnd)))
+        workdayEndHour = endHour
+        workdayStartHour = min(endHour - 1, max(0, defaults.integer(forKey: Key.workdayStart)))
         globalShortcutEnabled = defaults.bool(forKey: Key.shortcut)
         callKeyEnabled = defaults.bool(forKey: Key.callKey)
         onboardingCompleted = defaults.bool(forKey: Key.onboarding)
@@ -124,6 +129,7 @@ final class Preferences {
         static let greeting = "buddy.lastGreetingDay"
         static let barks = "buddy.barksEnabled"
         static let workdayEnd = "calendar.workdayEndHour"
+        static let workdayStart = "calendar.workdayStartHour"
         static let shortcut = "buddy.globalShortcut"
         static let callKey = "buddy.callKey"
         static let onboarding = "buddy.onboardingCompleted"

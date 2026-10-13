@@ -49,6 +49,21 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 - [ ] In Connections, paste an invalid Claude key. It's rejected with a reason and nothing is saved.
 - [ ] Revoke the app's access at myaccount.google.com › Security › Third-party access. Connections then shows *Reconnect*; nothing crashes.
 
+## Calendar: week, availability and changes
+
+- [ ] Today › calendar › **Week**: the strip shows this week with today marked. Click another day, drag across the strip (past the edge keeps going into the next week), and use ←/→, ⇧←/⇧→ and T. The day list updates at once for loaded weeks and shows *Loading…* for new ones.
+- [ ] A day with back-to-back meetings shows no open time between them; a day with nothing shows "Nothing scheduled — open …".
+- [ ] An all-day event sits at the top; an event that runs past midnight shows on both days with ← / →.
+- [ ] A repeating event shows the repeat mark on each occurrence.
+- [ ] Chat: "What does my week look like?", "Am I free Thursday afternoon?", "Which day is lightest?" — the chat says it looked at the calendar, and the answers match the week browser.
+- [ ] Chat: "Find a 30-minute opening Thursday" — every suggestion is genuinely open in the browser.
+- [ ] Chat: "Schedule a design review next Tuesday at 2" — a card shows the date, time and any clash. *Not now* changes nothing. *Add*: the first time, Google's sheet asks to allow changes; afterwards the event appears in Google Calendar and on that day in the browser, and the chat is told.
+- [ ] Ask to move it to Wednesday, then to delete it. Each time a card asks first; the event keeps its id (no duplicate) and Google Calendar matches.
+- [ ] Ask to delete a meeting someone else organised: Coco says she can't.
+- [ ] Add an event in Google Calendar on the web, reopen the panel a few minutes later: it appears.
+- [ ] Decline Google's permission sheet: the card says nothing changed.
+- [ ] Settings › Your day: change the workday start/end; open time and Coco's suggestions follow.
+
 ## Global shortcut
 
 - [ ] ⌃⌥C from another app opens the panel; pressing it again closes the panel.

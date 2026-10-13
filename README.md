@@ -25,7 +25,7 @@ A native macOS desktop companion. **Coco** is a black-and-white corgi with a whi
 - **Planning that stays honest.** A local task list with a quick-add syntax, *Up next* with its reason, focus sessions linked to tasks, and carry-over for today-only items. Nothing is ever marked done because time passed.
 - **Voice in and out.** On-device speech recognition and a tested rule-based parser. Commands run directly; everything else becomes draft tasks you review.
 - **Claude, safely.** Raw HTTP + SSE to the Messages API, with four narrow tools: read today, *propose* tasks, start focus, and *ask* to complete a task. Adding or completing tasks always waits for your click; only a focus session (local, and stoppable) starts straight away.
-- **Google Calendar, read-only.** OAuth with PKCE, a schedule strip, free time and meeting reminders. Tokens stay in the Keychain.
+- **Google Calendar.** OAuth with PKCE; a week browser with open time; meeting reminders; Coco finds free slots and adds, moves or deletes events only after you confirm (Google asks once for that permission). Tokens stay in the Keychain.
 - **Respectful by default.** First-launch welcome, onboarding that explains each permission before macOS asks, Settings with *Delete all my data*, full keyboard use, VoiceOver labels, and support for Reduce Motion and Low Power Mode.
 
 ## Status
@@ -39,6 +39,7 @@ All five phases are done.
    - a focus log.
 3. **Google Calendar:**
    - a schedule strip: meeting now/next with Join, and the longest free block;
+   - **Week**: the strip opens into a week you can click, drag across or step through with ←/→, each day's events in order with the open time between them;
    - meeting reminders and a focus-length heads-up.
    - Setup: [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
 4. **Conversational assistant:** a Chat tab with Claude (Opus 5.5, low effort, streamed replies), voice in and out, and tools whose task changes are confirmed in the panel.
@@ -85,6 +86,9 @@ cd Packages/BuddyKit && swift test
 | Chat tab › *"What should I work on next?"* | Coco looks at your tasks and calendar (the chat says so) and answers briefly. She thinks while waiting and talks while the reply streams |
 | Chat › *"Break my top task into steps"* | Draft tasks appear for review; nothing is added until you press Add |
 | Chat › *"I finished the intro"* | A "Mark done?" card. Only your click marks it |
+| Today › calendar › **Week** | The week strip: drag across the days or use ←/→ (⇧ for a week, T for today). Each day lists events and the open time between them |
+| Chat › *"Find me a free hour Thursday afternoon"* | Coco checks Thursday's real events and offers openings, saying why |
+| Chat › *"Schedule a design review next Tuesday at 2"* | An "Add to Google Calendar" card with any clash shown. Only **Add** creates it; the first time, Google asks you to allow changes |
 | Right-click her | Talk, presence, focus behaviour, always-on-top, mute, voice, hide, reset position, Settings |
 | Menu bar › Settings… | Presence, sounds and barks, voice, focus lengths, workday end, reminders, open at login, the shortcut, *Show welcome again*, *Delete all my data* |
 | Leave the Mac idle 5 min | She dozes off (airplane ears, Zs) and wakes when you return |
@@ -154,6 +158,8 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 **Global shortcut.** ⌃⌥C uses the Carbon hot-key API, which needs no Accessibility or Input Monitoring permission. If another app already owns the combination, Settings says so instead of failing silently.
 
 **Calling Coco.** Holding right Option shows an invisible layer over every display, so the click calls her instead of reaching the app underneath. The key is read from modifier and mouse events, with no Accessibility or Input Monitoring permission. Her route is a `Dash` (BuddyKit): a pure function of time that eases her up to speed and down to a stop and keeps her speed and heading when she changes course. While she runs, the sitting drawing hands over to a small 3D model of her, drawn flat in her palette and redrawn each frame, so she can face any direction. The handovers are single-frame swaps hidden in a squash. With Reduce Motion on, she fades across instead. Debug builds render review sheets and GIFs with `--run-preview <folder>`.
+
+**Calendar, one source of truth.** Events are fetched a week at a time, only for the weeks being looked at, and cached per week; the Today strip, the week browser, the chat and meeting reminders all read the same cache. Repeating events arrive as their occurrences, events crossing midnight show on both days, and open time is counted in your working hours using wall-clock times, so daylight-saving days work. Availability, totals and conflicts are computed by the app (`Availability`, BuddyKit) and handed to the chat as facts — the model never decides whether a time is free. Changes go through `propose_event*` tools that only show a card; the app calls Google after you confirm and tells the chat what Google confirmed. Debug builds can run `--calendar-selftest`, which drives all of this against a stand-in Google Calendar.
 
 **Unobtrusive by rule.** Lines have an importance (`ambient`, `acknowledge`, `important`). Ambient chatter only happens in Interactive presence and never during focus. Coco greets at most once a day, and nothing interrupts a focus session except its end.
 

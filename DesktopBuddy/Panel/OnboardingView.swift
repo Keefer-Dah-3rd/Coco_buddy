@@ -104,7 +104,7 @@ struct OnboardingView: View {
                     .help("\(Buddy.name) speaks her lines aloud")
             }
             Extra(symbol: "calendar", title: "Google Calendar",
-                  detail: "Read-only: today's events, free time and meeting reminders.") {
+                  detail: "Your week, open time and meeting reminders. Events change only when you confirm.") {
                 Button("Set up…") { model.openConnections() }.buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
             }
             Extra(symbol: "bubble.left", title: "Chat with Claude",

@@ -19,6 +19,14 @@ enum RunPreview {
         let turning = turningAround(t: t0)
         writeGIF(turning, delay: 1.0 / 30, to: folder.appendingPathComponent("run-turning.gif"))
         write(strip(of: turning, every: 3, columns: 10), to: folder.appendingPathComponent("run-turning-frames.png"))
+        let treat = treatGame(t: t0)
+        writeGIF(treat.frames, delay: 1.0 / 30, to: folder.appendingPathComponent("treat.gif"))
+        write(treat.strip, to: folder.appendingPathComponent("treat-frames.png"))
+        write(treat.closeups, to: folder.appendingPathComponent("treat-closeups.png"))
+        let fetch = fetchGame(t: t0)
+        writeGIF(fetch.frames, delay: 1.0 / 30, to: folder.appendingPathComponent("fetch.gif"))
+        write(fetch.strip, to: folder.appendingPathComponent("fetch-frames.png"))
+        write(fetch.closeups, to: folder.appendingPathComponent("fetch-closeups.png"))
         let dash = dashAcross(t: t0)
         writeGIF(dash.frames, delay: 1.0 / 30, to: folder.appendingPathComponent("run-dash.gif"))
         write(dash.strip, to: folder.appendingPathComponent("run-dash-frames.png"))
@@ -184,6 +192,200 @@ enum RunPreview {
                                   width: tile.width, height: tile.height)
                 NSImage(cgImage: frame, size: rect.size).draw(in: rect)
                 ("\(index * n)" as NSString).draw(at: NSPoint(x: rect.minX + 3, y: rect.minY + 2), withAttributes: [
+                    .font: NSFont.monospacedSystemFont(ofSize: 8, weight: .medium), .foregroundColor: NSColor.gray,
+                ])
+            }
+            return true
+        }
+    }
+
+    /// A whole game of fetch on a small desktop, with every frame of the ball drawn too.
+    /// Also returns a filmstrip, and close-ups of the pickup and the drop.
+    static func fetchGame(t: TimeInterval) -> (frames: [CGImage], strip: NSImage, closeups: NSImage) {
+        let size = NSSize(width: 720, height: 420)
+        let desk = NSView(frame: NSRect(origin: .zero, size: size))
+        desk.wantsLayer = true
+        desk.layer?.backgroundColor = NSColor(hex: 0xD9E0E6).cgColor
+        let artSize = NSSize(width: 96, height: 114)
+        let art = CocoLayerView(frame: NSRect(origin: .zero, size: artSize))
+        desk.addSubview(art)
+        let ball = TennisBallLayer()
+        desk.layer?.addSublayer(ball.layer)
+        let window = offscreenWindow(for: desk)
+        defer { window.orderOut(nil) }
+
+        let pawOffset = CGPoint(x: artSize.width / 2, y: artSize.width * 0.07)
+        let home = SIMD2<Double>(560, 60)
+        let geometry = RunningCoco.fetchReach(artWidth: artSize.width)
+        let flight = BallFlight(from: home + SIMD2(-24, 6), height: 46, to: SIMD2(170, 250), at: t)
+        let game = Fetch(home: home, ball: flight, at: t, reach: geometry.reach, mouthHeight: geometry.mouthHeight)
+        var animator = CharacterAnimator()
+        animator.setFetch(game)
+
+        var images: [CGImage] = []
+        var crops: [CGImage] = []
+        var closeTimes: [(TimeInterval, String)] = []
+        for k in [0.0, 0.25, 0.45, 0.5, 0.7, 1.0] { closeTimes.append((game.pickupStart + Fetch.pickupDuration * k, "pickup \(k)")) }
+        for k in [0.2, 0.4, 0.43, 0.6, 0.66, 0.9] { closeTimes.append((game.dropStart + Fetch.dropDuration * k, "drop \(k)")) }
+        var closeups: [(CGImage, String)] = []
+
+        func render(_ time: TimeInterval) -> CGImage? {
+            let paws = game.position(at: time)
+            art.frame.origin = CGPoint(x: paws.x - pawOffset.x, y: paws.y - pawOffset.y)
+            art.render(animator.pose(at: time), focusProgress: nil)
+            if let loose = game.looseBall(at: time) {
+                ball.layer.isHidden = false
+                ball.place(ground: CGPoint(x: loose.ground.x, y: loose.ground.y), height: loose.height, spin: loose.spin)
+                // Nearer the viewer (lower on screen) than her paws: in front of her.
+                desk.layer?.addSublayer(ball.layer)
+                if loose.ground.y > paws.y, let artLayer = art.layer {
+                    desk.layer?.insertSublayer(ball.layer, below: artLayer)
+                }
+            } else {
+                ball.layer.isHidden = true
+            }
+            return snapshot(desk)
+        }
+
+        var time = t - 0.2
+        while time < game.endTime + 0.6 {
+            if let image = render(time) {
+                if images.count % 4 == 0 { crops.append(image) }
+                images.append(image)
+            }
+            time += 1.0 / 30
+        }
+        for (when, label) in closeTimes {
+            guard let image = render(when) else { continue }
+            let paws = game.position(at: when)
+            let scale = CGFloat(image.width) / size.width
+            let box = CGRect(x: paws.x - 80, y: size.height - paws.y - 130, width: 160, height: 150)
+            if let crop = image.cropping(to: CGRect(x: box.minX * scale, y: box.minY * scale, width: box.width * scale, height: box.height * scale)) {
+                closeups.append((crop, label))
+            }
+        }
+
+        let columns = 6
+        let tile = NSSize(width: size.width * 0.4, height: size.height * 0.4)
+        let rows = (crops.count + columns - 1) / columns
+        let strip = NSImage(size: NSSize(width: tile.width * CGFloat(columns), height: tile.height * CGFloat(rows)), flipped: true) { _ in
+            for (index, crop) in crops.enumerated() {
+                let rect = NSRect(x: tile.width * CGFloat(index % columns), y: tile.height * CGFloat(index / columns), width: tile.width, height: tile.height)
+                NSImage(cgImage: crop, size: rect.size).draw(in: rect)
+                ("\(index * 4)" as NSString).draw(at: NSPoint(x: rect.minX + 3, y: rect.minY + 2), withAttributes: [
+                    .font: NSFont.monospacedSystemFont(ofSize: 8, weight: .medium), .foregroundColor: NSColor.gray,
+                ])
+            }
+            return true
+        }
+        let close = NSImage(size: NSSize(width: 160 * 6, height: 150 * 2), flipped: true) { _ in
+            for (index, item) in closeups.enumerated() {
+                let rect = NSRect(x: 160 * (index % 6), y: 150 * (index / 6), width: 160, height: 150)
+                NSImage(cgImage: item.0, size: rect.size).draw(in: rect)
+                (item.1 as NSString).draw(at: NSPoint(x: rect.minX + 3, y: rect.minY + 2), withAttributes: [
+                    .font: NSFont.monospacedSystemFont(ofSize: 8, weight: .medium), .foregroundColor: NSColor.gray,
+                ])
+            }
+            return true
+        }
+        return (images, strip, close)
+    }
+
+    /// Begging, then a treat tossed, chased, eaten and celebrated, on a small desktop.
+    static func treatGame(t: TimeInterval) -> (frames: [CGImage], strip: NSImage, closeups: NSImage) {
+        let size = NSSize(width: 720, height: 420)
+        let desk = NSView(frame: NSRect(origin: .zero, size: size))
+        desk.wantsLayer = true
+        desk.layer?.backgroundColor = NSColor(hex: 0xD9E0E6).cgColor
+        let artSize = NSSize(width: 96, height: 114)
+        let art = CocoLayerView(frame: NSRect(origin: .zero, size: artSize))
+        desk.addSubview(art)
+        let treatLayer = TreatLayer()
+        desk.layer?.addSublayer(treatLayer.layer)
+        let window = offscreenWindow(for: desk)
+        defer { window.orderOut(nil) }
+
+        let pawOffset = CGPoint(x: artSize.width / 2, y: artSize.width * 0.07)
+        let home = SIMD2<Double>(540, 70)
+        let geometry = RunningCoco.fetchReach(artWidth: artSize.width)
+        let throwAt = t + 1.2
+        let flight = BallFlight(from: home + SIMD2(-12, 0), height: 70, to: SIMD2(230, 230), at: throwAt, material: .treat)
+        let game = TreatGame(home: home, treat: flight, at: throwAt, reach: geometry.reach)
+        var animator = CharacterAnimator()
+        animator.setBegging(true, at: t)
+        animator.look(at: SIMD2(-0.6, -0.5), at: t)
+
+        func render(_ time: TimeInterval) -> CGImage? {
+            if time >= throwAt, animator.treat == nil {
+                animator.setBegging(false, at: throwAt)
+                animator.look(at: nil, at: throwAt)
+                animator.setTreat(game)
+            }
+            let paws = time < throwAt ? home : game.position(at: time)
+            art.frame.origin = CGPoint(x: paws.x - pawOffset.x, y: paws.y - pawOffset.y)
+            art.render(animator.pose(at: time), focusProgress: nil)
+            if time >= throwAt, let loose = game.looseTreat(at: time) {
+                treatLayer.layer.isHidden = false
+                treatLayer.place(ground: CGPoint(x: loose.ground.x, y: loose.ground.y), height: loose.height, spin: loose.spin)
+                desk.layer?.addSublayer(treatLayer.layer)
+                if loose.ground.y > paws.y, let artLayer = art.layer { desk.layer?.insertSublayer(treatLayer.layer, below: artLayer) }
+            } else {
+                treatLayer.layer.isHidden = true
+            }
+            return snapshot(desk)
+        }
+
+        var images: [CGImage] = []
+        var crops: [CGImage] = []
+        var time = t
+        while time < game.endTime + 0.5 {
+            if let image = render(time) {
+                if images.count % 4 == 0 { crops.append(image) }
+                images.append(image)
+            }
+            time += 1.0 / 30
+        }
+        var moments: [(TimeInterval, String)] = [(t + 0.05, "beg start"), (t + 0.4, "begging"), (t + 0.75, "begging"), (t + 1.1, "begging")]
+        for k in [0.1, 0.29, 0.31, 0.5, 0.65, 0.9] { moments.append((game.eatStart + TreatGame.eatDuration * k, "eat \(k)")) }
+        for k in [0.25, 0.45, 0.6, 0.65, 0.9, 0.95] { moments.append((game.celebrateStart + TreatGame.celebrateDuration * k, "jump \(k)")) }
+        animator = CharacterAnimator()
+        animator.setBegging(true, at: t)
+        animator.look(at: SIMD2(-0.6, -0.5), at: t)
+        var closeups: [(CGImage, String)] = []
+        for (when, label) in moments {
+            guard let image = render(when) else { continue }
+            let paws = when < throwAt ? home : game.position(at: when)
+            let scale = CGFloat(image.width) / size.width
+            let box = CGRect(x: paws.x - 80, y: size.height - paws.y - 135, width: 160, height: 150)
+            if let crop = image.cropping(to: CGRect(x: box.minX * scale, y: box.minY * scale, width: box.width * scale, height: box.height * scale)) {
+                closeups.append((crop, label))
+            }
+        }
+        return (images, sheet(crops, columns: 6, every: 4, tile: NSSize(width: size.width * 0.4, height: size.height * 0.4)),
+                labelled(closeups, columns: 8))
+    }
+
+    private static func sheet(_ frames: [CGImage], columns: Int, every: Int, tile: NSSize) -> NSImage {
+        let rows = (frames.count + columns - 1) / columns
+        return NSImage(size: NSSize(width: tile.width * CGFloat(columns), height: tile.height * CGFloat(rows)), flipped: true) { _ in
+            for (index, frame) in frames.enumerated() {
+                let rect = NSRect(x: tile.width * CGFloat(index % columns), y: tile.height * CGFloat(index / columns), width: tile.width, height: tile.height)
+                NSImage(cgImage: frame, size: rect.size).draw(in: rect)
+                ("\(index * every)" as NSString).draw(at: NSPoint(x: rect.minX + 3, y: rect.minY + 2), withAttributes: [
+                    .font: NSFont.monospacedSystemFont(ofSize: 8, weight: .medium), .foregroundColor: NSColor.gray,
+                ])
+            }
+            return true
+        }
+    }
+
+    private static func labelled(_ items: [(CGImage, String)], columns: Int) -> NSImage {
+        let rows = (items.count + columns - 1) / columns
+        return NSImage(size: NSSize(width: 160 * columns, height: 150 * rows), flipped: true) { _ in
+            for (index, item) in items.enumerated() {
+                let rect = NSRect(x: 160 * (index % columns), y: 150 * (index / columns), width: 160, height: 150)
+                NSImage(cgImage: item.0, size: rect.size).draw(in: rect)
+                (item.1 as NSString).draw(at: NSPoint(x: rect.minX + 3, y: rect.minY + 2), withAttributes: [
                     .font: NSFont.monospacedSystemFont(ofSize: 8, weight: .medium), .foregroundColor: NSColor.gray,
                 ])
             }

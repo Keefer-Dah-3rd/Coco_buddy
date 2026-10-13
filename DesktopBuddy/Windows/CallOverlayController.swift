@@ -6,23 +6,27 @@ import QuartzCore
 /// click, so it calls Coco instead of landing in the app underneath. After the click, a
 /// smaller marker waits at the spot until she gets there.
 final class CallOverlayController {
-    /// A click while aiming, in screen coordinates.
-    var onCall: ((CGPoint) -> Void)?
+    /// A click while aiming, in screen coordinates, with the key that was held.
+    var onCall: ((CGPoint, HeldKey) -> Void)?
     /// The cursor moved over the overlay (the usual mouse tracking can't see it there).
     var onCursorMoved: (() -> Void)?
 
     private(set) var isShowing = false
+    /// Which key is being held: the paw circle for calling, the tennis ball for throwing.
+    private(set) var key: HeldKey = .rightOption
     private var panels: [OverlayPanel] = []
     private var hideWork: DispatchWorkItem?
     private let marker = MarkerPanel()
 
-    func show() {
+    func show(for key: HeldKey) {
         guard !isShowing else { return }
         isShowing = true
+        self.key = key
         hideWork?.cancel()
         matchScreens()
         let mouse = NSEvent.mouseLocation
         for panel in panels {
+            panel.surface.key = key
             panel.surface.moveTarget(to: mouse)
             panel.orderFrontRegardless()
         }
@@ -61,8 +65,9 @@ final class CallOverlayController {
         panels = NSScreen.screens.map { screen in
             let panel = OverlayPanel(frame: screen.frame)
             panel.surface.onClick = { [weak self] point in
-                self?.panels.forEach { $0.surface.ping(at: point) }
-                self?.onCall?(point)
+                guard let self else { return }
+                if self.key == .rightOption { self.panels.forEach { $0.surface.ping(at: point) } }
+                self.onCall?(point, self.key)
             }
             panel.surface.onMouseMoved = { [weak self] in self?.cursorMoved() }
             return panel
@@ -103,7 +108,12 @@ private final class OverlayPanel: NSPanel {
 private final class OverlaySurface: NSView {
     var onClick: ((CGPoint) -> Void)?
     var onMouseMoved: (() -> Void)?
+    var key: HeldKey = .rightOption {
+        didSet { if key != oldValue { hideTarget() } }
+    }
     private let target = CallTarget()
+    private let ball = ThingCursor(TennisBallLayer(), height: 9, spin: 0.4)
+    private let treat = ThingCursor(TreatLayer(), height: 10, spin: -0.35)
     private var targetShown = false
 
     override init(frame: NSRect) {
@@ -111,6 +121,10 @@ private final class OverlaySurface: NSView {
         wantsLayer = true
         target.layer.opacity = 0
         layer?.addSublayer(target.layer)
+        for cursor in [ball, treat] {
+            cursor.layer.opacity = 0
+            layer?.addSublayer(cursor.layer)
+        }
     }
 
     @available(*, unavailable)
@@ -122,13 +136,20 @@ private final class OverlaySurface: NSView {
             if targetShown { hideTarget() }
             return
         }
+        let local = CGPoint(x: point.x - window.frame.minX, y: point.y - window.frame.minY)
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        target.layer.position = CGPoint(x: point.x - window.frame.minX, y: point.y - window.frame.minY)
+        target.layer.position = local
+        ball.layer.position = local
+        treat.layer.position = local
         CATransaction.commit()
         if !targetShown {
             targetShown = true
-            target.appear()
+            switch key {
+            case .rightOption: target.appear()
+            case .rightCommand: ball.appear()
+            case .rightShift: treat.appear()
+            }
         }
     }
 
@@ -136,6 +157,8 @@ private final class OverlaySurface: NSView {
         guard targetShown else { return }
         targetShown = false
         target.disappear()
+        ball.disappear()
+        treat.disappear()
     }
 
     /// A ripple where you clicked, so the click visibly registered.
@@ -148,7 +171,7 @@ private final class OverlaySurface: NSView {
 
     override func mouseDown(with event: NSEvent) {
         // If the key went up unnoticed, this click isn't a call; the overlay is leaving.
-        guard CallKeyMonitor.isCallKey(event.modifierFlags) else { return }
+        guard key.matches(event.modifierFlags) else { return }
         onClick?(NSEvent.mouseLocation)
     }
 
@@ -207,6 +230,59 @@ private final class MarkerPanel: NSPanel {
         let work = DispatchWorkItem { [weak self] in self?.orderOut(nil) }
         popWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
+    }
+}
+
+// MARK: - The ball under the cursor
+
+/// While aiming a throw: the ball (or treat) floats just above the cursor, bobbing a
+/// little, with its shadow on the spot where it will land.
+private final class ThingCursor {
+    let layer = CALayer()
+    private let thing: TossedThing
+
+    init(_ thing: TossedThing, height: CGFloat, spin: CGFloat) {
+        self.thing = thing
+        layer.bounds = CGRect(x: -20, y: -10, width: 40, height: 50)
+        thing.layer.position = .zero
+        layer.addSublayer(thing.layer)
+        thing.place(ground: .zero, height: height, spin: spin)
+    }
+
+    func appear() {
+        layer.removeAllAnimations()
+        layer.opacity = 1
+        let fade = CABasicAnimation(keyPath: "opacity")
+        fade.fromValue = 0
+        fade.toValue = 1
+        fade.duration = 0.12
+        layer.add(fade, forKey: "fade")
+        let grow = CASpringAnimation(keyPath: "transform.scale")
+        grow.fromValue = 0.5
+        grow.toValue = 1
+        grow.damping = 12
+        grow.stiffness = 320
+        grow.duration = grow.settlingDuration
+        layer.add(grow, forKey: "grow")
+        // A small bob, like it's being bounced in a hand; runs in the render server.
+        let bob = CABasicAnimation(keyPath: "sublayerTransform.translation.y")
+        bob.fromValue = 0
+        bob.toValue = 4
+        bob.duration = 0.5
+        bob.autoreverses = true
+        bob.repeatCount = .infinity
+        bob.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        layer.add(bob, forKey: "bob")
+    }
+
+    func disappear() {
+        let from = layer.presentation()?.opacity ?? layer.opacity
+        layer.opacity = 0
+        let fade = CABasicAnimation(keyPath: "opacity")
+        fade.fromValue = from
+        fade.toValue = 0
+        fade.duration = 0.12
+        layer.add(fade, forKey: "fade")
     }
 }
 

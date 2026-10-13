@@ -117,9 +117,13 @@ final class CocoLayerView: NSView {
         )
 
         tail.setAffineTransform(CGAffineTransform(rotationAngle: 0.75 + p.tail + dangle * 1.5))
+        // Begging lifts the front legs, paws hanging straight down, each bobbing in turn as
+        // she paws the air.
+        let beg = CGFloat(min(1, max(0, p.beg)))
         for (index, leg) in legs.enumerated() {
             let swing = dangle * 0.22 * sin(p.clock * 7 + Double(index) * 1.7)
-            leg.setAffineTransform(CGAffineTransform(translationX: 0, y: 3 * dangle).rotated(by: swing))
+            let paw = beg * CGFloat(1.6 * sin(p.clock * 10 + Double(index) * .pi))
+            leg.setAffineTransform(CGAffineTransform(translationX: 0, y: 3 * dangle - 9 * beg + paw).rotated(by: swing))
         }
 
         head.position = CGPoint(x: 0, y: Self.neck.y - Self.bodyOrigin.y + p.headDip)

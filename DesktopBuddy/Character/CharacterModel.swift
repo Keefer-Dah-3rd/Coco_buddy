@@ -85,6 +85,25 @@ final class CharacterModel {
         animator.setDash(dash)
     }
 
+    /// Playing fetch; the window and the ball follow it.
+    var fetch: Fetch? { animator.fetch }
+
+    func setFetch(_ game: Fetch?) {
+        animator.setFetch(game)
+    }
+
+    /// Chasing and eating a treat; the window and the treat follow it.
+    var treat: TreatGame? { animator.treat }
+
+    func setTreat(_ game: TreatGame?) {
+        animator.setTreat(game)
+    }
+
+    /// Sitting up begging (while a treat is being held out).
+    func setBegging(_ begging: Bool) {
+        animator.setBegging(begging, at: Self.clock)
+    }
+
     /// Shows a speech bubble. The mouth moves for the start of the line, as if spoken.
     func say(_ text: String) {
         let duration = min(7, max(2.8, 1.8 + Double(text.count) * 0.05))

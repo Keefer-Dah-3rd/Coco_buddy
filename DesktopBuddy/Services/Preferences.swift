@@ -62,6 +62,12 @@ final class Preferences {
     var globalShortcutEnabled: Bool { didSet { defaults.set(globalShortcutEnabled, forKey: Key.shortcut) } }
     /// Hold right Option and click anywhere to call Coco over.
     var callKeyEnabled: Bool { didSet { defaults.set(callKeyEnabled, forKey: Key.callKey) } }
+    /// Hold right Command and click to throw Coco's ball.
+    var throwKeyEnabled: Bool { didSet { defaults.set(throwKeyEnabled, forKey: Key.throwKey) } }
+    /// Hold right Shift and click to toss Coco a treat.
+    var treatKeyEnabled: Bool { didSet { defaults.set(treatKeyEnabled, forKey: Key.treatKey) } }
+    /// Coco says something on her mind every half hour or so, when nothing else is going on.
+    var chatterEnabled: Bool { didSet { defaults.set(chatterEnabled, forKey: Key.chatter) } }
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -86,6 +92,9 @@ final class Preferences {
         workdayStartHour = 9
         globalShortcutEnabled = true
         callKeyEnabled = true
+        throwKeyEnabled = true
+        treatKeyEnabled = true
+        chatterEnabled = true
         onboardingCompleted = false
     }
 
@@ -93,7 +102,8 @@ final class Preferences {
         self.defaults = defaults
         defaults.register(defaults: [Key.visible: true, Key.onTop: true, Key.muted: false,
                                      Key.barks: true, Key.workdayEnd: 18, Key.workdayStart: 9, Key.shortcut: true,
-                                     Key.callKey: true])
+                                     Key.callKey: true, Key.throwKey: true,
+                                     Key.treatKey: true, Key.chatter: true])
 
         isBuddyVisible = defaults.bool(forKey: Key.visible)
         alwaysOnTop = defaults.bool(forKey: Key.onTop)
@@ -114,6 +124,9 @@ final class Preferences {
         workdayStartHour = min(endHour - 1, max(0, defaults.integer(forKey: Key.workdayStart)))
         globalShortcutEnabled = defaults.bool(forKey: Key.shortcut)
         callKeyEnabled = defaults.bool(forKey: Key.callKey)
+        throwKeyEnabled = defaults.bool(forKey: Key.throwKey)
+        treatKeyEnabled = defaults.bool(forKey: Key.treatKey)
+        chatterEnabled = defaults.bool(forKey: Key.chatter)
         onboardingCompleted = defaults.bool(forKey: Key.onboarding)
     }
 
@@ -132,6 +145,9 @@ final class Preferences {
         static let workdayStart = "calendar.workdayStartHour"
         static let shortcut = "buddy.globalShortcut"
         static let callKey = "buddy.callKey"
+        static let throwKey = "buddy.throwKey"
+        static let treatKey = "buddy.treatKey"
+        static let chatter = "buddy.chatter"
         static let onboarding = "buddy.onboardingCompleted"
     }
 }

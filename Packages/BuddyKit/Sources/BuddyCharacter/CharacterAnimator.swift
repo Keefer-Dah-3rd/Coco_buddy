@@ -41,6 +41,14 @@ public struct CharacterAnimator: Sendable {
 
     /// Running somewhere she was called to.
     public private(set) var dash: Dash?
+    /// Playing fetch.
+    public private(set) var fetch: Fetch?
+    /// Chasing and eating a treat.
+    public private(set) var treat: TreatGame?
+    /// Begging for a treat: when it started, and when it stopped (if it has).
+    private var begStart: TimeInterval?
+    private var begEnd: TimeInterval?
+    static let begEase: TimeInterval = 0.25
 
     public init() {}
 
@@ -80,6 +88,39 @@ public struct CharacterAnimator: Sendable {
     /// Starts, redirects or (with nil) ends a dash.
     public mutating func setDash(_ newDash: Dash?) {
         dash = newDash
+    }
+
+    /// Starts or (with nil) ends a game of fetch.
+    public mutating func setFetch(_ game: Fetch?) {
+        fetch = game
+    }
+
+    /// Starts or (with nil) ends a treat.
+    public mutating func setTreat(_ game: TreatGame?) {
+        treat = game
+    }
+
+    /// Sits up and begs while you're holding a treat; settles back down when you stop.
+    public mutating func setBegging(_ begging: Bool, at t: TimeInterval) {
+        if begging {
+            guard begStart == nil || begEnd != nil else { return }
+            // Picking up again mid-settle carries on from where she is.
+            let current = begAmount(at: t)
+            begStart = t - Self.begEase * current
+            begEnd = nil
+        } else {
+            guard begStart != nil, begEnd == nil else { return }
+            begEnd = t
+        }
+    }
+
+    /// 0 … 1 how far into the begging pose she is.
+    func begAmount(at t: TimeInterval) -> Double {
+        guard let begStart else { return 0 }
+        let rising = Self.ease((t - begStart) / Self.begEase)
+        guard let begEnd else { return rising }
+        let peak = Self.ease((begEnd - begStart) / Self.begEase)
+        return peak * (1 - Self.ease((t - begEnd) / Self.begEase))
     }
 
     // MARK: - Output
@@ -128,6 +169,16 @@ public struct CharacterAnimator: Sendable {
         if let dash, t < dash.endTime {
             Self.apply(dash, at: t, to: &p)
         }
+        let beg = begAmount(at: t)
+        if beg > 0 {
+            Self.applyBegging(beg, at: t, to: &p)
+        }
+        if let fetch, t < fetch.endTime {
+            Self.apply(fetch, at: t, to: &p)
+        }
+        if let treat, t < treat.endTime {
+            Self.apply(treat, at: t, to: &p)
+        }
 
         if reduceMotion {
             p.lift = 0
@@ -164,6 +215,9 @@ public struct CharacterAnimator: Sendable {
         }
         if t - stateChangedAt < Self.transitionDuration { return fast }
         if let dash, t < dash.endTime { return fast }
+        if let fetch, t < fetch.endTime { return fast }
+        if let treat, t < treat.endTime { return fast }
+        if let begStart, begEnd == nil || t - (begEnd ?? 0) < Self.begEase, t >= begStart { return fast }
         if reactions.contains(where: { t >= $0.start && t - $0.start < $0.kind.duration }) { return fast }
         if carried || t - carriedChangedAt < 0.25 { return fast }
         if t - gazeChangedAt < Self.gazeEase || t - hoverChangedAt < Self.hoverFade { return fast }
@@ -406,6 +460,214 @@ extension CharacterAnimator {
         p.mouthOpen = 0.35
         p.tongue = 0.5
         return p
+    }
+
+    /// Fetch, beat by beat. The handovers between the sitting and running drawings are the
+    /// same squash-hidden swaps as being called.
+    static func apply(_ game: Fetch, at t: TimeInterval, to p: inout CharacterPose) {
+        switch game.phase(at: t) {
+        case .notice(let k):
+            // Spots the throw: eyes follow the ball, ears up, a bounce of excitement.
+            let ball = game.ball.ground(at: t) + SIMD2(0, game.ball.height(at: t)) - game.home
+            let distance = max(140, (ball.x * ball.x + ball.y * ball.y).squareRoot())
+            p.gazeX = ball.x / distance
+            p.gazeY = -ball.y / distance
+            p.earPerk = 1
+            p.eyeScale += 0.22 * ease(k / 0.3)
+            p.lift += 4 * sin(min(1, k / 0.7) * .pi)
+            p.squash += 0.07 * ease((k - 0.7) / 0.3)
+            p.mouthOpen = max(p.mouthOpen, 0.35)
+            p.tail += 0.5 * sin(t * 26)
+
+        case .chase(let phase):
+            switch phase {
+            case .ready(let k):
+                // Swaps to running squashed, swings round to the ball, and goes.
+                var r = runningPose(from: p, facing: turn(from: SIMD2(0, -1), to: game.chaseFacing(at: t), by: ease(k / 0.7)),
+                                    strides: game.chase.strides(at: t), effort: 0, at: t)
+                r.crouch = 0.55 * exp(-k * 10) + 0.3 * ease((k - 0.5) / 0.5)
+                r.eyeSmile = 0
+                r.eyeScale = 1.15
+                r.tail = 0.7 * sin(t * 30)
+                p = r
+            default:
+                var r = runningPose(from: p, facing: game.chaseFacing(at: t), strides: game.chase.strides(at: t),
+                                    effort: game.chase.effort(at: t), at: t)
+                // Eyes on the prize rather than the happy squint.
+                r.eyeSmile = 0.2
+                r.eyeScale = 1.08
+                p = r
+            }
+
+        case .pickup(let k):
+            // A last little step as she stops, head down to the ball, mouth closes on it, head up.
+            var r = runningPose(from: p, facing: game.pickupFacing, strides: game.chase.strides(at: game.pickupStart) + 0.6 * ease(k / 0.25),
+                                effort: 0, at: t)
+            r.gallop = 0.25 * (1 - ease(k / 0.25))
+            let down = ease(k / Fetch.contact) * (1 - ease((k - Fetch.contact - 0.08) / 0.3))
+            r.reach = down
+            r.bow = 0.3 * down
+            r.crouch = 0.25 * down
+            r.carry = k >= Fetch.contact ? 1 : 0
+            r.tongue = 0
+            r.mouthOpen = k < Fetch.contact ? 0.6 * ease((k - 0.2) / 0.25) : 0.3
+            r.eyeSmile = k >= Fetch.contact ? 0.85 : 0
+            r.tail = (k >= Fetch.contact ? 0.6 : 0.3) * sin(t * 24)
+            p = r
+
+        case .homeward(let phase):
+            var r: CharacterPose
+            switch phase {
+            case .ready(let k):
+                // Turns round with it, paws stepping.
+                r = runningPose(from: p, facing: turn(from: game.pickupFacing, to: game.homewardFacing(at: t), by: ease(k)),
+                                strides: game.homeward.strides(at: t) + 1.2 * k, effort: 0, at: t)
+                r.gallop = 0.25 * sin(k * .pi)
+            default:
+                r = runningPose(from: p, facing: game.homewardFacing(at: t), strides: game.homeward.strides(at: t),
+                                effort: game.homeward.effort(at: t), at: t)
+            }
+            r.carry = 1
+            r.tongue = 0
+            r.mouthOpen = 0.3
+            r.eyeSmile = 0.85
+            p = r
+
+        case .drop(let k):
+            if k < Fetch.handback {
+                // Faces you, head down, lets go, head back up — still on her feet.
+                let s = k / Fetch.handback
+                let arrived = game.homewardFacing(at: game.dropStart)
+                var r = runningPose(from: p, facing: turn(from: arrived, to: SIMD2(0, -1), by: ease(s / 0.45)),
+                                    strides: game.homeward.strides(at: t), effort: 0, at: t)
+                let release = Fetch.release / Fetch.handback
+                let down = ease((s - 0.25) / (release - 0.25)) * (1 - ease((s - release) / (1 - release)))
+                r.reach = down
+                r.bow = 0.3 * down
+                r.crouch = 0.2 * down + 0.35 * ease((s - 0.75) / 0.25)
+                r.carry = k < Fetch.release ? 1 : 0
+                r.tongue = k < Fetch.release ? 0 : 1
+                r.mouthOpen = k < Fetch.release ? 0.3 : 0.55
+                r.eyeSmile = 0.85
+                r.tail = 0.6 * sin(t * 22)
+                p = r
+            } else {
+                // Plops down proud, tongue out, tail going.
+                let s = (k - Fetch.handback) / (1 - Fetch.handback)
+                p.squash += 0.13 * exp(-s * 5) * cos(s * 13)
+                p.tongue = 1
+                p.mouthOpen = max(p.mouthOpen, 0.5)
+                p.eyeSmile = max(p.eyeSmile, 0.8)
+                p.gazeY = 0.5
+                p.tail += 0.55 * sin(t * 20)
+            }
+
+        case .finished:
+            break
+        }
+    }
+
+    /// Begging: sitting up tall, front paws raised and pawing the air, head cocked, eyes on
+    /// the treat (the cursor), a gentle bounce and a busy tail.
+    static func applyBegging(_ amount: Double, at t: TimeInterval, to p: inout CharacterPose) {
+        p.beg = amount
+        p.earPerk = p.earPerk + (1 - p.earPerk) * amount
+        p.eyeScale += 0.14 * amount
+        p.headTilt += (0.12 + 0.05 * sin(t * 2.2)) * amount
+        p.mouthCurve += (0.8 - p.mouthCurve) * amount
+        p.mouthOpen = max(p.mouthOpen, (0.2 + 0.08 * sin(t * 9)) * amount)
+        p.tongue = max(p.tongue, 0.35 * amount)
+        p.lift += (1.5 + 1.2 * abs(sin(t * 4.5))) * amount
+        p.squash += -0.035 * amount
+        p.tail += 0.4 * sin(t * 18) * amount
+    }
+
+    /// A treat, beat by beat. Handovers between the drawings are squash-hidden swaps.
+    static func apply(_ game: TreatGame, at t: TimeInterval, to p: inout CharacterPose) {
+        switch game.phase(at: t) {
+        case .notice(let k):
+            // Eyes on the treat as it flies; a little hop of "it's mine!".
+            let treat = game.treat.ground(at: t) + SIMD2(0, game.treat.height(at: t)) - game.home
+            let distance = max(140, (treat.x * treat.x + treat.y * treat.y).squareRoot())
+            p.gazeX = treat.x / distance
+            p.gazeY = -treat.y / distance
+            p.earPerk = 1
+            p.eyeScale += 0.2
+            p.lift += 3 * sin(min(1, k / 0.8) * .pi)
+            p.squash += 0.06 * ease((k - 0.75) / 0.25)
+            p.mouthOpen = max(p.mouthOpen, 0.3)
+            p.tail += 0.55 * sin(t * 28)
+
+        case .chase(let phase):
+            var r: CharacterPose
+            if case .ready(let k) = phase {
+                r = runningPose(from: p, facing: turn(from: SIMD2(0, -1), to: game.chaseFacing(at: t), by: ease(k / 0.7)),
+                                strides: game.chase.strides(at: t), effort: 0, at: t)
+                r.crouch = 0.55 * exp(-k * 10) + 0.3 * ease((k - 0.5) / 0.5)
+                r.tail = 0.7 * sin(t * 30)
+            } else {
+                r = runningPose(from: p, facing: game.chaseFacing(at: t), strides: game.chase.strides(at: t),
+                                effort: game.chase.effort(at: t), at: t)
+            }
+            r.eyeSmile = 0.15
+            r.eyeScale = 1.1
+            p = r
+
+        case .eat(let k):
+            // Facing it at first; turns toward you as she licks her lips.
+            let facing = turn(from: game.eatFacing, to: SIMD2(0, -1), by: ease((k - 0.62) / 0.33))
+            var r = runningPose(from: p, facing: facing, strides: game.chase.strides(at: game.eatStart) + 0.5 * ease(k / 0.18),
+                                effort: 0, at: t)
+            r.gallop = 0.22 * (1 - ease(k / 0.18))
+            let bite = TreatGame.bite
+            let chewing = k >= bite && k < TreatGame.chewEnd
+            // Down to the treat, a snap at the bite, then a few chomps with the head bobbing.
+            let down = ease((k - 0.06) / (bite - 0.06))
+            let chomp = chewing ? sin((k - bite) / (TreatGame.chewEnd - bite) * 3 * .pi) : 0
+            r.reach = k < bite ? down : max(0, (0.32 + 0.12 * chomp) * (1 - ease((k - TreatGame.chewEnd + 0.1) / 0.18)))
+            r.bow = 0.3 * r.reach
+            r.crouch = 0.2 * r.reach
+            r.mouthOpen = k < bite ? 0.65 * ease((k - 0.12) / 0.14) : (chewing ? 0.32 * max(0, chomp) : 0.15)
+            r.tongue = k >= TreatGame.chewEnd ? sin((k - TreatGame.chewEnd) / (1 - TreatGame.chewEnd) * .pi) : 0
+            r.eyeSmile = k < bite ? 0 : 0.95
+            r.earPerk = 1
+            r.earBack = 0
+            r.tail = (k < bite ? 0.3 : 0.65) * sin(t * 24)
+            p = r
+
+        case .celebrate(let k):
+            if k < TreatGame.handback {
+                // Crouch, spring straight up, stretch out at the top, land soft and squashed.
+                var r = runningPose(from: p, facing: SIMD2(0, -1), strides: 0.3, effort: 0, at: t)
+                let air = TreatGame.jump(k)
+                let landed = k >= TreatGame.landing
+                r.lift = TreatGame.jumpHeight * air
+                r.crouch = k < TreatGame.takeoff ? 0.75 * ease(k / TreatGame.takeoff)
+                    : landed ? 0.7 * exp(-(k - TreatGame.landing) * 14) : 0
+                // Legs stretched out in the air.
+                r.gallop = air > 0 ? 0.6 : 0
+                r.earBack = air > 0 ? 0.25 * (1 - air) : 0
+                r.earPerk = 1
+                r.eyeSmile = 1
+                r.mouthOpen = 0.55 + 0.2 * air
+                r.tongue = 1
+                r.sparkles = k > TreatGame.takeoff ? min(1, (k - TreatGame.takeoff) / 0.08) : 0
+                r.tail = 0.7 * sin(t * 30)
+                p = r
+            } else {
+                // Sits, wiggling with happiness.
+                let s = (k - TreatGame.handback) / (1 - TreatGame.handback)
+                p.squash += 0.12 * exp(-s * 5) * cos(s * 13)
+                p.eyeSmile = max(p.eyeSmile, 1)
+                p.tongue = 1
+                p.mouthOpen = max(p.mouthOpen, 0.5)
+                p.sparkles = max(p.sparkles, 1 - s)
+                p.tail += 0.6 * sin(t * 24)
+            }
+
+        case .finished:
+            break
+        }
     }
 
     /// The running Coco mid-dash: bounding along in a direction with a happy, open-mouthed

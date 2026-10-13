@@ -16,7 +16,7 @@ A native macOS desktop companion. **Coco** is a black-and-white corgi with a whi
 | --- | --- | --- | --- |
 | ![Welcome](docs/images/welcome-1.png) | ![Welcome extras](docs/images/welcome-3.png) | <img src="docs/images/settings.png" alt="Settings"> | ![Connections](docs/images/connections-connected.png) |
 
-**Swift 6 · SwiftUI + AppKit + Core Animation · no third-party dependencies · 80 unit tests · about 1% CPU at idle**
+**Swift 6 · SwiftUI + AppKit + Core Animation · no third-party dependencies · 142 unit tests · about 1% CPU at idle**
 
 ## Highlights
 
@@ -73,6 +73,8 @@ cd Packages/BuddyKit && swift test
 | Watch for a minute | She blinks, glances around, flicks an ear, wags, pants and tilts her head, on a schedule rather than constantly |
 | Drag her | Legs dangle and ears flop while carried. She squashes on landing and snaps back if dropped off-screen |
 | Hold **Right ⌥** and click anywhere | A faint circle shows where she'll land. She spots it, drops into a play bow, dashes there (32 facings, blended as she turns), then turns and sits. Click again mid-run to change course |
+| Hold **Right ⌘** a moment and click anywhere | A tennis ball appears under the cursor; the click throws it there. She spots it, sets off before it lands, picks it up as it settles, runs it back to where she was and drops it at her paws |
+| Hold **Right ⇧** a moment | She sits up and begs, paws raised, eyes on the treat under your cursor. Click to toss it: she chases it before it lands, eats it where it falls (a bite, a few chomps, a lick) and jumps for joy |
 | Click her, or press **⌃⌥C** from any app | The panel opens beside her. Type a task, e.g. `Draft homepage ~45m !!` |
 | **↓** from the add field, then **↑ ↓ Space ↩ ⌫ F** | Move through tasks, tick, edit, delete, start focus on the selected one |
 | Tick a task | She barks and celebrates: hops, tongue out, tail going |
@@ -107,7 +109,7 @@ DesktopBuddy/                    App target: AppKit windows + SwiftUI views only
   Services/   TaskStore, FocusController, VoiceInput/Output, calendar, assistant, notifications, sounds,
               presence, global shortcut, preferences
 Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
-  BuddyCore         Tasks, quick-add parser, day planner (Up next), focus log, voice parsing, focus timer, persistence
+  BuddyCore         Coco's dialogue pools + line picker, tasks, quick-add parser, day planner (Up next), focus log, voice parsing, focus timer, persistence
   BuddyCharacter    States, pose model, animator (blinks, idle life, reactions, frame scheduling)
   BuddyIntegrations Google OAuth (PKCE) + Calendar parsing + free-time maths; Notion (paused)
   BuddyAssistant    Claude Messages API (raw HTTP + SSE), stream accumulation, tool schemas + validation, prompts
@@ -161,6 +163,10 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 
 **Calendar, one source of truth.** Events are fetched a week at a time, only for the weeks being looked at, and cached per week; the Today strip, the week browser, the chat and meeting reminders all read the same cache. Repeating events arrive as their occurrences, events crossing midnight show on both days, and open time is counted in your working hours using wall-clock times, so daylight-saving days work. Availability, totals and conflicts are computed by the app (`Availability`, BuddyKit) and handed to the chat as facts — the model never decides whether a time is free. Changes go through `propose_event*` tools that only show a card; the app calls Google after you confirm and tells the chat what Google confirmed. Debug builds can run `--calendar-selftest`, which drives all of this against a stand-in Google Calendar.
 
+**Fetch.** Holding right Command (for 0.2 s, so ⌘-shortcuts never trigger it) shows a tennis ball on the same click-catching overlay as calling her. The throw is a `BallFlight` (BuddyKit): a gravity arc, bounces that each keep less height and lose speed to friction, then a roll to a stop, with spin that follows its travel — tracked as a floor point plus a height, so its shadow and the spot she runs to stay on the floor. A `Fetch` chains that with two `Dash`es: notice, a chase that leaves before the ball lands and is paced to arrive as it settles, a pickup (slow last step, head down, mouth closes on the ball), a turn-around and run home to the exact starting spot, and a drop at her paws. The ball lives in its own click-through window (in front of or behind her by depth) while loose, and in her running model's mouth while carried. Throws that would leave the ball out of reach are shortened. Debug builds can run `--fetch-selftest`.
+
+**Treats.** Right Shift (held 0.25 s, so capitals never trigger it) makes her beg — the hold *is* the begging — and the click tosses a bone-shaped biscuit. It flies with the same `BallFlight` model as the ball but a treat `Material`: a lower, quicker arc, tumbling end over end, one small flat bounce and a short skid. A `TreatGame` (BuddyKit) plans the chase, the eating (gone at the bite) and a jump straight up and down on the spot. Fetch and treats share one lock: while either is playing, no key does anything.
+
 **Unobtrusive by rule.** Lines have an importance (`ambient`, `acknowledge`, `important`). Ambient chatter only happens in Interactive presence and never during focus. Coco greets at most once a day, and nothing interrupts a focus session except its end.
 
 ## Privacy
@@ -198,6 +204,7 @@ How it works, what syncs and what doesn't: [docs/DESIGN_SYSTEM.md](docs/DESIGN_S
 - [Integrations setup](docs/INTEGRATIONS_SETUP.md): Google Calendar (personal OAuth client) and the Claude API key.
 - [QA checklist](docs/QA_CHECKLIST.md): manual checks for displays, Spaces, sleep, offline, date change, keyboard and VoiceOver.
 - [Demo script](docs/DEMO_SCRIPT.md): a 60-second screen recording, shot by shot.
+- [Personality](docs/PERSONALITY.md): Coco's traits, line categories, when she speaks up, and an example-conversation eval set for the chat prompt.
 
 ## Debug tools
 

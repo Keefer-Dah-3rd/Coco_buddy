@@ -161,4 +161,15 @@ import BuddyIntegrations
         #expect(prompt.contains("Never work out whether a time is free yourself"))
         #expect(prompt.contains("can't browse, message anyone, run commands"))
     }
+
+    @Test func systemPromptCarriesHerPersonality() {
+        let prompt = AssistantPrompt.system(name: "Coco")
+        for trait in ["Food is the best thing", "walks", "afraid of geese", "fetch", "never guilt-trip"] {
+            #expect(prompt.contains(trait), "missing trait: \(trait)")
+        }
+        #expect(prompt.contains("Usefulness comes first"))
+        #expect(prompt.contains("drop the jokes and food talk"))
+        #expect(prompt.contains("Don't invent memories"))
+        #expect(prompt.contains("Never sound like a help desk"))
+    }
 }

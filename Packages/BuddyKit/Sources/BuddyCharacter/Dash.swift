@@ -45,15 +45,41 @@ public struct Dash: Sendable, Equatable {
         self.init(from: start, to: end, at: time, readyDuration: Self.windUp, speed: 0, heading: nil, strideOffset: 0)
     }
 
+    /// From a standstill, with its own wind-up and settle lengths. With `earliestArrival` she
+    /// paces herself — a lower top speed, same easing — so as not to get there before then.
+    public init(from start: SIMD2<Double>, to end: SIMD2<Double>, at time: TimeInterval,
+                readyDuration: TimeInterval, settleDuration: TimeInterval, earliestArrival: TimeInterval? = nil,
+                strideOffset: Double = 0) {
+        self.init(from: start, to: end, at: time, readyDuration: readyDuration, speed: 0, heading: nil,
+                  strideOffset: strideOffset, settleDuration: settleDuration, earliestArrival: earliestArrival)
+    }
+
     private init(from start: SIMD2<Double>, to end: SIMD2<Double>, at time: TimeInterval,
-                 readyDuration: TimeInterval, speed: Double, heading: SIMD2<Double>?, strideOffset: Double) {
+                 readyDuration: TimeInterval, speed: Double, heading: SIMD2<Double>?, strideOffset: Double,
+                 settleDuration: TimeInterval = Dash.settle, earliestArrival: TimeInterval? = nil) {
         self.start = start
         self.end = end
         startTime = time
         self.readyDuration = readyDuration
-        settleDuration = Self.settle
+        self.settleDuration = settleDuration
         course = Course(from: start, to: end, leaving: heading, speed: speed)
-        profile = SpeedProfile(distance: course.length, startSpeed: speed)
+        var profile = SpeedProfile(distance: course.length, startSpeed: speed)
+        if let earliestArrival, time + readyDuration + profile.duration < earliestArrival {
+            let wanted = earliestArrival - time - readyDuration
+            var fast = Self.topSpeed
+            var slow = 60.0
+            // Duration only grows as the speed limit drops: find the limit that fits.
+            for _ in 0..<30 {
+                let limit = (fast + slow) / 2
+                if SpeedProfile(distance: course.length, startSpeed: speed, speedLimit: limit).duration < wanted {
+                    fast = limit
+                } else {
+                    slow = limit
+                }
+            }
+            profile = SpeedProfile(distance: course.length, startSpeed: speed, speedLimit: slow)
+        }
+        self.profile = profile
         self.strideOffset = strideOffset
         strideTable = Self.strideTable(for: profile)
     }
@@ -272,7 +298,7 @@ struct SpeedProfile: Sendable, Equatable {
 
     var duration: Double { rampUp + cruise + rampDown }
 
-    init(distance: Double, startSpeed v0: Double) {
+    init(distance: Double, startSpeed v0: Double, speedLimit: Double = Dash.topSpeed) {
         startSpeed = v0
         guard distance > 0.5 else {
             peak = 0; rampUp = 0; cruise = 0; rampDown = 0
@@ -286,8 +312,8 @@ struct SpeedProfile: Sendable, Equatable {
         if unlimited < 0 {
             // Too close to ease anything in: brake all the way from her current speed.
             peak = v0; rampUp = 0; cruise = 0; rampDown = 2 * distance / v0
-        } else if unlimited > Dash.topSpeed {
-            peak = Dash.topSpeed; rampUp = up; rampDown = down
+        } else if unlimited > speedLimit, speedLimit >= v0 {
+            peak = speedLimit; rampUp = up; rampDown = down
             cruise = (distance - up * (v0 + peak) / 2 - down * peak / 2) / peak
         } else {
             peak = unlimited; rampUp = up; cruise = 0; rampDown = down

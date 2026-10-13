@@ -51,6 +51,7 @@ final class AssistantService {
     @ObservationIgnored private var apiKey: String?
     @ObservationIgnored private var history: [JSONValue] = []
     @ObservationIgnored private var pendingNotes: [String] = []
+    @ObservationIgnored private var pendingNoteKeys: [String?] = []
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private let persistent: Bool
     @ObservationIgnored private let log = Logger(subsystem: "com.keefer.DesktopBuddy", category: "assistant")
@@ -111,9 +112,17 @@ final class AssistantService {
     // MARK: - Chat
 
     /// Something that happened in the app since the last message (e.g. the user confirmed
-    /// a task). Told to Claude with the next message so it never assumes.
-    func note(_ text: String) {
+    /// a task). Told to Claude with the next message so it never assumes. A note with a `key`
+    /// replaces an earlier one with the same key that hasn't been sent yet.
+    func note(_ text: String, key: String? = nil) {
+        if let key {
+            if let index = pendingNoteKeys.firstIndex(of: key) {
+                pendingNotes.remove(at: index)
+                pendingNoteKeys.remove(at: index)
+            }
+        }
         pendingNotes.append(text)
+        pendingNoteKeys.append(key)
     }
 
     func newChat() {
@@ -121,6 +130,7 @@ final class AssistantService {
         history = []
         turns = []
         pendingNotes = []
+        pendingNoteKeys = []
         chatCost = 0
         onChatCleared?()
     }
@@ -139,6 +149,7 @@ final class AssistantService {
             ["type": "text", "text": .string(text)],
         ]
         pendingNotes = []
+        pendingNoteKeys = []
         if let last = history.last, last["role"] == "user", let content = last["content"]?.array {
             // The previous message never got a reply (error or stop): append to it, so
             // turns still alternate and nothing earlier is rewritten.

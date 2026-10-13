@@ -98,6 +98,12 @@ public struct CharacterPose: Equatable, Sendable {
     public var bank: Double = 0
     /// 0 … 1 ears swept back by the wind.
     public var earBack: Double = 0
+    /// 0 … 1 head lowered all the way to the floor (picking up, putting down).
+    public var reach: Double = 0
+    /// 0 … 1 a tennis ball held in her mouth.
+    public var carry: Double = 0
+    /// 0 … 1 sitting up to beg, front paws raised.
+    public var beg: Double = 0
 
     // Extras
     /// Status light (collar tag), 0 off … 1 lit.
@@ -142,6 +148,9 @@ public struct CharacterPose: Equatable, Sendable {
         p.crouch = mix(a.crouch, b.crouch)
         p.bank = mix(a.bank, b.bank)
         p.earBack = mix(a.earBack, b.earBack)
+        p.reach = mix(a.reach, b.reach)
+        p.carry = b.carry
+        p.beg = mix(a.beg, b.beg)
         p.led = mix(a.led, b.led)
         p.dangle = mix(a.dangle, b.dangle)
         p.sleepZ = mix(a.sleepZ, b.sleepZ)

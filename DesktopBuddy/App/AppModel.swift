@@ -126,6 +126,16 @@ final class AppModel {
     @ObservationIgnored private var lastBarkAt = Date.distantPast
     @ObservationIgnored private var reminderTimer: Timer?
     @ObservationIgnored private var remindedEventIDs: Set<String> = []
+    // What she's been up to lately, so her comments fit (and she doesn't ask for attention
+    // right after getting some). Kept in memory only.
+    @ObservationIgnored private var lastSpokeAt = Date.now
+    @ObservationIgnored private var lastTogetherAt = Date.now
+    @ObservationIgnored private var recentTreats: [Date] = []
+    @ObservationIgnored private var recentFetches: [Date] = []
+    @ObservationIgnored private var nextChatterAt = Date.now.addingTimeInterval(AppModel.chatterGap.lowerBound)
+    @ObservationIgnored private var chatterTimer: Timer?
+    /// How long she stays quiet between unprompted comments.
+    static let chatterGap: ClosedRange<TimeInterval> = 25 * 60...45 * 60
 
     /// - Parameter preview: in-memory stores and throwaway defaults, for snapshots.
     init(preview: Bool = false) {
@@ -178,6 +188,7 @@ final class AppModel {
         presence.start()
         focus.restoreAfterLaunch()
         greetOncePerDay()
+        startChatter()
         startConnections()
     }
 
@@ -338,6 +349,7 @@ final class AppModel {
     // MARK: - Intents (called by views and menus)
 
     func buddyClicked() {
+        lastTogetherAt = .now
         character.react(.poke)
         if isUserAway { userAwayChanged(false) }
         // A hello when you open her panel — not when closing it, not during focus.
@@ -348,6 +360,7 @@ final class AppModel {
     /// Called over with the call key: she wakes up if she was dozing, and the panel
     /// closes since she's leaving it behind.
     func buddyCalled() {
+        lastTogetherAt = .now
         if isUserAway { userAwayChanged(false) }
         setPanelOpen(false)
     }
@@ -366,6 +379,63 @@ final class AppModel {
         windows?.setPanelOpen(open)
     }
 
+    /// She's eaten a treat you tossed and sat back down.
+    func treatEaten() {
+        let now = Date.now
+        recentTreats = recentTreats.filter { now.timeIntervalSince($0) < 10 * 60 } + [now]
+        lastTogetherAt = now
+        speak(BuddyVoice.line(recentTreats.count > 1 ? .treatAgain : .treatReceived), .acknowledge)
+        assistant.note(recentTreats.count > 1
+                       ? "The user has tossed \(Buddy.name) \(recentTreats.count) treats in the last few minutes"
+                       : "The user just tossed \(Buddy.name) a treat, and she ate it", key: "treat")
+    }
+
+    /// She's brought the ball back.
+    func fetchFinished() {
+        let now = Date.now
+        recentFetches = recentFetches.filter { now.timeIntervalSince($0) < 10 * 60 } + [now]
+        lastTogetherAt = now
+        speak(BuddyVoice.line(recentFetches.count > 1 ? .fetchAgain : .fetchCompleted), .acknowledge)
+        assistant.note(recentFetches.count > 1
+                       ? "The user and \(Buddy.name) have played \(recentFetches.count) rounds of fetch in the last few minutes"
+                       : "The user just played fetch with \(Buddy.name), and she brought the ball back", key: "fetch")
+    }
+
+    // MARK: - Chatter
+
+    /// Now and then — every half hour or so, and only when nothing else is going on — she
+    /// says something on her mind. Never during focus or a meeting, never while you're away.
+    private func startChatter() {
+        chatterTimer?.invalidate()
+        chatterTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.chatterTick() }
+        }
+    }
+
+    private func chatterTick() {
+        let now = Date.now
+        guard now >= nextChatterAt else { return }
+        guard preferences.chatterEnabled, preferences.presence == .interactive, preferences.isBuddyVisible,
+              !isUserAway, !isPanelOpen, !focus.timer.isActive, !voiceIn.isListening, character.speech == nil,
+              !inMeeting(at: now),
+              now.timeIntervalSince(lastSpokeAt) >= Self.chatterGap.lowerBound,
+              now.timeIntervalSince(lastTogetherAt) >= 10 * 60
+        else { return }
+        nextChatterAt = now.addingTimeInterval(.random(in: Self.chatterGap))
+        let hour = Calendar.current.component(.hour, from: now)
+        let moment = LinePicker.Moment(
+            now: now, hour: hour,
+            recentlyTogether: now.timeIntervalSince(lastTogetherAt) < 30 * 60,
+            recentlyPlayed: recentFetches.last.map { now.timeIntervalSince($0) < 30 * 60 } ?? false,
+            recentlyFed: recentTreats.last.map { now.timeIntervalSince($0) < 30 * 60 } ?? false,
+            working: (preferences.workdayStartHour..<preferences.workdayEndHour).contains(hour))
+        speak(BuddyVoice.idleLine(moment), .ambient)
+    }
+
+    private func inMeeting(at now: Date) -> Bool {
+        calendar.events(on: now)?.contains { !$0.isAllDay && $0.start <= now && $0.end > now } ?? false
+    }
+
     func openPanel(_ tab: PanelTab? = nil) {
         if let tab { panelTab = tab }
         setPanelOpen(true)
@@ -378,6 +448,10 @@ final class AppModel {
             panelOpenCount += 1
             character.dismissSpeech()
             character.react(.perk)
+            // A hello when you come to see her, unless she's said something recently.
+            if !focus.isFocusing, Date.now.timeIntervalSince(lastSpokeAt) > 3 * 60 {
+                speak(BuddyVoice.line(.petted), .acknowledge)
+            }
             // Pick up changes made in Google Calendar since the last look (stale weeks only).
             calendar.prefetch(around: .now)
             if scheduleExpanded { calendar.prefetch(around: scheduleDay) }
@@ -899,6 +973,7 @@ final class AppModel {
 
     func speak(_ text: String, _ importance: Importance) {
         buddyLine = text
+        lastSpokeAt = .now
         if isPanelOpen {
             if voiceAudible { voiceOut.speak(text) } else { character.mouthAlong(text) }
             return

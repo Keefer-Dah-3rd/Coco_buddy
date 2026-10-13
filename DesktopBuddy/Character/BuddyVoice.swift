@@ -1,73 +1,93 @@
 import Foundation
 import BuddyCore
 
-/// Coco's lines. Warm, a little playful, never more than a sentence or two — and
-/// written to sound right when spoken aloud as well as read.
-/// Kept in one place so tone stays consistent and lines are easy to tune.
+/// Coco's lines for things the app does: a playful, food-motivated corgi who still gets the
+/// information across. Every line is a sentence or two and sounds right spoken aloud.
+/// Her personality pools (snacks, walks, geese, play…) live in `Dialogue` in BuddyCore;
+/// this file adds the task, focus and planning lines, which need the details.
 enum BuddyVoice {
+    /// Remembers what she said lately, so lines don't come round again too soon.
+    private static var picker = LinePicker()
+    private static var lastTemplate: [String: Int] = [:]
+
+    static func line(_ topic: Dialogue.Topic) -> String { picker.pick(topic) }
+
+    /// A topic for an unprompted comment, suited to the moment (see `LinePicker.idleTopic`).
+    static func idleLine(_ moment: LinePicker.Moment) -> String { picker.pick(picker.idleTopic(moment)) }
+
     static func greeting(at date: Date = .now) -> String {
         switch Calendar.current.component(.hour, from: date) {
-        case 5..<12:
-            pick("Morning! I've done my stretches. What's first today?",
-                 "Good morning. Tail's wagging — what are we working on?",
-                 "Morning. What's the one thing that would make today feel good?")
-        case 12..<17:
-            pick("Afternoon! Want to pick the next thing?",
-                 "Hey you. Still here, still cheering.")
-        case 17..<22:
-            pick("Evening shift? Let's keep it small.",
-                 "Evening. Anything left that really matters today?")
-        default:
-            pick("It's late. Write tomorrow's first task and let's call it?",
-                 "Night owl mode. I'll keep you company.")
+        case 5..<12: line(.greetingMorning)
+        case 12..<17: line(.greetingAfternoon)
+        case 17..<22: line(.greetingEvening)
+        default: line(.greetingNight)
         }
     }
 
     static func taskAdded(_ title: String, openCount: Int) -> String {
-        pick("Got it — “\(short(title))”.",
-             "On the list.",
-             openCount > 1 ? "Noted. \(openCount) things on deck." : "Noted. One thing on deck.")
+        pick("taskAdded",
+             "Got it! “\(short(title))”.",
+             "On the list. I'm guarding it.",
+             openCount > 1 ? "Noted. \(openCount) things on deck." : "Noted. One thing on deck.",
+             "Ooh, a new one. “\(short(title))”.")
     }
 
     static func duplicate(_ title: String) -> String {
-        "“\(short(title))” is already on the list."
+        pick("duplicate",
+             "“\(short(title))” is already on the list. I sniffed it.",
+             "Wait wait wait. “\(short(title))” is already there.")
     }
 
     static func taskCompleted(remaining: Int) -> String {
         if remaining == 0 {
-            return pick("That's everything! Zoomies are mandatory.",
-                        "Clean sweep. Go do something nice.")
+            return pick("allDone",
+                        "That's everything! Zoomies are mandatory.",
+                        "Clean sweep! Walk? Snack? Both?",
+                        "All done. Go do something nice. I recommend a walk.")
         }
-        return pick("Good human. \(remaining) to go.",
+        return pick("taskCompleted",
+                    "Good human. \(remaining) to go.",
                     "One down! \(remaining) left.",
-                    "Done and done. \(remaining) remaining.")
+                    "Oh! Oh! Oh! Done! \(remaining) to go.",
+                    "Nailed it. \(remaining) remaining.")
     }
 
     static func focusStarted(task: String?, minutes: Int) -> String {
         guard let task else {
-            return pick("\(minutes) minutes. I'll keep watch quietly.",
-                        "Timer's running. I'm on guard duty.")
+            return pick("focusStarted",
+                        "\(minutes) minutes. I'll keep watch quietly.",
+                        "Timer's running. I'm on guard duty.",
+                        "\(minutes) minutes. I'll be a very quiet loaf.")
         }
-        return pick("Focusing on “\(short(task))”. I'll keep guard.",
-                    "\(minutes) minutes on “\(short(task))”. I'll be very quiet.")
+        return pick("focusStartedTask",
+                    "Focusing on “\(short(task))”. I'll keep guard.",
+                    "\(minutes) minutes on “\(short(task))”. Shh. I'm being very quiet.")
     }
 
     static func focusFinished(minutes: Int, task: String?) -> String {
         if let task {
-            return "Time! \(minutes) minutes on “\(short(task))”. Did it get done?"
+            return pick("focusFinishedTask",
+                        "Time! \(minutes) minutes on “\(short(task))”. Did it get done?",
+                        "Done! \(minutes) minutes on “\(short(task))”. Finished, or more to go?")
         }
-        return pick("Time! \(minutes) minutes of real focus.",
-                    "That's a session! Stretch with me?")
+        return pick("focusFinished",
+                    "Time! \(minutes) minutes of real focus.",
+                    "That's a session! Stretch with me?",
+                    "Time's up! You did great. I did great too. I napped.")
     }
 
     static func breakStarted(minutes: Int) -> String {
-        pick("Break time. Go look at something far away.",
-             "\(minutes) minutes off. Water? Window? Walk?")
+        pick("breakStarted",
+             "Break time. Go look at something far away.",
+             "\(minutes) minutes off. Water? Window? Walk?",
+             "Break! Stretch those human legs. Snack optional. Snack encouraged.")
     }
 
     static func breakFinished() -> String {
-        pick("Break's over. Ready when you are.",
-             "Back to it? No rush — just click me.")
+        pick("breakFinished",
+             "Break's over. Ready when you are.",
+             "Back to it? No rush. Just click me.",
+             "Break's done. Tail's ready. Are you?")
     }
 
     static func endedWhileAway(_ phase: String) -> String {
@@ -89,7 +109,7 @@ enum BuddyVoice {
     }
 
     static let nothingNext = "Nothing on the list yet. Want to add something?"
-    static let welcomeDone = "All set! Click me whenever you want to plan."
+    static let welcomeDone = "All set! Click me whenever you want to plan. Or play."
 
     // MARK: Connections
 
@@ -110,8 +130,8 @@ enum BuddyVoice {
 
     // MARK: Voice
 
-    static let listening = "I'm listening."
-    static let heardNothing = "I didn't catch that. Try again?"
+    static let listening = "Ears up. I'm listening."
+    static let heardNothing = "I didn't catch that. Ears were up, though. Try again?"
     static let micUnavailable = "I can't hear you — microphone access is off."
 
     static func heardTasks(_ count: Int) -> String {
@@ -133,8 +153,14 @@ enum BuddyVoice {
 
     // MARK: -
 
-    private static func pick(_ lines: String...) -> String {
-        lines.randomElement() ?? ""
+    /// A random line from the choices, never the same one twice in a row for `key`.
+    private static func pick(_ key: String, _ lines: String...) -> String {
+        guard lines.count > 1 else { return lines.first ?? "" }
+        var choices = Array(lines.indices)
+        if let last = lastTemplate[key] { choices.removeAll { $0 == last } }
+        let index = choices.randomElement() ?? 0
+        lastTemplate[key] = index
+        return lines[index]
     }
 
     static func short(_ title: String, limit: Int = 28) -> String {

@@ -34,12 +34,18 @@ struct SettingsView: View {
                     }
                     ToggleRow("Show \(Buddy.name) on the desktop", isOn: $preferences.isBuddyVisible)
                     ToggleRow("Keep \(Buddy.name) above other windows", isOn: $preferences.alwaysOnTop)
+                    ToggleRow("\(Buddy.name) chats now and then", isOn: $preferences.chatterEnabled)
+                    Caption("About every half hour, when you're not focusing or in a meeting, she says what's on her mind. Snacks, mostly.")
                     ToggleRow("Open \(Buddy.name) from any app with \(GlobalShortcut.displayName)", isOn: $preferences.globalShortcutEnabled)
                     if model.shortcutUnavailable {
                         Caption("Another app is already using \(GlobalShortcut.displayName), so it isn't active. Quit that app or change its shortcut, then switch this off and on.")
                     }
-                    ToggleRow("Call \(Buddy.name) over: hold \(CallKeyMonitor.displayName) and click", isOn: $preferences.callKeyEnabled)
+                    ToggleRow("Call \(Buddy.name) over: hold \(HeldKey.rightOption.displayName) and click", isOn: $preferences.callKeyEnabled)
                     Caption("While you hold the right-hand Option key, a circle shows where she'll go. Click and she runs there.")
+                    ToggleRow("Play fetch: hold \(HeldKey.rightCommand.displayName) and click", isOn: $preferences.throwKeyEnabled)
+                    Caption("Hold the right-hand Command key for a moment and a tennis ball appears; click where to throw it. She brings it back to where she was.")
+                    ToggleRow("Give her a treat: hold \(HeldKey.rightShift.displayName) and click", isOn: $preferences.treatKeyEnabled)
+                    Caption("Hold the right-hand Shift key for a moment and she begs; click where to toss the treat. She eats it where it lands.")
                     ToggleRow("Open at login", isOn: Binding(get: { launchAtLogin }, set: { setLaunchAtLogin($0) }))
                     if let loginNote { Caption(loginNote) }
                 }

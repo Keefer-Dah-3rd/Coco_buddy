@@ -49,6 +49,39 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 - [ ] In Connections, paste an invalid Claude key. It's rejected with a reason and nothing is saved.
 - [ ] Revoke the app's access at myaccount.google.com › Security › Third-party access. Connections then shows *Reconnect*; nothing crashes.
 
+## Fetch (hold Right ⌘, click)
+
+- [ ] Hold Right ⌘: after a moment a tennis ball appears under the cursor; let go and it's gone. Quick ⌘C / ⌘V presses never show it. Left ⌘ does nothing.
+- [ ] Click while holding: the app underneath gets no click. The ball arcs from beside Coco, spinning, bounces lower each time and rolls to a stop where you clicked (or a little past).
+- [ ] She looks at the ball, then sets off before it hits the ground, and gets there as it settles.
+- [ ] She slows, lowers her head, and the ball is in her mouth at that moment — no gap, no jump.
+- [ ] She turns round, runs back carrying it, faces you, drops it at her paws and sits back down exactly where she started.
+- [ ] Throw toward the menu bar, the Dock, or off the screen: the throw is shortened so she can reach it.
+- [ ] Throw so the ball lands right next to her: she still picks it up and brings it back.
+- [ ] Mid-game, hold Right ⌘ or Right ⌥: nothing appears; one game at a time.
+- [ ] Grab her mid-run: she stops, and the ball ends up on the floor (by her, if she was carrying it).
+- [ ] Throw while she's running somewhere you called her: she stops and plays fetch from there.
+- [ ] Settings: switch "Play fetch" off; Right ⌘ does nothing.
+
+## Treats (hold Right ⇧, click)
+
+- [ ] Hold Right ⇧ a moment: she sits up and begs, front paws raised and pawing, eyes on the treat under your cursor. Typing capitals never sets it off; left ⇧ does nothing. Let go without clicking: she settles back down.
+- [ ] Click: the app underneath gets no click. The treat flips through a low arc, bounces once and skids a little.
+- [ ] She follows it with her eyes, sets off before it lands, slows, puts her head down and the treat vanishes exactly as she bites.
+- [ ] A few chomps, a lick of the lips, then a crouch, a jump straight up with sparkles, a soft landing, a wag, and she sits — in the same spot.
+- [ ] During a treat, Right ⌘ / Right ⌥ / Right ⇧ do nothing; during fetch, Right ⇧ does nothing (no begging).
+- [ ] Grab her before she eats it: the treat is left lying where it landed (it fades after a while).
+- [ ] Settings: switch "Give her a treat" off; Right ⇧ does nothing.
+
+## Personality and chatter
+
+- [ ] Give her a treat: once she sits back down, she says a treat line ("Mm. Crunchy. Ten out of ten."). A second treat within 10 minutes gets an "another one?" line.
+- [ ] Play fetch: when she drops the ball she says a fetch line; a second round gets an "again?" line.
+- [ ] Open her panel after a few quiet minutes: the header says a hello ("Hi hi hi. What are we doing?"). Open it again straight away: the line doesn't change.
+- [ ] Leave her alone in Interactive presence for about 30 minutes: one short comment at most. Nothing during a focus session, a break, a calendar meeting, or while you're away.
+- [ ] Settings: switch off "Coco chats now and then"; she stays quiet unless something happens.
+- [ ] Chat: run a few of the example conversations in docs/PERSONALITY.md. Serious messages get calm replies with no jokes; planning questions get the answer first.
+
 ## Calendar: week, availability and changes
 
 - [ ] Today › calendar › **Week**: the strip shows this week with today marked. Click another day, drag across the strip (past the edge keeps going into the next week), and use ←/→, ⇧←/⇧→ and T. The day list updates at once for loaded weeks and shows *Loading…* for new ones.

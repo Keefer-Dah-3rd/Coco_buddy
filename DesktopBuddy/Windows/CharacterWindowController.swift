@@ -28,6 +28,10 @@ final class CharacterPanel: NSPanel {
 
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
+
+    /// Her position is always chosen on purpose (kept on a display by `onScreenOrigin`);
+    /// macOS mustn't nudge the window down when its headroom pokes above the screen.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
 
 /// Owns the character window: placement, dragging, clicks and visibility.
@@ -43,6 +47,10 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
     var onOcclusionChanged: ((Bool) -> Void)?
     /// She has arrived (or been stopped) after being called somewhere.
     var onDashFinished: (() -> Void)?
+    /// A game of fetch finished (or was cut short).
+    var onFetchFinished: (() -> Void)?
+    /// A treat was eaten and celebrated (or the game was cut short).
+    var onTreatFinished: (() -> Void)?
     /// Whether the eyes should follow a nearby cursor at all (interactive presence).
     var followsCursor = true
     /// While you aim where to call her, she watches the cursor wherever it is.
@@ -76,7 +84,11 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         window.delegate = self
 
         // Grabbing her mid-run stops her where she is.
-        interaction.onMouseDown = { [weak self] in self?.stopDash() }
+        interaction.onMouseDown = { [weak self] in
+            self?.stopDash()
+            self?.stopFetch()
+            self?.stopTreat()
+        }
         interaction.onClick = { [weak self] in self?.onClick?() }
         interaction.onRightClick = { [weak self] event, view in self?.onRightClick?(event, view) }
         interaction.onDragChanged = { [weak self] dragging in
@@ -96,6 +108,8 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.stopDash(atDestination: true)
+                self?.stopFetch()
+                self?.stopTreat()
                 self?.settleOnScreen(animated: false)
             }
         }
@@ -109,8 +123,12 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         track({ model.scale }) { art.characterScale = $0 }
         // A covered buddy normally stops drawing, but one that's running has to keep
         // going — she's on her way out from under whatever covers her.
-        track({ (model.isRenderingPaused, model.dash != nil) }) { renderLoop.isPaused = $0 && !$1 }
-        renderLoop.onFrame = { [weak self] t in self?.followDash(at: t) }
+        track({ (model.isRenderingPaused, model.dash != nil || model.fetch != nil || model.treat != nil) }) { renderLoop.isPaused = $0 && !$1 }
+        renderLoop.onFrame = { [weak self] t in
+            self?.followDash(at: t)
+            self?.followFetch(at: t)
+            self?.followTreat(at: t)
+        }
         track({ model.isLowPower }) { renderLoop.applyPowerMode(lowPower: $0) }
         track({ model.isDimmed }) { dimmed in
             NSAnimationContext.runAnimationGroup { context in
@@ -127,6 +145,11 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
             window.orderFrontRegardless()
         } else {
             stopDash(atDestination: true)
+            stopFetch()
+            stopTreat()
+            model.setBegging(false)
+            ball.hide()
+            treatWindow.hide()
             window.orderOut(nil)
         }
     }
@@ -260,6 +283,186 @@ final class CharacterWindowController: NSObject, NSWindowDelegate {
         model.setDash(nil)
         onMoved?(window.frame.origin)
         onDashFinished?()
+    }
+
+    // MARK: - Fetch
+
+    /// The ball in the world (thrown, bouncing, or lying where she dropped it).
+    let ball = BallWindow()
+    var isFetching: Bool { model.fetch != nil }
+    /// A ball left lying around fades after this long.
+    private static let ballLingers: TimeInterval = 45
+
+    /// Throws her ball to land at `point`: she notices, chases, picks it up, brings it back
+    /// to where she is now and drops it. A throw that would leave the ball somewhere she
+    /// can't stand to pick it up is shortened until it fits.
+    func throwBall(to point: CGPoint) {
+        guard window.isVisible, !interaction.isDragging, !isPlaying else { return }
+        stopDash()
+        model.setBegging(false)
+        let scale = Double(model.scale)
+        let paws = CGPoint(x: window.frame.minX + pawOffset.x, y: window.frame.minY + pawOffset.y)
+        let home = SIMD2<Double>(Double(paws.x), Double(paws.y))
+        let target = SIMD2<Double>(Double(point.x), Double(point.y))
+        let away = target - home
+        let distance = (away.x * away.x + away.y * away.y).squareRoot()
+        let direction = distance > 1 ? away / distance : SIMD2<Double>(-1, 0)
+        // Tossed from just beside her, about where a hand would be.
+        let launch = home + direction * 22 * scale + SIMD2<Double>(0, 4)
+        let geometry = RunningCoco.fetchReach(artWidth: Double(CharacterLayout.artFrame.width) * scale)
+        let now = CharacterModel.clock
+
+        var game: Fetch?
+        for step in 0...12 {
+            let landing = launch + (target - launch) * (1 - Double(step) * 0.075)
+            let flight = BallFlight(from: launch, height: 46 * scale, to: landing, at: now)
+            let candidate = Fetch(home: home, ball: flight, at: now, reach: geometry.reach, mouthHeight: geometry.mouthHeight)
+            if isReachable(candidate) {
+                game = candidate
+                break
+            }
+        }
+        guard let game else { return }
+        model.setFetch(game)
+        followFetch(at: now)
+    }
+
+    /// The ball comes to rest on a display, and she can stand where she needs to pick it up.
+    private func isReachable(_ game: Fetch) -> Bool {
+        isReachable(rest: game.ball.rest, standing: game.pickupSpot)
+    }
+
+    private func isReachable(rest: SIMD2<Double>, standing: SIMD2<Double>) -> Bool {
+        let rest = CGPoint(x: rest.x, y: rest.y)
+        guard NSScreen.screens.contains(where: { $0.visibleFrame.insetBy(dx: 8, dy: 4).contains(rest) }) else { return false }
+        let spot = CGPoint(x: standing.x, y: standing.y)
+        return destination(forClickAt: spot).distance(to: spot) < 1
+    }
+
+    private func followFetch(at t: TimeInterval) {
+        guard let game = model.fetch else { return }
+        let paws = game.position(at: t)
+        window.setFrameOrigin(NSPoint(x: paws.x - pawOffset.x, y: paws.y - pawOffset.y))
+        if let loose = game.looseBall(at: t) {
+            ball.place(ground: CGPoint(x: loose.ground.x, y: loose.ground.y), height: loose.height, spin: loose.spin,
+                       scale: model.scale, character: window, characterPaws: CGPoint(x: paws.x, y: paws.y))
+        } else {
+            ball.hide()
+        }
+        if t >= game.endTime { finishFetch(game, at: t) }
+    }
+
+    private func finishFetch(_ game: Fetch, at t: TimeInterval) {
+        model.setFetch(nil)
+        ball.fade(after: Self.ballLingers)
+        onMoved?(window.frame.origin)
+        onFetchFinished?()
+    }
+
+    /// Cuts a game short (she was grabbed, hidden, or the displays changed). Whatever happens,
+    /// the ball ends up on the floor — never left hanging in the air.
+    func stopFetch() {
+        guard let game = model.fetch else { return }
+        let now = CharacterModel.clock
+        let paws = CGPoint(x: window.frame.minX + pawOffset.x, y: window.frame.minY + pawOffset.y)
+        let resting: CGPoint
+        if game.isCarrying(at: now) {
+            resting = CGPoint(x: paws.x, y: paws.y - 12 * model.scale)
+        } else if now < game.contactTime {
+            resting = CGPoint(x: game.ball.rest.x, y: game.ball.rest.y)
+        } else {
+            resting = CGPoint(x: game.drop.rest.x, y: game.drop.rest.y)
+        }
+        model.setFetch(nil)
+        if window.isVisible {
+            ball.place(ground: resting, height: 0, spin: game.ball.spin(at: game.ball.restTime), scale: model.scale,
+                       character: window, characterPaws: paws)
+            ball.fade(after: Self.ballLingers)
+        }
+        onMoved?(window.frame.origin)
+        onFetchFinished?()
+    }
+
+    // MARK: - Treats
+
+    /// A treat out in the world, until she eats it.
+    let treatWindow = BallWindow(TreatLayer())
+    var isTreating: Bool { model.treat != nil }
+    /// Fetch or a treat in progress: one game at a time.
+    var isPlaying: Bool { isFetching || isTreating }
+
+    /// Begs while you hold a treat out. Not mid-game or mid-run — she's busy.
+    func setBegging(_ begging: Bool) {
+        if begging, !window.isVisible || isPlaying || isDashing || interaction.isDragging { return }
+        model.setBegging(begging)
+    }
+
+    /// Tosses her a treat to land at `point`: she follows it, chases it, eats it where it
+    /// lands and jumps for joy. A toss she couldn't reach is shortened until she can.
+    func throwTreat(to point: CGPoint) {
+        guard window.isVisible, !interaction.isDragging, !isPlaying else { return }
+        stopDash()
+        model.setBegging(false)
+        let scale = Double(model.scale)
+        let paws = CGPoint(x: window.frame.minX + pawOffset.x, y: window.frame.minY + pawOffset.y)
+        let home = SIMD2<Double>(Double(paws.x), Double(paws.y))
+        let target = SIMD2<Double>(Double(point.x), Double(point.y))
+        let away = target - home
+        let distance = (away.x * away.x + away.y * away.y).squareRoot()
+        let direction = distance > 1 ? away / distance : SIMD2<Double>(-1, 0)
+        // Tossed from a hand held out just above her head.
+        let launch = home + direction * 10 * scale + SIMD2<Double>(0, 6)
+        let reach = RunningCoco.fetchReach(artWidth: Double(CharacterLayout.artFrame.width) * scale).reach
+        let now = CharacterModel.clock
+
+        var game: TreatGame?
+        for step in 0...12 {
+            let landing = launch + (target - launch) * (1 - Double(step) * 0.075)
+            let flight = BallFlight(from: launch, height: 72 * scale, to: landing, at: now, material: .treat)
+            let candidate = TreatGame(home: home, treat: flight, at: now, reach: reach)
+            if isReachable(rest: candidate.treat.rest, standing: candidate.eatSpot) {
+                game = candidate
+                break
+            }
+        }
+        guard let game else { return }
+        model.setTreat(game)
+        followTreat(at: now)
+    }
+
+    private func followTreat(at t: TimeInterval) {
+        guard let game = model.treat else { return }
+        let paws = game.position(at: t)
+        window.setFrameOrigin(NSPoint(x: paws.x - pawOffset.x, y: paws.y - pawOffset.y))
+        if let loose = game.looseTreat(at: t) {
+            treatWindow.place(ground: CGPoint(x: loose.ground.x, y: loose.ground.y), height: loose.height, spin: loose.spin,
+                              scale: model.scale, character: window, characterPaws: CGPoint(x: paws.x, y: paws.y))
+        } else {
+            // Eaten.
+            treatWindow.hide()
+        }
+        if t >= game.endTime {
+            model.setTreat(nil)
+            onMoved?(window.frame.origin)
+            onTreatFinished?()
+        }
+    }
+
+    /// Cuts a treat short. An uneaten treat ends up lying on the floor where it lands.
+    func stopTreat() {
+        guard let game = model.treat else { return }
+        let now = CharacterModel.clock
+        let paws = CGPoint(x: window.frame.minX + pawOffset.x, y: window.frame.minY + pawOffset.y)
+        model.setTreat(nil)
+        if now < game.biteTime, window.isVisible {
+            treatWindow.place(ground: CGPoint(x: game.treat.rest.x, y: game.treat.rest.y), height: 0,
+                              spin: game.treat.spin(at: game.treat.restTime), scale: model.scale, character: window, characterPaws: paws)
+            treatWindow.fade(after: Self.ballLingers)
+        } else {
+            treatWindow.hide()
+        }
+        onMoved?(window.frame.origin)
+        onTreatFinished?()
     }
 
     /// Reduce Motion: no run across the screen — she fades out and back in at the spot.

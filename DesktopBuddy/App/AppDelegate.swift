@@ -14,7 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settings: HostedWindowController!
     private var onboarding: HostedWindowController!
     private let shortcut = GlobalShortcut()
-    private let callKey = CallKeyMonitor()
+    private let callKey = CallKeyMonitor(key: .rightOption)
+    private let throwKey = CallKeyMonitor(key: .rightCommand)
+    private let treatKey = CallKeyMonitor(key: .rightShift)
     private let callOverlay = CallOverlayController()
     private var isOccluded = false
 
@@ -29,6 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let index = CommandLine.arguments.firstIndex(of: "--run-preview"), index + 1 < CommandLine.arguments.count {
             RunPreview.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
+            exit(0)
+        }
+        if CommandLine.arguments.contains("--fetch-selftest") {
+            FetchSelfTest.run()
             exit(0)
         }
         if CommandLine.arguments.contains("--calendar-selftest") {
@@ -120,31 +126,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    /// Hold right Option and click anywhere: Coco runs to the spot.
+    /// Hold right Option and click anywhere: Coco runs to the spot. Hold right Command and
+    /// click: you throw her ball there and she fetches it.
     private func connectCalling() {
-        callKey.onChange = { [weak self] held in self?.callKeyChanged(held) }
-        callOverlay.onCall = { [weak self] point in self?.call(to: point) }
+        callKey.onChange = { [weak self] held in self?.aimKeyChanged(.rightOption, held: held) }
+        throwKey.onChange = { [weak self] held in self?.aimKeyChanged(.rightCommand, held: held) }
+        treatKey.onChange = { [weak self] held in self?.aimKeyChanged(.rightShift, held: held) }
+        callOverlay.onCall = { [weak self] point, key in
+            switch key {
+            case .rightOption: self?.call(to: point)
+            case .rightCommand: self?.throwBall(to: point)
+            case .rightShift: self?.throwTreat(to: point)
+            }
+        }
         // The cursor is over the overlay while aiming, so pass its moves on to her eyes.
         callOverlay.onCursorMoved = { [weak self] in self?.character.cursorMoved() }
         character.onDashFinished = { [weak self] in self?.dashFinished() }
+        character.onFetchFinished = { [weak self] in
+            self?.model.fetchFinished()
+            self?.dashFinished()
+        }
+        character.onTreatFinished = { [weak self] in
+            self?.model.treatEaten()
+            self?.dashFinished()
+        }
     }
 
-    private func callKeyChanged(_ held: Bool) {
-        let aiming = held && model.preferences.isBuddyVisible
+    private func aimKeyChanged(_ key: HeldKey, held: Bool) {
+        // Mid-game (fetch or a treat) she's busy: no key does anything until she's done.
+        let aiming = held && model.preferences.isBuddyVisible && !character.isPlaying
         if aiming {
-            callOverlay.show()
-        } else {
+            callOverlay.show(for: key)
+        } else if callOverlay.key == key {
             callOverlay.hide()
         }
-        character.isWatchingAim = aiming
+        // Holding a treat out: she begs until it's thrown or put away.
+        if key == .rightShift { character.setBegging(aiming) }
+        character.isWatchingAim = callOverlay.isShowing
     }
 
     private func call(to point: CGPoint) {
-        guard model.preferences.isBuddyVisible else { return }
+        guard model.preferences.isBuddyVisible, !character.isPlaying else { return }
         model.buddyCalled()
         bubble.hide()
         callOverlay.showMarker(at: character.destination(forClickAt: point), below: character.window)
         character.call(to: point)
+    }
+
+    private func throwTreat(to point: CGPoint) {
+        guard model.preferences.isBuddyVisible, !character.isPlaying else { return }
+        model.buddyCalled()
+        bubble.hide()
+        // One treat at a time: the one in your hand goes away until she's done.
+        callOverlay.hide()
+        character.isWatchingAim = false
+        character.throwTreat(to: point)
+    }
+
+    private func throwBall(to point: CGPoint) {
+        guard model.preferences.isBuddyVisible, !character.isPlaying else { return }
+        model.buddyCalled()
+        bubble.hide()
+        // One throw at a time: the aiming ball goes away until she's brought it back.
+        callOverlay.hide()
+        character.isWatchingAim = false
+        character.throwBall(to: point)
     }
 
     private func dashFinished() {
@@ -170,6 +216,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.model.shortcutUnavailable = !self.shortcut.setEnabled(enabled)
         }
+        track({ model.preferences.throwKeyEnabled }) { [weak self] enabled in
+            self?.throwKey.setEnabled(enabled)
+        }
+        track({ model.preferences.treatKeyEnabled }) { [weak self] enabled in
+            self?.treatKey.setEnabled(enabled)
+        }
         track({ model.preferences.callKeyEnabled }) { [weak self] enabled in
             self?.callKey.setEnabled(enabled)
         }
@@ -183,7 +235,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             if let speech {
                 // Mid-run the bubble waits; it shows when she arrives.
-                guard !self.character.isDashing else { return }
+                guard !self.character.isDashing, !self.character.isPlaying else { return }
                 self.bubble.show(speech.text, near: self.character.characterFrame, on: self.character.screen)
             } else {
                 self.bubble.hide()

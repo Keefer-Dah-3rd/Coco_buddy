@@ -31,6 +31,7 @@ final class RunningCoco {
     private let chest: Part, belly: Part, rump: Part, bib: Part
     // Head
     private let skull: Part, muzzle: Part, nose: Part, blaze: Part, mouth: Part, tongue: Part
+    private let ball: Part, ballSeams: Part
     private let ears: [(outer: Part, inside: Part)]
     private let eyes: [(open: Part, shine: Part, happy: Part)]
     // Tail, collar
@@ -57,13 +58,15 @@ final class RunningCoco {
         blaze = part(.shape(Palette.white, edge: nil))
         mouth = part(.shape(Palette.mouthInside, edge: nil))
         tongue = part(.limb(width: 4.4, Palette.tongue, edge: Palette.tongueGroove))
+        ball = part(.shape(TennisBall.felt, edge: TennisBall.edge))
+        ballSeams = part(.curve(width: 1.1, TennisBall.seam))
         ears = (0..<2).map { _ in (part(.shape(Palette.fur, edge: Palette.rim)), part(.shape(Palette.innerEar, edge: nil))) }
         eyes = (0..<2).map { _ in
             (part(.marking(Palette.eye, stroke: Palette.eyeRim, width: 0.7)),
              part(.marking(NSColor.white.withAlphaComponent(0.9))),
              part(.curve(width: 1.5, Palette.closedEye)))
         }
-        head = Region([skull, muzzle, nose, blaze, mouth, tongue]
+        head = Region([skull, muzzle, nose, blaze, mouth, tongue, ball, ballSeams]
                       + ears.flatMap { [$0.outer, $0.inside] }
                       + eyes.flatMap { [$0.open, $0.shine, $0.happy] })
 
@@ -92,7 +95,26 @@ final class RunningCoco {
         let tau = 2 * Double.pi
         let g = min(1, max(0, p.gallop))
         let bow = min(1, max(0, p.bow))
+        let phase = p.stride - p.stride.rounded(.down)
+        let (floor, body, headFrame, lift) = Self.frames(p, reachPitch: Self.reachPitch)
+        layoutShadow(on: floor, airborne: lift)
+        layoutBody(body)
+        layoutHead(headFrame, p, gallop: g, phase: phase)
+        _ = tau
+        layoutCollar(body, led: p.led)
+        layoutTail(body, wag: p.tail, gallop: g, bow: bow)
+        layoutLegs(body: body, floor: floor, gallop: g, bow: bow, phase: phase, jump: max(0, p.lift))
+        arrange()
+    }
+
+    /// Where she stands and how her body and head are turned, for a pose. Drawing and the
+    /// fetch geometry both use this, so they always agree.
+    private static func frames(_ p: CharacterPose, reachPitch: Double) -> (floor: Frame, body: Frame, head: Frame, lift: Double) {
+        let tau = 2 * Double.pi
+        let g = min(1, max(0, p.gallop))
+        let bow = min(1, max(0, p.bow))
         let crouch = min(1, max(0, p.crouch))
+        let reach = min(1, max(0, p.reach))
         let phase = p.stride - p.stride.rounded(.down)
 
         // Facing on the floor; x right, y away from the viewer.
@@ -108,17 +130,47 @@ final class RunningCoco {
         let body = Frame(origin: Vec(0, 0, lift), forward: floor.forward, left: floor.left, up: floor.up)
             .pitched(rock - 0.36 * bow, about: Vec(-2, 0, 22))
             .rolled(p.bank, about: Vec(0, 0, 4))
-
-        layoutShadow(on: floor, airborne: lift - p.lift)
-        layoutBody(body)
-        let headFrame = body
-            .pitched(-0.6 * rock + 0.32 * bow - 0.06 * crouch + 0.05 * g * sin(tau * (phase + 0.35)), about: Anatomy.neck)
+        // Reaching for the floor tips the head down at the neck.
+        let head = body
+            .pitched(-0.6 * rock + 0.32 * bow - 0.06 * crouch + 0.05 * g * sin(tau * (phase + 0.35)) - reachPitch * reach,
+                     about: Anatomy.neck)
             .rolled(-p.headTilt * 0.8, about: Anatomy.skull.center)
-        layoutHead(headFrame, p, gallop: g, phase: phase)
-        layoutCollar(body, led: p.led)
-        layoutTail(body, wag: p.tail, gallop: g, bow: bow)
-        layoutLegs(body: body, floor: floor, gallop: g, bow: bow, phase: phase)
-        arrange()
+        return (floor, body, head, lift)
+    }
+
+    /// The pose at the moment her mouth closes on a ball on the floor.
+    static var pickupPose: CharacterPose {
+        var p = CharacterPose()
+        p.headingX = 1
+        p.headingY = 0
+        p.reach = 1
+        p.bow = 0.3
+        p.crouch = 0.25
+        return p
+    }
+
+    /// How far the head tips down at full reach: just enough that the ball in her mouth
+    /// touches the floor in the pickup pose.
+    private static let reachPitch: Double = {
+        var low = 0.0
+        var high = 1.6
+        for _ in 0..<40 {
+            let mid = (low + high) / 2
+            let height = frames(pickupPose, reachPitch: mid).head.point(Anatomy.ballHold).z
+            if height > Anatomy.ballRadius { low = mid } else { high = mid }
+        }
+        return (low + high) / 2
+    }()
+
+    /// Fetch geometry in points for an art view this wide: how far ahead of her paws the ball
+    /// in her mouth is when her head is down, and how high its bottom is when she lets go.
+    static func fetchReach(artWidth: Double) -> (reach: Double, mouthHeight: Double) {
+        let points = artWidth / 100 * Camera.scale
+        let ballAtFloor = frames(pickupPose, reachPitch: reachPitch).head.point(Anatomy.ballHold)
+        var letGo = pickupPose
+        letGo.reach = 0.55
+        let ballAtRelease = frames(letGo, reachPitch: reachPitch).head.point(Anatomy.ballHold)
+        return (ballAtFloor.x * points, max(2, ballAtRelease.z - Anatomy.ballRadius) * points)
     }
 
     private func layoutShadow(on floor: Frame, airborne: Double) {
@@ -162,6 +214,17 @@ final class RunningCoco {
             let start = frame.point(Anatomy.mouth + Vec(-1.2, 0, 0.6))
             let end = start + frame.vector(Vec(-sin(swing), 0, -cos(swing))) * length
             tongue.show(Camera.line([start, end]), depth: Camera.depth((start + end) / 2) - 0.2)
+        }
+
+        // A tennis ball held in the front of her mouth.
+        if p.carry > 0.5 {
+            let center = frame.point(Anatomy.ballHold)
+            let r = Anatomy.ballRadius
+            ball.show(Camera.ellipsoid(center: center, frame.forward * r, frame.left * r, frame.up * r),
+                      depth: Camera.depth(center) - 1.2)
+            let screen = Camera.vector(Vec(r, 0, 0)).dx
+            ballSeams.show(Camera.card(TennisBall.seams, at: Camera.point(center), x: CGVector(dx: screen, dy: 0),
+                                       y: CGVector(dx: 0, dy: screen)), depth: Camera.depth(center) - 1.21)
         }
 
         // Ears: the sitting Coco's own outline, laid on a card standing up from the skull.
@@ -282,7 +345,8 @@ final class RunningCoco {
         tail.depth = Camera.depth(middle) + 2
     }
 
-    private func layoutLegs(body: Frame, floor: Frame, gallop g: Double, bow: Double, phase: Double) {
+    /// `jump` lifts the paws off the floor with her (a leap, not a gallop's bounce).
+    private func layoutLegs(body: Frame, floor: Frame, gallop g: Double, bow: Double, phase: Double, jump: Double) {
         // A bounding gallop: the hind pair drives together, then the front pair reaches.
         let offsets = [0.5, 0.57, 0.0, 0.07]
         let stance = 0.42
@@ -304,7 +368,7 @@ final class RunningCoco {
                 dz = 7 * g * sin(.pi * u) * (fore ? 1 : 0.85)
             }
             dx += fore ? 3.5 * g + 9 * bow : -3.5 * g - 1.5 * bow
-            let paw = floor.point(joint.x + dx, (joint.y + 0.6) * side, Anatomy.pawRadius + dz)
+            let paw = floor.point(joint.x + dx, (joint.y + 0.6) * side, Anatomy.pawRadius + dz + jump)
 
             limb.leg.show(Camera.line([top, paw]), depth: Camera.depth((top + paw) / 2))
             limb.paw.show(Camera.ellipsoid(center: paw, floor.forward * 4.5, floor.left * 3.6, floor.up * Anatomy.pawRadius),
@@ -382,6 +446,10 @@ private enum Anatomy {
     // A thin marking on the front of the face, leaning back with the forehead.
     static let blaze = Ellipsoid(center: Vec(43.2, 0, 46.5), radii: Vec(2, 3.6, 8), pitch: 0.35)
     static let mouth = Vec(48.5, 0, 31.2)
+    /// Where a carried ball sits: gripped in the front of the mouth.
+    static let ballHold = Vec(52, 0, 28)
+    /// The ball's radius in model units (matches `BallFlight.radius` in points at full size).
+    static let ballRadius = 6.3
     static let earBase = Vec(25.5, 10.5, 55.5)
 
     static let collarCenter = Vec(21, 0, 32)

@@ -208,10 +208,12 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Coco listens only while you're talking to her (after you click the microphone), to turn what you say into tasks and timer commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "What you say to Coco is transcribed — on this Mac whenever supported — so she can add tasks and run the focus timer by voice.";
@@ -242,10 +244,12 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Coco listens only while you're talking to her (after you click the microphone), to turn what you say into tasks and timer commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "What you say to Coco is transcribed — on this Mac whenever supported — so she can add tasks and run the focus timer by voice.";

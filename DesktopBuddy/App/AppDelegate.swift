@@ -37,8 +37,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FetchSelfTest.run()
             exit(0)
         }
+        if CommandLine.arguments.contains("--partiful-selftest") {
+            PartifulSelfTest.run()
+            exit(0)
+        }
         if CommandLine.arguments.contains("--calendar-selftest") {
             CalendarSelfTest.run()
+            exit(0)
+        }
+        if CommandLine.arguments.contains("--apple-calendar-selftest") {
+            AppleCalendarSelfTest.run()
             exit(0)
         }
         if CommandLine.arguments.contains("--dash-selftest") {

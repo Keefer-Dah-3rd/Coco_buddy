@@ -18,7 +18,9 @@ struct ConnectionsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 AssistantSection(service: model.assistant)
+                AppleCalendarSection(service: model.appleCalendar, model: model)
                 CalendarSection(service: model.calendar, model: model)
+                PartifulSection(service: model.partiful)
                 if Features.notion {
                     NotionSection(service: model.notion, model: model)
                 }
@@ -89,6 +91,109 @@ private struct AssistantSection: View {
         case .invalid: ("Key rejected", false)
         case .missing: ("Not connected", false)
         }
+    }
+}
+
+// MARK: - Apple Calendar
+
+/// Calendar.app's calendars, read-only. Access is asked for only when the user clicks
+/// Connect, and every state macOS can be in gets its own explanation.
+private struct AppleCalendarSection: View {
+    let service: AppleCalendarService
+    let model: AppModel
+
+    var body: some View {
+        Card(title: "Apple Calendar", status: statusLabel) {
+            Text("Reads the calendars in the Calendar app on this Mac — iCloud, Google, Exchange or On My Mac — for the days you look at: titles, times, places and video links, to show your week, find open time and remind you of meetings. Read-only: \(Buddy.name) never adds, changes or deletes an Apple Calendar event. An event that's also in your Google Calendar is shown once.")
+                .bodyStyle()
+
+            if service.isActive {
+                connected
+            } else {
+                switch service.access {
+                case .notDetermined, .granted:
+                    if service.access == .notDetermined {
+                        Text("macOS will ask whether Desktop Buddy may see your calendars. Choose Allow Full Access.")
+                            .bodyStyle()
+                    }
+                    HStack {
+                        Spacer()
+                        if service.isRequesting { ProgressView().controlSize(.small) }
+                        Button("Connect Apple Calendar") { Task { await service.connect() } }
+                            .buttonStyle(KeyButtonStyle(kind: .primary))
+                            .disabled(service.isRequesting)
+                    }
+                case .denied, .writeOnly:
+                    Text(service.access == .denied
+                         ? "Calendar access is turned off for Desktop Buddy, so \(Buddy.name) can't see Apple Calendar. Everything else keeps working. To allow it: System Settings › Privacy & Security › Calendars › Desktop Buddy › Full Access, then click Check again."
+                         : "Desktop Buddy can only add events, not read them. To show your schedule, choose Full Access in System Settings › Privacy & Security › Calendars, then click Check again.")
+                        .bodyStyle()
+                    HStack {
+                        Spacer()
+                        Button("Check again") { Task { await service.connect() } }
+                            .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                        Button("Open Privacy Settings") { AppleCalendarService.openPrivacySettings() }
+                            .buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
+                    }
+                case .restricted:
+                    Text("Calendar access is blocked on this Mac by its administrator (a profile or Screen Time), so \(Buddy.name) can't read Apple Calendar.")
+                        .bodyStyle()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var connected: some View {
+        Row("Today") {
+            Text("\(service.events(on: .now)?.filter { !$0.isAllDay }.count ?? 0) events"
+                 + (service.lastUpdated.map { " · read \($0.formatted(date: .omitted, time: .shortened))" } ?? ""))
+                .valueStyle()
+        }
+        VStack(alignment: .leading, spacing: Space.xs) {
+            MonoLabel("Calendars \(Buddy.name) reads")
+            ForEach(service.calendars) { info in
+                HStack(spacing: Space.sm) {
+                    Circle().fill(color(info.color)).frame(width: 8, height: 8)
+                    Text(info.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
+                    MonoLabel(info.account)
+                    Spacer()
+                    Toggle("Read \(info.title)", isOn: Binding(get: { service.isIncluded(info) }, set: { service.setIncluded($0, info) }))
+                        .toggleStyle(.switch).controlSize(.mini).labelsHidden()
+                }
+            }
+            if service.calendars.isEmpty {
+                Text("No calendars found in the Calendar app.").bodyStyle()
+            }
+            Text("Birthdays, subscribed calendars (holidays) and calendars you can't edit — usually other people's — start switched off.")
+                .font(.style(.caption)).foregroundStyle(Theme.inkTertiary).fixedSize(horizontal: false, vertical: true)
+        }
+        if let problem = service.problem(for: .now) {
+            Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+        }
+        HStack {
+            Button("Stop using Apple Calendar") { service.disconnect() }
+                .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+            Spacer()
+            Button("Privacy Settings…") { AppleCalendarService.openPrivacySettings() }
+                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                .help("Turn calendar access off completely in System Settings › Privacy & Security › Calendars")
+        }
+    }
+
+    private var statusLabel: (String, Bool) {
+        if service.isActive { return ("Connected", true) }
+        switch service.access {
+        case .denied: return ("No access", false)
+        case .restricted: return ("Blocked", false)
+        case .writeOnly: return ("Add-only access", false)
+        case .notDetermined, .granted: return ("Not connected", false)
+        }
+    }
+
+    private func color(_ hex: String?) -> Color {
+        guard let hex, hex.hasPrefix("#"), let value = UInt32(hex.dropFirst(), radix: 16) else { return Theme.inkTertiary }
+        return Color(hex: value)
     }
 }
 
@@ -182,6 +287,91 @@ private struct CalendarSection: View {
 
     private func connect() {
         Task { await service.connect(presentingFrom: NSApp.keyWindow) }
+    }
+}
+
+// MARK: - Partiful
+
+/// Imports the user's Partiful events from their personal calendar link. Read-only: the events
+/// show in Coco's calendar and count for free time; nothing is written anywhere.
+/// (Not private: the Partiful self-test renders it on its own.)
+struct PartifulSection: View {
+    let service: PartifulFeedService
+    @State private var link = ""
+    @State private var problem: String?
+    @State private var connecting = false
+
+    var body: some View {
+        Card(title: "Partiful", status: service.isConnected ? ("Connected", true) : ("Not connected", false)) {
+            Text("Shows your Partiful events in \(Buddy.name)'s calendar, so she knows when you're busy and can talk about them. Read-only: nothing is added to Google Calendar or changed on Partiful.")
+                .bodyStyle()
+
+            if service.isConnected {
+                Row("Events") {
+                    Text(summary).valueStyle()
+                }
+                ForEach(upcoming, id: \.uid) { event in
+                    HStack(spacing: Space.sm) {
+                        Text(event.start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
+                            .font(.style(.monoValue)).foregroundStyle(Theme.inkSecondary)
+                        Text(event.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                }
+                Text("Your calendar link is kept in the Keychain. \(Buddy.name) reads it about every half hour.")
+                    .bodyStyle()
+                HStack {
+                    Button("Disconnect and forget events") { service.disconnect() }
+                        .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                    Spacer()
+                    Button(service.isRefreshing ? "Refreshing…" : "Refresh") { Task { await service.refresh() } }
+                        .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                        .disabled(service.isRefreshing)
+                }
+            } else {
+                SetupSteps(steps: [
+                    ("On partiful.com, on a computer, open any event you're going to.", URL(string: "https://partiful.com")),
+                    ("Click the calendar icon under the event details, then choose Google Calendar.", nil),
+                    ("Click Copy Link — that's your personal calendar link. Paste it below.", nil),
+                ])
+                TextField("Calendar link", text: $link, prompt: Text("webcal://… or https://…"))
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit(connect)
+                HStack {
+                    Text("Keep this link private — anyone with it can see your Partiful events.")
+                        .font(.style(.caption)).foregroundStyle(Theme.inkTertiary).fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button(connecting ? "Checking…" : "Import events") { connect() }
+                        .buttonStyle(KeyButtonStyle(kind: .primary))
+                        .disabled(link.trimmingCharacters(in: .whitespaces).isEmpty || connecting)
+                }
+            }
+
+            if let message = problem ?? service.problem {
+                Text(message).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var upcoming: [ICalendar.Event] {
+        Array(service.feedEvents.filter { $0.end > .now }.prefix(3))
+    }
+
+    private var summary: String {
+        let count = service.feedEvents.filter { $0.end > .now }.count
+        let updated = service.lastUpdated.map { " · updated \($0.formatted(date: .omitted, time: .shortened))" } ?? ""
+        return (count == 1 ? "1 upcoming" : "\(count) upcoming") + updated
+    }
+
+    private func connect() {
+        guard !connecting else { return }
+        connecting = true
+        problem = nil
+        Task {
+            problem = await service.connect(link)
+            if problem == nil { link = "" }
+            connecting = false
+        }
     }
 }
 

@@ -103,8 +103,8 @@ struct OnboardingView: View {
                     .toggleStyle(.switch).controlSize(.small).labelsHidden()
                     .help("\(Buddy.name) speaks her lines aloud")
             }
-            Extra(symbol: "calendar", title: "Google Calendar",
-                  detail: "Your week, open time and meeting reminders. Events change only when you confirm.") {
+            Extra(symbol: "calendar", title: "Calendar",
+                  detail: "Apple Calendar, Google Calendar or both — shown as one schedule, with open time and meeting reminders. Events change only when you confirm.") {
                 Button("Set up…") { model.openConnections() }.buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
             }
             Extra(symbol: "bubble.left", title: "Chat with Claude",

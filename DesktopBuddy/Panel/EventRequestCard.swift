@@ -40,7 +40,14 @@ struct EventRequestCard: View {
     private var content: some View {
         switch request.kind {
         case .create(let draft):
-            line(draft.title, AppModel.describe(draft.start, draft.end, allDay: draft.isAllDay), draft.location)
+            VStack(alignment: .leading, spacing: 2) {
+                line(draft.title, AppModel.describe(draft.start, draft.end, allDay: draft.isAllDay), draft.location)
+                if let source = draft.source {
+                    Link("From \(source.name) · keeps the invite link", destination: source.url)
+                        .font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                        .accessibilityLabel("Open the \(source.name) invitation")
+                }
+            }
         case .change(let event, let changes):
             VStack(alignment: .leading, spacing: 2) {
                 Text(changes.title ?? event.title).font(.style(.bodyEmphasis)).foregroundStyle(Theme.ink)
@@ -57,12 +64,26 @@ struct EventRequestCard: View {
                     Text("Location: \(location)").font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
                 }
                 if event.isRecurring { MonoLabel("Only this occurrence") }
+                separateCopies(of: event)
             }
         case .delete(let event):
             VStack(alignment: .leading, spacing: 2) {
                 line(event.title, AppModel.describe(event.start, event.end, allDay: event.isAllDay), event.location)
                 if event.isRecurring { MonoLabel("Only this occurrence") }
+                separateCopies(of: event)
             }
+        }
+    }
+
+    /// The same meeting saved separately in another calendar (matched by its details, not
+    /// synced): this change won't reach it, so say so before the user confirms.
+    @ViewBuilder
+    private func separateCopies(of event: CalendarEvent) -> some View {
+        let copies = event.alsoIn.filter { $0.match == .details }
+        if !copies.isEmpty {
+            Text("Only the Google Calendar event changes — the copy in \(copies.map(\.label).joined(separator: " and ")) stays as it is.")
+                .font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

@@ -97,6 +97,46 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 - [ ] Decline Google's permission sheet: the card says nothing changed.
 - [ ] Settings › Your day: change the workday start/end; open time and Coco's suggestions follow.
 
+## Apple Calendar and one schedule
+
+- [ ] Fresh install (or reset with `tccutil reset Calendar com.keefer.DesktopBuddy`): launching never asks for calendar access. Connections › Apple Calendar › **Connect**: macOS asks once, naming Desktop Buddy and the reason.
+- [ ] Choose **Don't Allow**: the card says access is off and how to turn it on; Google Calendar, tasks and the chat keep working; the chat says it can't see Apple Calendar rather than guessing.
+- [ ] Allow it in System Settings › Privacy & Security › Calendars, then **Check again**: Connected, today's count and your calendars with switches (birthdays and holidays off).
+- [ ] With your Google account in Calendar.app too: every Google meeting shows **once** on the Today card and in the week, and the day's count matches Google Calendar. Hover a row: the tooltip lists both calendars.
+- [ ] An event only in iCloud shows with a small "Apple · Home" label; it counts for open time and reminders.
+- [ ] Two different meetings at different times on the same day, two overlapping meetings, and a repeating meeting all show as separate rows (each occurrence on its own day).
+- [ ] An all-day event across two days shows on both and not the third; a late event running past midnight shows on both days with ← / →.
+- [ ] Add, move and delete an event in Calendar.app: Coco's card updates within a second or two, without reopening anything.
+- [ ] Turn off a calendar's switch in Connections: its events disappear; on again, they return.
+- [ ] Chat: "What's on my calendar today?", "What do I have coming up?", "What's my next meeting?", "Am I free this afternoon?", "When is my next meeting with <someone invited to an Apple event>?" and "How much free time do I have between meetings?" — answers match the Today card, with no meeting counted twice.
+- [ ] Chat: ask to move or delete an Apple-only event: Coco says it's read-only here and to change it in Calendar. Ask to move a meeting that's in both: the card changes the Google event (and says so if the Apple copy is a separate copy that won't follow).
+- [ ] Revoke access in System Settings while Coco runs: Apple events disappear and the card shows the access-off state; Google events stay.
+- [ ] *Stop using Apple Calendar*: Apple events disappear; System Settings still shows access granted.
+- [ ] A day with no events: "No meetings today — wide open." After the last meeting: "That's all for today — no more meetings." *Coming up* lists the next days with "Tomorrow", a weekday or a date.
+
+## Partiful invites (chat)
+
+- [ ] Paste a public Partiful link (partiful.com/e/…): the chat shows "Read the Partiful invite …" and Coco gives the title, day, time and place — no invented details.
+- [ ] Ask "add this to my calendar": a card appears with the right local time and "From Partiful"; nothing is created until you click Add. After Add, the calendar card jumps to that day and the event is there, with the invite link in its description.
+- [ ] Paste the same link again and ask to add it: Coco says it's already on your calendar; no second card or event.
+- [ ] An event in another time zone (e.g. a Los Angeles party from New York): Coco gives both times; the card shows your local time.
+- [ ] An invite with no end time: Coco asks how long to block before proposing.
+- [ ] A go.partiful.com short link works the same as the full link.
+- [ ] A mistyped/deleted link, a password-protected invite, or a non-Partiful link: Coco says why she can't read it and offers to work from pasted invitation text.
+- [ ] "Do I have anything else that day?" after reading an invite: she checks the calendar for that date.
+- [ ] Offline: she says the Mac seems offline; nothing is cached as a failure.
+
+## Partiful import (Connections › Partiful)
+
+- [ ] Paste an invite link (partiful.com/e/…) instead of the calendar link: it explains the difference and doesn't connect.
+- [ ] Paste your personal calendar link (calendar icon under an event → Google Calendar → Copy Link): "Connected", the upcoming count and the next three events appear.
+- [ ] Your Partiful events show in the Today card and the week browser, tagged Partiful, and can't be moved or deleted from Coco.
+- [ ] An event that's also in Google Calendar (e.g. from Partiful's own Google sync) shows once, not twice.
+- [ ] Ask the chat "am I free Saturday evening?": Partiful events count as busy.
+- [ ] A private invite you're on (page won't load publicly): pasting its link in chat still gives the details, from your calendar.
+- [ ] Quit and reopen offline: the last Partiful events still show; the card says why it couldn't refresh.
+- [ ] Disconnect: events disappear from the calendar card; the link is gone from the Keychain.
+
 ## Global shortcut
 
 - [ ] ⌃⌥C from another app opens the panel; pressing it again closes the panel.

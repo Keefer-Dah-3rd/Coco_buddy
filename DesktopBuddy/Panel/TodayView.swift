@@ -31,7 +31,7 @@ struct TodayView: View {
             }
 
             let leftovers = model.tasks.leftovers
-            let hasConnections = model.calendar.isConnected || (Features.notion && model.notion.isReady)
+            let hasConnections = model.agenda.isConnected || (Features.notion && model.notion.isReady)
             if tasks.isEmpty && leftovers.isEmpty && !hasConnections {
                 EmptyTodayView()
             } else {
@@ -43,7 +43,7 @@ struct TodayView: View {
                                     .padding(.horizontal, Space.xl)
                                     .padding(.bottom, Space.sm)
                             }
-                            if model.calendar.isConnected {
+                            if model.agenda.isConnected {
                                 ScheduleStrip(model: model)
                                     .padding(.horizontal, Space.xl)
                                     .padding(.bottom, Space.sm)

@@ -129,8 +129,8 @@ struct FocusView: View {
     /// If a meeting would interrupt the session, say so before it starts.
     @ViewBuilder
     private var meetingHeadsUp: some View {
-        if model.calendar.isConnected, !timer.isActive,
-           let next = model.calendar.schedule.next(after: .now),
+        if model.agenda.isConnected, !timer.isActive,
+           let next = model.agenda.schedule.next(after: .now),
            next.start.timeIntervalSinceNow < focus.remaining {
             let minutes = max(1, Int(next.start.timeIntervalSinceNow / 60))
             HStack(spacing: Space.xs) {

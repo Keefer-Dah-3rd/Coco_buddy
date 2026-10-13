@@ -40,8 +40,15 @@ final class AppModel {
     let focus: FocusController
     let focusLog: FocusLogStore
     let calendar: GoogleCalendarService
+    /// Calendar.app's calendars, read-only, through EventKit.
+    let appleCalendar: AppleCalendarService
+    /// The user's Partiful events (read-only), from their personal calendar link.
+    let partiful: PartifulFeedService
     let notion: NotionService
     let assistant: AssistantService
+    /// Every connected calendar as one schedule, duplicates merged. The Today card, week
+    /// browser, reminders and chat read this; changes go to the Google service itself.
+    let agenda: Agenda
     let character = CharacterModel()
     let voiceOut = VoiceOutput()
     let voiceIn = VoiceInput()
@@ -76,7 +83,7 @@ final class AppModel {
     private(set) var scheduleDay = Calendar.current.startOfDay(for: .now)
     /// The Today card's calendar is opened out into the week browser.
     var scheduleExpanded = false {
-        didSet { if scheduleExpanded { calendar.prefetch(around: scheduleDay) } }
+        didSet { if scheduleExpanded { agenda.prefetch(around: scheduleDay) } }
     }
     /// Event changes the assistant proposed — nothing happens to the calendar unless confirmed.
     private(set) var eventRequests: [EventRequest] = []
@@ -93,6 +100,21 @@ final class AppModel {
         /// Busy events the proposed time would overlap.
         var conflicts: [CalendarEvent]
         var state: State = .waiting
+
+        /// A card, not yet done, adding an event from this invitation.
+        func isCreating(from sourceKey: String) -> Bool {
+            guard case .create(let draft) = kind, draft.source?.key == sourceKey else { return false }
+            switch state {
+            case .waiting, .working, .failed: return true
+            case .done: return false
+            }
+        }
+    }
+
+    /// What the next meeting reminder depends on.
+    private struct ReminderBasis: Equatable, Sendable {
+        var schedule: DaySchedule
+        var minutes: Int
     }
 
     /// Working hours for open time and slot finding.
@@ -126,6 +148,7 @@ final class AppModel {
     @ObservationIgnored private var lastBarkAt = Date.distantPast
     @ObservationIgnored private var reminderTimer: Timer?
     @ObservationIgnored private var remindedEventIDs: Set<String> = []
+    @ObservationIgnored private var reminderBasis: ReminderBasis?
     // What she's been up to lately, so her comments fit (and she doesn't ask for attention
     // right after getting some). Kept in memory only.
     @ObservationIgnored private var lastSpokeAt = Date.now
@@ -134,6 +157,7 @@ final class AppModel {
     @ObservationIgnored private var recentFetches: [Date] = []
     @ObservationIgnored private var nextChatterAt = Date.now.addingTimeInterval(AppModel.chatterGap.lowerBound)
     @ObservationIgnored private var chatterTimer: Timer?
+    @ObservationIgnored private let eventLinks = EventLinkReader()
     /// How long she stays quiet between unprompted comments.
     static let chatterGap: ClosedRange<TimeInterval> = 25 * 60...45 * 60
 
@@ -145,6 +169,10 @@ final class AppModel {
         focus = FocusController(preferences: preferences, notifications: notifications, persistent: !preview)
         focusLog = FocusLogStore(persistent: !preview)
         calendar = GoogleCalendarService(persistent: !preview)
+        partiful = PartifulFeedService(persistent: !preview)
+        appleCalendar = preview ? AppleCalendarService(reader: NoAppleCalendar(), defaults: UserDefaults(suiteName: "DesktopBuddy.preview")!)
+            : AppleCalendarService()
+        agenda = Agenda(sources: [calendar, appleCalendar, partiful])
         notion = NotionService(persistent: !preview)
         assistant = AssistantService(persistent: !preview)
         sounds = SoundPlayer(preferences: preferences)
@@ -215,6 +243,8 @@ final class AppModel {
         assistant.disconnect()
         notion.disconnect()
         await calendar.eraseAll()
+        partiful.disconnect()
+        appleCalendar.eraseAll()
         focus.eraseAll()
         focusLog.eraseAll()
         tasks.eraseAll()
@@ -243,8 +273,14 @@ final class AppModel {
     }
 
     private func startConnections() {
-        calendar.onScheduleChanged = { [weak self] in self?.scheduleMeetingReminder() }
+        // One reminder timer, set again whenever today's merged schedule or the lead time changes.
+        track({ [weak self] in self.map { ReminderBasis(schedule: $0.agenda.schedule, minutes: $0.calendar.reminderMinutes) } }) { [weak self] basis in
+            guard let self, let basis, basis != self.reminderBasis else { return }
+            self.reminderBasis = basis
+            self.scheduleMeetingReminder()
+        }
         calendar.startAutoRefresh()
+        partiful.start()
         scheduleMeetingReminder()
         // Never leave the mic open across sleep; what was heard so far is discarded.
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
@@ -272,7 +308,7 @@ final class AppModel {
     /// Calendar, Notion candidates and linked tasks — each only if connected.
     func refreshConnections() {
         Task {
-            await calendar.refresh()
+            await agenda.refresh()
             guard Features.notion else { return }
             await notion.refreshTasks()
             await syncLinkedTasks()
@@ -322,10 +358,11 @@ final class AppModel {
         reminderTimer?.invalidate()
         notifications.cancel(prefix: "meeting.")
         let lead = TimeInterval(calendar.reminderMinutes * 60)
-        guard calendar.isConnected, lead > 0 else { return }
+        guard agenda.isConnected, lead > 0 else { return }
         let now = Date.now
-        guard let next = calendar.schedule.events.first(where: {
-            $0.start > now && !remindedEventIDs.contains($0.id)
+        // Merged events: a meeting in two calendars is reminded once, whichever id it shows under.
+        guard let next = agenda.schedule.events.first(where: {
+            $0.start > now && remindedEventIDs.isDisjoint(with: $0.allIDs)
         }) else { return }
         let fireAt = max(now.addingTimeInterval(1), next.start.addingTimeInterval(-lead))
         notifications.schedule(id: "meeting.\(next.id)", title: next.title,
@@ -338,7 +375,7 @@ final class AppModel {
     }
 
     private func remind(_ event: CalendarEvent) {
-        remindedEventIDs.insert(event.id)
+        remindedEventIDs.formUnion(event.allIDs)
         let minutes = max(0, Int((event.start.timeIntervalSinceNow / 60).rounded()))
         bark()
         // A clear reason to speak up, even during focus.
@@ -433,7 +470,7 @@ final class AppModel {
     }
 
     private func inMeeting(at now: Date) -> Bool {
-        calendar.events(on: now)?.contains { !$0.isAllDay && $0.start <= now && $0.end > now } ?? false
+        agenda.events(on: now)?.contains { !$0.isAllDay && $0.isBusy && $0.start <= now && $0.end > now } ?? false
     }
 
     func openPanel(_ tab: PanelTab? = nil) {
@@ -453,8 +490,8 @@ final class AppModel {
                 speak(BuddyVoice.line(.petted), .acknowledge)
             }
             // Pick up changes made in Google Calendar since the last look (stale weeks only).
-            calendar.prefetch(around: .now)
-            if scheduleExpanded { calendar.prefetch(around: scheduleDay) }
+            agenda.prefetch(around: .now)
+            if scheduleExpanded { agenda.prefetch(around: scheduleDay) }
         }
     }
 
@@ -669,12 +706,26 @@ final class AppModel {
                 ? "\(timer.phase.label.lowercased()) \(timer.isPaused ? "paused" : "running"), \(Self.clock(focus.remaining)) left"
                     + (tasks.task(timer.taskID).map { " on “\($0.title)”" } ?? "")
                 : "not running (default focus length \(preferences.focusSettings.focusMinutes) min)"
+            var problems: [String] = []
+            var upcoming: [CalendarEvent] = []
+            if agenda.isConnected {
+                // Today and the week ahead, so "what's next" works after today's last meeting.
+                let now = Date.now
+                do {
+                    problems = try await agenda.load(from: now, to: now.addingTimeInterval(7 * 86_400))
+                } catch {
+                    problems = [(error as? IntegrationError)?.userMessage ?? error.localizedDescription]
+                }
+                upcoming = agenda.comingUp(after: now, limit: 3)
+            }
+            let schedule = agenda.schedule
             let text = AssistantPrompt.today(
                 tasks: tasks.today(), focus: .init(focusState), focusedMinutesToday: focusLog.today.minutes,
-                calendarConnected: calendar.isConnected,
-                events: calendar.schedule.events + calendar.schedule.allDayEvents, now: .now,
-                workdayEndHour: preferences.workdayEndHour)
-            return .init(result: text, activity: calendar.isConnected ? "Looked at your tasks and calendar" : "Looked at your tasks")
+                calendarConnected: agenda.isConnected,
+                events: schedule.events + schedule.allDayEvents, now: .now,
+                workdayEndHour: preferences.workdayEndHour,
+                sources: agenda.isConnected ? agenda.connectedNames : nil, problems: problems, upcoming: upcoming)
+            return .init(result: text, activity: agenda.isConnected ? "Looked at your tasks and calendar" : "Looked at your tasks")
 
         case .proposeTasks(let proposals):
             draftOrigin = .chat
@@ -709,8 +760,26 @@ final class AppModel {
             return .init(result: "Asked the user to confirm marking “\(task.title)” done. It is NOT done unless they confirm.",
                          activity: "Asked you to confirm “\(BuddyVoice.short(task.title))”")
 
-        case .getSchedule, .findFreeTime, .proposeEvent, .proposeEventChange, .proposeEventDeletion:
+        case .getSchedule, .findFreeTime, .findEvents, .proposeEvent, .proposeEventChange, .proposeEventDeletion:
             return await performCalendar(action)
+
+        case .readEventLink(let url):
+            switch await eventLinks.read(url) {
+            case .success(let event):
+                return .init(result: AssistantPrompt.linkedEvent(event, now: .now),
+                             activity: "Read the Partiful invite “\(BuddyVoice.short(event.title))”")
+            case .failure(let failure):
+                // A private or locked invite the user is on: their own Partiful calendar has it.
+                if let id = Self.partifulID(in: url), let mine = partiful.event(partifulID: id) {
+                    let event = LinkedEvent(id: id, url: Partiful.canonicalURL(id: id), title: mine.title, start: mine.start,
+                                            end: mine.endListed ? mine.end : nil, address: mine.location,
+                                            description: mine.description.map(Self.withoutPartifulBoilerplate))
+                    return .init(result: "The public page couldn't be read, but this event is in the user's own Partiful calendar:\n"
+                                 + AssistantPrompt.linkedEvent(event, now: .now),
+                                 activity: "Found “\(BuddyVoice.short(mine.title))” in your Partiful calendar")
+                }
+                return .init(result: failure.explanation, isError: true, activity: "Couldn't read the Partiful link")
+            }
         }
     }
 
@@ -718,13 +787,18 @@ final class AppModel {
 
     private func performCalendar(_ action: AssistantAction) async -> AssistantService.ToolOutcome {
         let cal = Calendar.current
-        guard calendar.isConnected else {
-            return .init(result: "Google Calendar isn't connected, so you can't see or change their schedule. "
-                         + "They can connect it in Connections.", isError: true)
+        guard agenda.isConnected else {
+            return .init(result: "No calendar is connected (Google Calendar or Apple Calendar), so you can't see or change "
+                         + "their schedule. They can connect one in Connections.", isError: true)
         }
+        // A calendar that couldn't be read is reported, not hidden: the answer may be incomplete.
+        var partial = ""
         func load(_ from: Date, _ to: Date) async -> String? {
             do {
-                try await calendar.ensureLoaded(from: from, to: to)
+                let problems = try await agenda.load(from: from, to: to)
+                if !problems.isEmpty {
+                    partial = "\n(Incomplete — couldn't read " + problems.joined(separator: "; ") + ". Tell the user.)"
+                }
                 return nil
             } catch let error as IntegrationError {
                 return "Couldn't load the calendar: \(error.userMessage)"
@@ -744,7 +818,7 @@ final class AppModel {
         }
         func events(_ days: [Date]) -> [CalendarEvent] {
             var seen = Set<String>()
-            return days.flatMap { calendar.events(on: $0) ?? [] }.filter { seen.insert($0.id).inserted }
+            return days.flatMap { agenda.events(on: $0) ?? [] }.filter { seen.insert($0.id).inserted }
         }
 
         switch action {
@@ -756,7 +830,7 @@ final class AppModel {
             let range = days(start, end)
             let text = AssistantPrompt.schedule(days: range, events: events(range), hours: workingHours, now: .now, calendar: cal)
             let label = range.count == 1 ? Self.shortDay(start) : "\(Self.shortDay(start))–\(Self.shortDay(end))"
-            return .init(result: text, activity: "Looked at your calendar for \(label)")
+            return .init(result: text + partial, activity: "Looked at your calendar for \(label)")
 
         case .findFreeTime(let request):
             guard let start = request.from.date(in: cal), let end = request.to.date(in: cal) else {
@@ -768,37 +842,88 @@ final class AppModel {
             let slots = Availability.slots(duration: TimeInterval(request.durationMinutes * 60), days: range, events: events(range),
                                            hours: hours, notBefore: .now, calendar: cal)
             return .init(result: AssistantPrompt.freeTime(slots: slots, durationMinutes: request.durationMinutes,
-                                                          from: start, to: end, hours: hours, calendar: cal),
+                                                          from: start, to: end, hours: hours, calendar: cal) + partial,
                          activity: "Looked for \(request.durationMinutes) free minutes")
 
+        case .findEvents(let query, let daysAhead, let limit):
+            let now = Date.now
+            let start = cal.startOfDay(for: now)
+            guard let end = cal.date(byAdding: .day, value: daysAhead, to: start) else {
+                return .init(result: "That range doesn't work.", isError: true)
+            }
+            if let problem = await load(start, end) { return .init(result: problem, isError: true) }
+            let found = events(days(start, end))
+                .filter { event in event.end > now && (query.map { CalendarSearch.matches(event, query: $0) } ?? true) }
+                .sorted { $0.start < $1.start }
+                .prefix(limit)
+            return .init(result: AssistantPrompt.foundEvents(Array(found), query: query, through: end, now: now, calendar: cal) + partial,
+                         activity: query.map { "Searched your calendar for “\(BuddyVoice.short($0))”" } ?? "Looked at what's coming up")
+
         case .proposeEvent(let proposal):
+            guard calendar.isConnected else {
+                return .init(result: "New events can only be added to Google Calendar, which isn't connected. Coco reads "
+                             + "\(agenda.connectedNames) but can't add to it — they can add the event in that app.", isError: true)
+            }
             guard let day = proposal.date.date(in: cal) else { return .init(result: "That isn't a real date.", isError: true) }
             let draft: EventDraft
             if proposal.allDay {
                 draft = EventDraft(title: proposal.title, start: day, end: cal.date(byAdding: .day, value: 1, to: day) ?? day,
-                                   isAllDay: true, location: proposal.location, notes: proposal.notes)
+                                   isAllDay: true, location: proposal.location, notes: proposal.notes, source: proposal.source)
             } else {
                 guard let time = proposal.start, let minutes = proposal.durationMinutes,
                       let start = cal.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: day) else {
                     return .init(result: "A start time and length are needed.", isError: true)
                 }
                 draft = EventDraft(title: proposal.title, start: start, end: start.addingTimeInterval(TimeInterval(minutes * 60)),
-                                   location: proposal.location, notes: proposal.notes)
+                                   location: proposal.location, notes: proposal.notes, source: proposal.source)
             }
             if !draft.isAllDay, draft.start < Date.now.addingTimeInterval(-60) {
                 return .init(result: "That time has already passed — ask for a later one.", isError: true)
             }
             if let problem = await load(draft.start, draft.end) { return .init(result: problem, isError: true) }
-            let conflicts = draft.isAllDay ? [] : Availability.conflicts(with: DateInterval(start: draft.start, end: draft.end),
-                                                                         in: events(days(cal.startOfDay(for: draft.start), draft.end)))
+            var nearby = events(days(cal.startOfDay(for: draft.start), draft.end))
+            var duplicateNote = ""
+            if let source = draft.source {
+                // The same invitation, shared again: never a second card or a second event.
+                if eventRequests.contains(where: { $0.isCreating(from: source.key) }) {
+                    return .init(result: "A card to add this invitation is already waiting for the user to confirm — don't propose it again.",
+                                 activity: "Already waiting for you to confirm")
+                }
+                if let existing = try? await calendar.events(fromSource: source.key).first {
+                    return .init(result: "It's already on their calendar: “\(existing.title)” \(Self.describe(existing.start, existing.end, allDay: existing.isAllDay)) "
+                                 + "(id \(existing.id)), added from this same link. Nothing new was proposed.",
+                                 activity: "“\(BuddyVoice.short(existing.title))” is already on your calendar")
+                }
+                // The same invitation as Coco already shows it: from the Partiful import, maybe
+                // merged with a copy Partiful synced into Google Calendar. Not a conflict with itself.
+                let sameInvite = nearby.filter { $0.matchKeys.contains(source.key) || $0.allIDs.contains(source.key) }
+                nearby.removeAll { event in sameInvite.contains { $0.id == event.id } }
+                if let synced = sameInvite.first(where: { $0.references.contains { $0.provider == .google } }) {
+                    return .init(result: "It's already in their Google Calendar: “\(synced.title)” \(Self.describe(synced.start, synced.end, allDay: synced.isAllDay)) "
+                                 + "(the same Partiful invitation, synced there). Nothing new was proposed.",
+                                 activity: "“\(BuddyVoice.short(synced.title))” is already on your calendar")
+                }
+                if let lookalike = Self.lookalike(of: draft, in: nearby) {
+                    duplicateNote = " It may already be on their calendar as “\(lookalike.title)” "
+                        + "\(Self.describe(lookalike.start, lookalike.end, allDay: lookalike.isAllDay)) (same name and time, perhaps added from Partiful) — "
+                        + "point that out so they don't add it twice."
+                }
+                if !sameInvite.isEmpty {
+                    duplicateNote += " It already shows in Coco from their Partiful import; adding it puts a copy in Google Calendar too."
+                }
+            }
+            let conflicts = draft.isAllDay ? [] : Availability.conflicts(with: DateInterval(start: draft.start, end: draft.end), in: nearby)
             eventRequests.append(EventRequest(kind: .create(draft), conflicts: conflicts))
             return .init(result: "Showing the user “\(draft.title)” on \(Self.describe(draft.start, draft.end, allDay: draft.isAllDay)) to confirm."
-                         + Self.conflictNote(conflicts) + " It is NOT created unless they confirm; the app will tell you if it was.",
+                         + Self.conflictNote(conflicts) + duplicateNote
+                         + " It is NOT created unless they confirm; the app will tell you if it was.",
                          activity: "Suggested adding “\(BuddyVoice.short(draft.title))” — confirm below")
 
         case .proposeEventChange(let change):
-            guard let event = calendar.event(id: change.eventID) else {
-                return .init(result: "No event with id \(change.eventID) in the loaded calendar. Call get_schedule for that day first.", isError: true)
+            let event: CalendarEvent
+            switch changeTarget(change.eventID, verb: "changed") {
+            case .success(let found): event = found
+            case .failure(let refusal): return refusal.outcome
             }
             guard event.canEdit else {
                 return .init(result: "“\(event.title)” is organised by someone else, so it can't be changed from here.", isError: true)
@@ -836,24 +961,58 @@ final class AppModel {
             if let start = changes.start, let end = changes.end {
                 summary += ": from \(Self.describe(event.start, event.end, allDay: event.isAllDay)) to \(Self.describe(start, end, allDay: event.isAllDay))"
             }
-            return .init(result: summary + "." + Self.conflictNote(conflicts) + " Nothing changes unless they confirm.",
+            return .init(result: summary + "." + Self.conflictNote(conflicts) + Self.separateCopiesNote(event)
+                         + " Nothing changes unless they confirm.",
                          activity: "Suggested changing “\(BuddyVoice.short(event.title))” — confirm below")
 
         case .proposeEventDeletion(let id):
-            guard let event = calendar.event(id: id) else {
-                return .init(result: "No event with id \(id) in the loaded calendar. Call get_schedule for that day first.", isError: true)
+            let event: CalendarEvent
+            switch changeTarget(id, verb: "deleted") {
+            case .success(let found): event = found
+            case .failure(let refusal): return refusal.outcome
             }
             guard event.canEdit else {
                 return .init(result: "“\(event.title)” is organised by someone else, so it can't be deleted from here.", isError: true)
             }
             eventRequests.append(EventRequest(kind: .delete(event), conflicts: []))
             return .init(result: "Asked the user to confirm deleting “\(event.title)” (\(Self.describe(event.start, event.end, allDay: event.isAllDay))). "
-                         + "It is NOT deleted unless they confirm.",
+                         + Self.separateCopiesNote(event) + "It is NOT deleted unless they confirm.",
                          activity: "Asked you to confirm deleting “\(BuddyVoice.short(event.title))”")
 
         default:
             return .init(result: "Not a calendar action.", isError: true)
         }
+    }
+
+    private struct Refusal: Error {
+        let outcome: AssistantService.ToolOutcome
+    }
+
+    /// The Google Calendar record to change for an event the chat named (by the id it was
+    /// shown with, or any of its merged copies'). Apple Calendar and Partiful events are
+    /// read-only here, so those are refused with where to change them instead.
+    private func changeTarget(_ id: String, verb: String) -> Result<CalendarEvent, Refusal> {
+        guard let shown = agenda.event(id: id) else {
+            return .failure(Refusal(outcome: .init(result: "No event with id \(id) in the loaded calendar. Call get_schedule for that day first.",
+                                                   isError: true)))
+        }
+        guard var record = agenda.googleRecord(for: shown, in: calendar) else {
+            return .failure(Refusal(outcome: .init(result: "“\(shown.title)” is in \(shown.sourceLabel), which Coco can only read, so it can't be "
+                                                   + "\(verb) from here. They can do it in \(shown.provider == .partiful ? "Partiful" : "the Calendar app").",
+                                                   isError: true)))
+        }
+        // Remember the other copies so the card can say which ones won't change.
+        record.alsoIn = shown.references.filter { $0.id != record.id }
+        return .success(record)
+    }
+
+    /// Separate copies in other calendars (matched by details, not the same synced event)
+    /// that a change to the Google event won't touch.
+    static func separateCopiesNote(_ event: CalendarEvent) -> String {
+        let copies = event.alsoIn.filter { $0.match == .details }
+        guard !copies.isEmpty else { return "" }
+        return " Only the Google Calendar event is affected — the separate copy in \(copies.map(\.label).joined(separator: " and ")) "
+            + "stays as it is; the card tells the user."
     }
 
     /// Carries out a confirmed event change. The assistant hears what really happened.
@@ -867,9 +1026,15 @@ final class AppModel {
                 let day: Date
                 switch request.kind {
                 case .create(let draft):
-                    let event = try await calendar.create(draft, presentingFrom: nil)
-                    outcome = "Added “\(event.title)” for \(Self.describe(event.start, event.end, allDay: event.isAllDay))"
-                    day = event.start
+                    // Shared twice and confirmed twice (or added meanwhile): don't make a second copy.
+                    if let source = draft.source, let existing = try await calendar.events(fromSource: source.key).first {
+                        outcome = "“\(existing.title)” was already on your calendar for \(Self.describe(existing.start, existing.end, allDay: existing.isAllDay)) — not added again"
+                        day = existing.start
+                    } else {
+                        let event = try await calendar.create(draft, presentingFrom: nil)
+                        outcome = "Added “\(event.title)” for \(Self.describe(event.start, event.end, allDay: event.isAllDay))"
+                        day = event.start
+                    }
                 case .change(let event, let changes):
                     let updated = try await calendar.update(event, with: changes, presentingFrom: nil)
                     outcome = "Changed “\(updated.title)” to \(Self.describe(updated.start, updated.end, allDay: updated.isAllDay))"
@@ -916,7 +1081,7 @@ final class AppModel {
     func showScheduleDay(_ day: Date) {
         scheduleDay = Calendar.current.startOfDay(for: day)
         calendar.browsingWeek = calendar.weekStart(for: scheduleDay)
-        calendar.prefetch(around: scheduleDay)
+        agenda.prefetch(around: scheduleDay)
     }
 
     func moveScheduleDay(by days: Int) {
@@ -932,6 +1097,31 @@ final class AppModel {
         if allDay { return "\(shortDay(start)), all day" }
         let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
         return "\(shortDay(start)) \(time(start))–\(time(end))"
+    }
+
+    /// The Partiful event id in a link (or in text containing one); nil for short links.
+    static func partifulID(in text: String) -> String? {
+        let parsed = Partiful.link(from: text) ?? Partiful.links(in: text).first.flatMap { Partiful.link(from: $0.absoluteString) }
+        if case .event(let id)? = parsed?.link { return id }
+        return nil
+    }
+
+    /// Partiful's calendar descriptions start with "View this event on Partiful at <link>".
+    static func withoutPartifulBoilerplate(_ description: String) -> String {
+        guard description.hasPrefix("View this event on Partiful at ") else { return description }
+        let rest = description.drop { $0 != "\n" }.trimmingCharacters(in: .whitespacesAndNewlines)
+        return rest
+    }
+
+    /// An event on the calendar that's probably this one: the same name (ignoring case, emoji
+    /// and punctuation) starting within half an hour.
+    static func lookalike(of draft: EventDraft, in events: [CalendarEvent]) -> CalendarEvent? {
+        func key(_ title: String) -> String {
+            String(title.lowercased().unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }.map(Character.init))
+        }
+        let name = key(draft.title)
+        guard !name.isEmpty else { return nil }
+        return events.first { key($0.title) == name && abs($0.start.timeIntervalSince(draft.start)) <= 30 * 60 }
     }
 
     private static func conflictNote(_ conflicts: [CalendarEvent]) -> String {

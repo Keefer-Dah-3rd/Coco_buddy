@@ -39,7 +39,7 @@ struct WeekScheduleView: View {
             model.showScheduleDay(.now)
             return .handled
         }
-        .onAppear { model.calendar.prefetch(around: model.scheduleDay) }
+        .onAppear { model.agenda.prefetch(around: model.scheduleDay) }
     }
 
     private func header(_ days: [Date]) -> some View {
@@ -147,7 +147,7 @@ private struct DayKey: View {
 
     /// Share of working hours booked, or nil while the week isn't loaded.
     private var booked: Double? {
-        guard let events = model.calendar.events(on: day),
+        guard let events = model.agenda.events(on: day),
               let window = model.workingHours.interval(on: day, calendar: .current), window.duration > 0 else { return nil }
         return min(1, Double(Availability.bookedMinutes(events, within: window)) * 60 / window.duration)
     }
@@ -160,7 +160,7 @@ private struct DayKey: View {
 
     private func accessibilityText(today: Bool) -> String {
         var text = day.formatted(.dateTime.weekday(.wide).day().month(.wide)) + (today ? ", today" : "")
-        if let events = model.calendar.events(on: day) {
+        if let events = model.agenda.events(on: day) {
             let timed = events.filter { !$0.isAllDay }.count
             text += ", \(timed) event\(timed == 1 ? "" : "s")"
         }
@@ -175,7 +175,7 @@ private struct WeekSummary: View {
 
     var body: some View {
         let calendar = Calendar.current
-        let loaded = days.compactMap { day in model.calendar.events(on: day).map { (day, $0) } }
+        let loaded = days.compactMap { day in model.agenda.events(on: day).map { (day, $0) } }
         if loaded.count == days.count {
             let perDay = loaded.map { day, events -> (Date, Int, Int) in
                 let timed = events.filter { !$0.isAllDay }
@@ -193,7 +193,7 @@ private struct WeekSummary: View {
                 }
             }
         } else {
-            MonoLabel(days.contains { model.calendar.isLoading($0) } ? "Loading the week…" : " ")
+            MonoLabel(days.contains { model.agenda.isLoading($0) } ? "Loading the week…" : " ")
         }
     }
 }
@@ -204,7 +204,7 @@ struct DayAgenda: View {
     let day: Date
 
     var body: some View {
-        let service = model.calendar
+        let service = model.agenda
         VStack(alignment: .leading, spacing: Space.xs) {
             HStack(spacing: Space.sm) {
                 Text(day.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)))
@@ -296,7 +296,7 @@ struct DayAgenda: View {
                         .buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
                 } else {
                     Button("Try again") {
-                        Task { try? await model.calendar.ensureLoaded(from: day, to: day, maxAge: 0) }
+                        Task { try? await model.agenda.load(from: day, to: day) }
                     }
                     .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
                 }
@@ -310,6 +310,8 @@ struct EventRow: View {
     let event: CalendarEvent
     let day: DateInterval
     let now: Date
+    /// "in 15m", "20m left" — shown after the times; accent when it's soon.
+    var note: (text: String, urgent: Bool)? = nil
 
     var body: some View {
         let past = event.end <= now
@@ -331,6 +333,9 @@ struct EventRow: View {
                     MonoLabel(TodayView.duration(Int(event.duration / 60)))
                     if event.isRecurring { Image(systemName: "repeat").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.inkTertiary) }
                     if !event.isBusy { MonoLabel("free") }
+                    if let note, !past { MonoLabel(note.text, color: note.urgent ? Theme.accent : Theme.inkSecondary) }
+                    // Google is the default; anything else says where it lives.
+                    if event.provider != .google { MonoLabel(event.sourceLabel.replacingOccurrences(of: " Calendar", with: ""), color: Theme.inkTertiary) }
                 }
                 if let location = event.location, !location.isEmpty {
                     Text(location).font(.style(.caption)).foregroundStyle(Theme.inkSecondary).lineLimit(1)
@@ -345,8 +350,10 @@ struct EventRow: View {
         }
         .padding(.vertical, Space.xxs)
         .opacity(past ? 0.5 : 1)
+        // Which calendar(s) it's in — one row even when it's in several.
+        .help(event.sourcesDescription)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(event.title), \(timeText)\(happening ? ", happening now" : "")")
+        .accessibilityLabel("\(event.title), \(timeText)\(happening ? ", happening now" : note.map { ", \($0.text)" } ?? "")")
     }
 
     /// Times, noting when an event runs in from the day before or on past midnight.
@@ -358,7 +365,7 @@ struct EventRow: View {
     }
 }
 
-private struct OpenRow: View {
+struct OpenRow: View {
     let interval: DateInterval
 
     var body: some View {
@@ -379,10 +386,14 @@ private struct OpenRow: View {
     }
 }
 
-/// Google Calendar's event colours (colorId 1–11). Events without one use a neutral ink.
+/// Google Calendar's event colours (colorId 1–11), or an Apple calendar's own colour
+/// ("#RRGGBB"). Events without one use a neutral ink.
 enum EventColor {
     static func color(for id: String?) -> Color {
-        switch id {
+        if let id, id.hasPrefix("#"), id.count == 7, let value = Int(id.dropFirst(), radix: 16) {
+            return Color(hex: UInt32(value))
+        }
+        return switch id {
         case "1": Color(hex: 0x7986CB)
         case "2": Color(hex: 0x33B679)
         case "3": Color(hex: 0x8E24AA)

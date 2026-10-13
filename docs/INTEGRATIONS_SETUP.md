@@ -23,6 +23,19 @@ If Google's sheet ever says the app isn't allowed to ask for event changes, add 
 
 Notes: in Testing mode Google shows an "unverified app" screen (expected — it's your own app) and may ask you to sign in again after 7 days. The client ID is an identifier, not a secret; it's kept in the app's preferences, not in the repo.
 
+## Apple Calendar — built, one click
+
+How it works: Coco reads the calendars in the Calendar app (iCloud, Google or Exchange accounts added in *System Settings › Internet Accounts*, and On My Mac) through EventKit. It's read-only — Coco never adds, changes or deletes an Apple Calendar event — and nothing to set up beyond allowing access. The app has the sandbox's calendars entitlement and a usage description; macOS asks the first time you click **Connect**, never at launch.
+
+- [ ] Menu bar › **Connections…** › **Apple Calendar** › **Connect Apple Calendar** › choose **Allow Full Access**.
+- [ ] Check the list of calendars: your own are on; birthdays, subscribed calendars (holidays) and read-only calendars (usually other people's) start off. Switch any on or off.
+
+If your Google account is also added to Calendar.app, the same meetings arrive from both sides. Coco shows each once: synced copies share an iCalendar UID with the Google event, and separate copies are matched by identical times and (nearly) identical titles — anything less certain stays as two rows. Edits from the chat still go only to Google Calendar.
+
+- **Denied by mistake?** *System Settings › Privacy & Security › Calendars › Desktop Buddy* → **Full Access**, then **Check again** on the card. ("Add Only" isn't enough to read.)
+- **Revoke:** turn it off in that same System Settings pane. *Stop using Apple Calendar* in Connections stops Coco reading it without changing the permission.
+- Apple events are read when shown and re-read whenever Calendar.app reports a change; Coco keeps no copy of them on disk.
+
 ## Notion — paused
 
 > Out of the plan until further notice. The code is kept but switched off (`Features.notion = false` in `DesktopBuddy/App/Buddy.swift`). Notes below are for when it returns.

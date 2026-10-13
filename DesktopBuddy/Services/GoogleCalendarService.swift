@@ -351,6 +351,13 @@ final class GoogleCalendarService {
         return event
     }
 
+    /// Events already created from an invitation (by its source key), on any date.
+    func events(fromSource key: String) async throws -> [CalendarEvent] {
+        let token = try await validAccessToken()
+        let data = try await HTTP.send(GoogleCalendarAPI.eventsRequest(sourceKey: key, accessToken: token))
+        return try GoogleCalendarAPI.decodeDay(data).events
+    }
+
     /// Changes an event in place (same id, same guests).
     func update(_ event: CalendarEvent, with changes: EventChanges, presentingFrom window: NSWindow?) async throws -> CalendarEvent {
         let token = try await changeAccessToken(window: window)

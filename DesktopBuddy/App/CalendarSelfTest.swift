@@ -174,7 +174,8 @@ enum CalendarSelfTest {
     }
 }
 
-/// A tiny Google Calendar: events.list with paging, insert, patch and delete.
+/// A tiny Google Calendar: events.list with paging, insert, patch and delete. Requests to
+/// other hosts go to `otherHosts` (the Partiful self-test's stand-in pages).
 nonisolated final class FakeGoogle: URLProtocol, @unchecked Sendable {
     struct Event {
         var id: String
@@ -182,7 +183,22 @@ nonisolated final class FakeGoogle: URLProtocol, @unchecked Sendable {
         var start: Date
         var end: Date
         var mine: Bool
+        /// Coco's private source property, when it was created from an invitation.
+        var sourceKey: String? = nil
+        /// The iCalendar UID, which Apple Calendar shows for the same event.
+        var uid: String? = nil
     }
+
+    struct Answer {
+        var status: Int
+        var body: Data
+        var headers: [String: String] = [:]
+    }
+    nonisolated(unsafe) static var otherHosts: ((URLRequest) -> Answer)?
+    /// Every host asked for, in order.
+    nonisolated(unsafe) static var hostsRequested: [String] = []
+    nonisolated(unsafe) static var lastInsert: [String: Any]?
+    nonisolated(unsafe) static var inserts = 0
 
     nonisolated(unsafe) static var events: [Event] = []
     nonisolated(unsafe) static var gets = 0
@@ -206,6 +222,26 @@ nonisolated final class FakeGoogle: URLProtocol, @unchecked Sendable {
     override func stopLoading() {}
 
     override func startLoading() {
+        let host = request.url?.host ?? ""
+        Self.lock.withLock { Self.hostsRequested.append(host) }
+        if host != "www.googleapis.com", let other = Self.otherHosts {
+            let answer = other(request)
+            let response = HTTPURLResponse(url: request.url!, statusCode: answer.status, httpVersion: nil, headerFields: answer.headers)!
+            if (300..<400).contains(answer.status), let location = answer.headers["Location"], let next = URL(string: location) {
+                var redirected = request
+                redirected.url = next
+                client?.urlProtocol(self, wasRedirectedTo: redirected, redirectResponse: response)
+                // If the redirect is declined, the 3xx itself is the answer (as on the network);
+                // if it's followed, this load was already cancelled and these are ignored.
+                client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+                client?.urlProtocolDidFinishLoading(self)
+                return
+            }
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: answer.body)
+            client?.urlProtocolDidFinishLoading(self)
+            return
+        }
         let (status, body) = Self.lock.withLock { Self.answer(request) }
         let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
@@ -221,6 +257,11 @@ nonisolated final class FakeGoogle: URLProtocol, @unchecked Sendable {
         let id = url.path.components(separatedBy: "/events/").dropFirst().first?.removingPercentEncoding
         switch request.httpMethod ?? "GET" {
         case "GET":
+            if let property = items["privateExtendedProperty"] {
+                let key = property.components(separatedBy: "=").dropFirst().joined(separator: "=")
+                let found = events.filter { $0.sourceKey == key }
+                return (200, try! JSONSerialization.data(withJSONObject: ["items": found.map(json)]))
+            }
             gets += 1
             if failNextGets > 0 { failNextGets -= 1; return (500, Data()) }
             let formatter = ISO8601DateFormatter()
@@ -237,7 +278,10 @@ nonisolated final class FakeGoogle: URLProtocol, @unchecked Sendable {
             guard let body = request.bodyData.flatMap({ try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }),
                   let start = time(body["start"]), let end = time(body["end"]) else { return (400, Data()) }
             counter += 1
-            let event = Event(id: "new\(counter)", title: body["summary"] as? String ?? "", start: start, end: end, mine: true)
+            inserts += 1
+            lastInsert = body
+            let key = ((body["extendedProperties"] as? [String: Any])?["private"] as? [String: String])?[GoogleCalendarAPI.sourceProperty]
+            let event = Event(id: "new\(counter)", title: body["summary"] as? String ?? "", start: start, end: end, mine: true, sourceKey: key)
             events.append(event)
             return (200, try! JSONSerialization.data(withJSONObject: json(event)))
         case "PATCH":
@@ -259,9 +303,11 @@ nonisolated final class FakeGoogle: URLProtocol, @unchecked Sendable {
     private static func json(_ event: Event) -> [String: Any] {
         let formatter = ISO8601DateFormatter()
         formatter.timeZone = .current
-        return ["id": event.id, "status": "confirmed", "summary": event.title,
+        var item: [String: Any] = ["id": event.id, "status": "confirmed", "summary": event.title,
                 "start": ["dateTime": formatter.string(from: event.start)], "end": ["dateTime": formatter.string(from: event.end)],
                 "organizer": event.mine ? ["self": true] : ["email": "someone@example.com"]]
+        if let uid = event.uid { item["iCalUID"] = uid }
+        return item
     }
 
     private static func time(_ value: Any?) -> Date? {

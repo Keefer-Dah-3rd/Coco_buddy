@@ -52,7 +52,22 @@ enum SnapshotRenderer {
                           end: Date.now.addingTimeInterval(48 * 60), meetingLink: URL(string: "https://meet.google.com/abc")),
             CalendarEvent(id: "2", title: "1:1 with Sam", start: Date.now.addingTimeInterval(5 * 3600),
                           end: Date.now.addingTimeInterval(5.5 * 3600)),
+            CalendarEvent(id: "3", title: "Portfolio critique", start: at(24 * 2 + 14), end: at(24 * 2 + 15.5)),
         ], account: "keefer@example.com")
+        // Apple Calendar too: a copy of the design review (shown once) and events of its own.
+        let work = AppleCalendarInfo(id: "work", title: "Work", account: "Google", color: "#1BADF8", kind: .calDAV, isWritable: true)
+        let home = AppleCalendarInfo(id: "home", title: "Home", account: "iCloud", color: "#63DA38", kind: .calDAV, isWritable: true)
+        let birthdays = AppleCalendarInfo(id: "birthdays", title: "Birthdays", account: "Other", kind: .birthdays, isWritable: false)
+        connected.appleCalendar.loadPreview(calendars: [work, home, birthdays], events: [
+            CalendarEvent(id: "apple:r", title: "Design Review", start: Date.now.addingTimeInterval(18 * 60),
+                          end: Date.now.addingTimeInterval(48 * 60), colorID: work.color, canEdit: false, provider: .apple,
+                          calendarID: work.id, calendarName: work.title),
+            CalendarEvent(id: "apple:d", title: "Dentist", start: Date.now.addingTimeInterval(2.5 * 3600),
+                          end: Date.now.addingTimeInterval(3.25 * 3600), location: "Dr. Patel, 22 Court St", colorID: home.color,
+                          canEdit: false, provider: .apple, calendarID: home.id, calendarName: home.title),
+            CalendarEvent(id: "apple:l", title: "Lunch with Ana", start: at(24 + 12.5), end: at(24 + 13.5), colorID: home.color,
+                          canEdit: false, provider: .apple, calendarID: home.id, calendarName: home.title),
+        ])
         connected.notion.loadPreview(
             mapping: NotionMapping(dataSourceID: "ds", dataSourceTitle: "Portfolio tasks", titleProperty: "Name"),
             tasks: [

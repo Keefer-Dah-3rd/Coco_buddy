@@ -16,7 +16,7 @@ A native macOS desktop companion. **Coco** is a black-and-white corgi with a whi
 | --- | --- | --- | --- |
 | ![Welcome](docs/images/welcome-1.png) | ![Welcome extras](docs/images/welcome-3.png) | <img src="docs/images/settings.png" alt="Settings"> | ![Connections](docs/images/connections-connected.png) |
 
-**Swift 6 · SwiftUI + AppKit + Core Animation · no third-party dependencies · 142 unit tests · about 1% CPU at idle**
+**Swift 6 · SwiftUI + AppKit + Core Animation · no third-party dependencies · 163 unit tests · about 1% CPU at idle**
 
 ## Highlights
 
@@ -24,8 +24,10 @@ A native macOS desktop companion. **Coco** is a black-and-white corgi with a whi
 - **Energy-aware rendering.** The animator predicts when anything will next move. Quick motion runs at 60 fps, slow rhythms at 30 fps, and at rest a single timer ticks about 10× a second. Nothing renders while she's hidden or covered.
 - **Planning that stays honest.** A local task list with a quick-add syntax, *Up next* with its reason, focus sessions linked to tasks, and carry-over for today-only items. Nothing is ever marked done because time passed.
 - **Voice in and out.** On-device speech recognition and a tested rule-based parser. Commands run directly; everything else becomes draft tasks you review.
-- **Claude, safely.** Raw HTTP + SSE to the Messages API, with four narrow tools: read today, *propose* tasks, start focus, and *ask* to complete a task. Adding or completing tasks always waits for your click; only a focus session (local, and stoppable) starts straight away.
+- **Claude, safely.** Raw HTTP + SSE to the Messages API, with narrow tools: read today and the calendar, read Partiful invites, *propose* tasks and calendar changes, start focus, and *ask* to complete a task. Adding or completing tasks always waits for your click; only a focus session (local, and stoppable) starts straight away.
 - **Google Calendar.** OAuth with PKCE; a week browser with open time; meeting reminders; Coco finds free slots and adds, moves or deletes events only after you confirm (Google asks once for that permission). Tokens stay in the Keychain.
+- **Apple Calendar, and one schedule.** Coco reads the calendars in Calendar.app (iCloud, Google, Exchange, On My Mac) through EventKit, read-only, after you allow it. Events from every connected calendar are merged into one schedule: a meeting that's in both Google and Apple Calendar shows once, everywhere — the Today card, the week, reminders, counts and the chat.
+- **Partiful invites.** Paste a Partiful link in chat and Coco reads the event (title, time with its time zone, place, description) from the page's public schema.org data, converts it to your time zone, and offers it as an event to confirm. Missing details are asked about, never guessed; the invite link is kept on the event, and sharing it again never creates a duplicate. In **Connections › Partiful** you can also import all your Partiful events from your personal Partiful calendar link: they show in Coco's calendar and count for free time, read-only, without being copied into Google Calendar.
 - **Respectful by default.** First-launch welcome, onboarding that explains each permission before macOS asks, Settings with *Delete all my data*, full keyboard use, VoiceOver labels, and support for Reduce Motion and Low Power Mode.
 
 ## Status
@@ -37,8 +39,8 @@ All five phases are done.
    - tasks with notes, priority, estimate, deadline, and *my list* or *today only*;
    - a daily overview (done/remaining, focused today, time left, *Up next*);
    - a focus log.
-3. **Google Calendar:**
-   - a schedule strip: meeting now/next with Join, and the longest free block;
+3. **Calendars (Google and Apple):**
+   - a Today card: what's on now (and how long is left), the next meeting and how soon, the rest of the day with the open time between, and *Coming up* for the next few days;
    - **Week**: the strip opens into a week you can click, drag across or step through with ←/→, each day's events in order with the open time between them;
    - meeting reminders and a focus-length heads-up.
    - Setup: [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
@@ -90,13 +92,15 @@ cd Packages/BuddyKit && swift test
 | Chat › *"I finished the intro"* | A "Mark done?" card. Only your click marks it |
 | Today › calendar › **Week** | The week strip: drag across the days or use ←/→ (⇧ for a week, T for today). Each day lists events and the open time between them |
 | Chat › *"Find me a free hour Thursday afternoon"* | Coco checks Thursday's real events and offers openings, saying why |
+| Chat › *"When's my next meeting with Sam?"* | Coco searches your calendars on the Mac (titles, places, attendees) and answers with the soonest match |
+| Connections › **Apple Calendar** › *Connect* | macOS asks once for calendar access. Your calendars appear with switches; events already in Google Calendar aren't shown twice |
 | Chat › *"Schedule a design review next Tuesday at 2"* | An "Add to Google Calendar" card with any clash shown. Only **Add** creates it; the first time, Google asks you to allow changes |
 | Right-click her | Talk, presence, focus behaviour, always-on-top, mute, voice, hide, reset position, Settings |
 | Menu bar › Settings… | Presence, sounds and barks, voice, focus lengths, workday end, reminders, open at login, the shortcut, *Show welcome again*, *Delete all my data* |
 | Leave the Mac idle 5 min | She dozes off (airplane ears, Zs) and wakes when you return |
 | `Esc` / `⌘1` `⌘2` `⌘3` / `Space` / `⌘L` / `⌘.` | Close panel / switch tabs / start-pause on Focus / talk / stop a reply |
 
-Permissions are asked for only on first use: notifications when you first start a session, microphone and speech recognition when you first press the mic. If you decline, everything else keeps working and the panel shows where to turn them on.
+Permissions are asked for only on first use: notifications when you first start a session, microphone and speech recognition when you first press the mic, calendars when you first connect Apple Calendar. If you decline, everything else keeps working and the panel shows where to turn them on.
 
 ## How it's built
 
@@ -111,7 +115,7 @@ DesktopBuddy/                    App target: AppKit windows + SwiftUI views only
 Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
   BuddyCore         Coco's dialogue pools + line picker, tasks, quick-add parser, day planner (Up next), focus log, voice parsing, focus timer, persistence
   BuddyCharacter    States, pose model, animator (blinks, idle life, reactions, frame scheduling)
-  BuddyIntegrations Google OAuth (PKCE) + Calendar parsing + free-time maths; Notion (paused)
+  BuddyIntegrations Google OAuth (PKCE) + Calendar parsing, Apple Calendar mapping, cross-calendar merge + search, free-time maths; Notion (paused)
   BuddyAssistant    Claude Messages API (raw HTTP + SSE), stream accumulation, tool schemas + validation, prompts
 ```
 
@@ -163,6 +167,8 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 
 **Calendar, one source of truth.** Events are fetched a week at a time, only for the weeks being looked at, and cached per week; the Today strip, the week browser, the chat and meeting reminders all read the same cache. Repeating events arrive as their occurrences, events crossing midnight show on both days, and open time is counted in your working hours using wall-clock times, so daylight-saving days work. Availability, totals and conflicts are computed by the app (`Availability`, BuddyKit) and handed to the chat as facts — the model never decides whether a time is free. Changes go through `propose_event*` tools that only show a card; the app calls Google after you confirm and tells the chat what Google confirmed. Debug builds can run `--calendar-selftest`, which drives all of this against a stand-in Google Calendar.
 
+**One schedule from several calendars.** Google Calendar, Apple Calendar (EventKit) and Partiful are each an `AgendaSource`; `Agenda` asks every connected one for a day and merges the results with `CalendarMerge` (BuddyKit) before anything counts, shows or reminds. Two records are one event when they share an iCalendar UID (Google's `iCalUID` is the same UID Calendar.app shows for a synced Google event) for the same occurrence — repeating events are compared occurrence by occurrence, by when each was originally scheduled, so a moved occurrence still matches and two occurrences never do. Without a shared UID, they must start and end at the same minute, both be all-day or both timed, and have the same title once case, punctuation, emoji and spacing are ignored (or clearly the same title, e.g. "Design review" and "Design review (Zoom)"). Records from the same calendar never merge, and loosely similar ones stay separate: a meeting shown twice beats one hidden. The merged event uses Google's record when there is one (the record Coco can change) and fills gaps — place, video link, colour — from the others; it keeps references to every copy. Merging is display-only: no source event is ever changed or deleted because it's a duplicate. Changes from the chat go to the Google record behind the event; Apple Calendar and Partiful events are read-only, and if the other copy is separate rather than synced, the confirmation card says it won't change. Apple Calendar is read a week at a time on a background actor and re-read when Calendar.app reports a change (`EKEventStoreChanged`) — no polling. Debug builds can run `--apple-calendar-selftest` (a stand-in EventKit: permission states, duplicates, changes, failures, revoked access).
+
 **Fetch.** Holding right Command (for 0.2 s, so ⌘-shortcuts never trigger it) shows a tennis ball on the same click-catching overlay as calling her. The throw is a `BallFlight` (BuddyKit): a gravity arc, bounces that each keep less height and lose speed to friction, then a roll to a stop, with spin that follows its travel — tracked as a floor point plus a height, so its shadow and the spot she runs to stay on the floor. A `Fetch` chains that with two `Dash`es: notice, a chase that leaves before the ball lands and is paced to arrive as it settles, a pickup (slow last step, head down, mouth closes on the ball), a turn-around and run home to the exact starting spot, and a drop at her paws. The ball lives in its own click-through window (in front of or behind her by depth) while loose, and in her running model's mouth while carried. Throws that would leave the ball out of reach are shortened. Debug builds can run `--fetch-selftest`.
 
 **Treats.** Right Shift (held 0.25 s, so capitals never trigger it) makes her beg — the hold *is* the begging — and the click tosses a bone-shaped biscuit. It flies with the same `BallFlight` model as the ball but a treat `Material`: a lower, quicker arc, tumbling end over end, one small flat bounce and a short skid. A `TreatGame` (BuddyKit) plans the chase, the eating (gone at the bite) and a jump straight up and down on the spot. Fetch and treats share one lock: while either is playing, no key does anything.
@@ -172,13 +178,14 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 ## Privacy
 
 - Everything is local. Tasks, the focus log and timer state are JSON files in the app's sandbox container; preferences live in UserDefaults; sign-ins and keys live in the Keychain.
-- App Sandbox entitlements: microphone and **outgoing** network (Google Calendar and the Claude API). Voice needs no network.
-- Integrations ask for the least access. Calendar is read-only, with events only and a minimal field list. *Disconnect* revokes and forgets tokens and deletes cached data.
+- App Sandbox entitlements: microphone, calendars (Apple Calendar, read-only) and **outgoing** network (Google Calendar, the Claude API, and Partiful pages you share). Voice needs no network.
+- Links: when you share a Partiful invitation in chat, the app fetches that one page from partiful.com, the way a link preview would. It sends no cookies or sign-in, identifies itself, follows redirects only within Partiful, and never fetches any other site. Password-protected or sign-in-only invites are reported, not worked around. If you import your Partiful calendar, its link (a secret) is kept in the Keychain, the events are cached on this Mac, and the link is read about every half hour; *Disconnect* forgets both.
+- Integrations ask for the least access. Google Calendar reads events only, with a minimal field list (no descriptions or attendee lists), until you allow changes. Apple Calendar is read-only; event notes and attendee names stay on this Mac — the chat never receives them, except the name you searched for when it matches. Apple events aren't stored by Coco at all (Calendar.app has them). *Disconnect* revokes and forgets tokens and deletes cached data; *Stop using Apple Calendar* stops reading it, and System Settings › Privacy & Security › Calendars revokes the permission.
 - Calendar and task data go to Anthropic only when you ask the chat something that needs them, and the chat marks it. Chats are kept in memory only.
 - Audio is never recorded or stored. The transcript is used once and discarded.
 - **Settings › Delete all my data** removes all of the following, then shows the welcome again:
   - tasks, focus history and the timer;
-  - the calendar sign-in (revoked with Google) and its cache;
+  - the calendar sign-in (revoked with Google) and its cache, and the Apple Calendar choices;
   - the Claude key, the chat, settings and scheduled notifications.
 
 ## Design system
@@ -208,6 +215,7 @@ How it works, what syncs and what doesn't: [docs/DESIGN_SYSTEM.md](docs/DESIGN_S
 
 ## Debug tools
 
+- `--partiful-selftest` (Debug) runs the Partiful flow — reading, redirects, private and missing pages, proposing, confirming and duplicate checks — against stand-in Partiful and Google servers. `--partiful-selftest --live <link>` reads one real invitation and prints what the chat would see.
 - `--snapshots <folder>` (Debug builds) renders every character state, the panels, Settings, the welcome steps and the app icon to PNGs, and writes Coco's poses as SVG (`mascot/`) for Figma. The images above come from it. Run it from an unsandboxed, locally signed build:
 
   ```bash

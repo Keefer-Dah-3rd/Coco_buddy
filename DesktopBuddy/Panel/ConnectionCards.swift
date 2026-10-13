@@ -2,7 +2,9 @@ import SwiftUI
 import BuddyCore
 import BuddyIntegrations
 
-/// Today's calendar in two lines: the meeting now or next, and the best stretch of free time.
+/// Today's calendar, from every connected calendar with duplicates merged: what's on now,
+/// what's next and how soon, the rest of the day with the open time between, then the next
+/// few days. Opens out into the week browser.
 struct ScheduleStrip: View {
     let model: AppModel
 
@@ -25,7 +27,10 @@ struct ScheduleStrip: View {
                 if model.scheduleExpanded {
                     WeekScheduleView(model: model)
                 } else {
-                    today.frame(maxWidth: .infinity, alignment: .leading)
+                    // Once a minute, so "in 15m" and "20m left" stay true while the panel is open.
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        today(now: context.date).frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
             .padding(.horizontal, Space.md)
@@ -34,15 +39,46 @@ struct ScheduleStrip: View {
         }
     }
 
-    /// Every event today, stacked in order — the one happening now marked, finished ones dimmed.
-    private var today: some View {
-        let service = model.calendar
-        let now = Date.now
-        let schedule = service.schedule
-        let day = Availability.dayInterval(now, calendar: .current)
+    private enum Item: Identifiable {
+        case event(CalendarEvent)
+        case open(DateInterval)
+        var id: String {
+            switch self {
+            case .event(let event): event.id
+            case .open(let interval): "open-\(interval.start.timeIntervalSince1970)"
+            }
+        }
+        var start: Date {
+            switch self {
+            case .event(let event): event.start
+            case .open(let interval): interval.start
+            }
+        }
+    }
+
+    /// Every event today in order — the one happening now marked, finished ones dimmed — with
+    /// open stretches of half an hour or more between the ones still to come.
+    private func today(now: Date) -> some View {
+        let agenda = model.agenda
+        let calendar = Calendar.current
         let _ = model.dayToken
+        let events = agenda.events(on: now) ?? []
+        let schedule = DaySchedule(events: events)
+        let day = Availability.dayInterval(now, calendar: calendar)
+        let remaining = schedule.events.filter { $0.end > now }
+        let next = schedule.next(after: now)
+        let open = remaining.isEmpty ? [] : Availability.openings(on: now, events: events, hours: model.workingHours,
+                                                                  minimum: 30 * 60, notBefore: now, calendar: calendar)
+        let items = (schedule.events.map(Item.event) + open.map(Item.open)).sorted { ($0.start, $0.id) < ($1.start, $1.id) }
         return VStack(alignment: .leading, spacing: Space.xs) {
-            MonoLabel("Today")
+            HStack(spacing: Space.sm) {
+                MonoLabel("Today")
+                Spacer(minLength: Space.xs)
+                if !schedule.events.isEmpty {
+                    MonoLabel(remaining.isEmpty ? "done" : "\(remaining.count) left"
+                              + (open.isEmpty ? "" : " · \(TodayView.duration(Int(open.reduce(0) { $0 + $1.duration } / 60))) open"))
+                }
+            }
             if schedule.events.isEmpty && schedule.allDayEvents.isEmpty {
                 Text("No meetings today — wide open.")
                     .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
@@ -52,44 +88,67 @@ struct ScheduleStrip: View {
                     MonoLabel("All day")
                     Text(event.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
                 }
+                .help(event.sourcesDescription)
             }
-            ForEach(schedule.events) { event in
-                EventRow(event: event, day: day, now: now)
-            }
-            if service.problem != nil || service.status == .needsReconnect {
-                Button { model.openConnections() } label: {
-                    MonoLabel(service.status == .needsReconnect ? "Calendar needs reconnecting ›"
-                              : "Couldn't refresh" + (service.lastUpdated.map { " · showing \($0.formatted(date: .omitted, time: .shortened))" } ?? ""),
-                              color: Theme.accent)
+            ForEach(items) { item in
+                switch item {
+                case .event(let event): EventRow(event: event, day: day, now: now, note: note(for: event, next: next, now: now))
+                case .open(let interval): OpenRow(interval: interval)
                 }
-                .buttonStyle(.plain)
             }
+            if !schedule.events.isEmpty && remaining.isEmpty {
+                Text("That's all for today — no more meetings.")
+                    .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
+            }
+            problemLine(now: now)
+            comingUp(now: now)
         }
     }
 
-    private func meetingLine(label: String, event: CalendarEvent, detail: String, urgent: Bool) -> some View {
-        HStack(spacing: Space.sm) {
-            MonoLabel(label, color: urgent ? Theme.accent : Theme.inkSecondary)
-            Text(event.title)
-                .font(.style(.bodyEmphasis))
-                .foregroundStyle(Theme.ink)
-                .lineLimit(1)
-            MonoLabel(detail)
-            Spacer(minLength: 4)
-            if let link = event.meetingLink {
-                Button("Join") { NSWorkspace.shared.open(link) }
-                    .buttonStyle(KeyButtonStyle(kind: urgent ? .primary : .secondary, compact: true))
-                    .help(link.absoluteString)
-            }
-        }
-        .accessibilityElement(children: .combine)
+    /// The meeting happening now: how long is left. The next one: how soon.
+    private func note(for event: CalendarEvent, next: CalendarEvent?, now: Date) -> (text: String, urgent: Bool)? {
+        if event.start <= now && now < event.end { return (RelativeTiming.remaining(until: event.end, now: now), false) }
+        guard event.id == next?.id else { return nil }
+        return (RelativeTiming.untilStart(of: event.start, now: now), event.start.timeIntervalSince(now) <= 15 * 60)
     }
 
-    private func longestFreeBlock(now: Date) -> DateInterval? {
-        let schedule = model.calendar.schedule
-        let start = schedule.current(at: now)?.end ?? now
-        return schedule.freeBlocks(from: start, until: DaySchedule.workdayEnd(after: now, hour: model.preferences.workdayEndHour), minimum: 25 * 60)
-            .max { $0.duration < $1.duration }
+    @ViewBuilder
+    private func problemLine(now: Date) -> some View {
+        let failing = model.agenda.activeSources.filter { $0.problem(for: now) != nil }.map(\.sourceName)
+        if model.calendar.status == .needsReconnect || !failing.isEmpty {
+            Button { model.openConnections() } label: {
+                MonoLabel(model.calendar.status == .needsReconnect ? "Google Calendar needs reconnecting ›"
+                          : "Couldn't refresh \(failing.joined(separator: " or ")) · showing what's saved ›",
+                          color: Theme.accent)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// The next few events after today, with when they are: "Tomorrow", "Thu", "Oct 24".
+    @ViewBuilder
+    private func comingUp(now: Date) -> some View {
+        let agenda = model.agenda
+        let upcoming = agenda.comingUp(after: now, limit: 3)
+        let weekAhead = Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
+        Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, Space.xxs)
+        MonoLabel("Coming up")
+        if upcoming.isEmpty {
+            Text(agenda.events(on: weekAhead) == nil && agenda.isLoading(weekAhead) ? "Loading…" : "Nothing in the next 7 days.")
+                .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
+        }
+        ForEach(upcoming) { event in
+            HStack(spacing: Space.sm) {
+                MonoLabel(RelativeTiming.day(of: event.start, now: now))
+                    .frame(width: 66, alignment: .leading)
+                Text(event.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
+                Spacer(minLength: Space.xs)
+                Text(event.isAllDay ? "all day" : event.start.formatted(date: .omitted, time: .shortened))
+                    .font(.style(.monoValue)).foregroundStyle(Theme.inkSecondary)
+            }
+            .help(event.sourcesDescription)
+            .accessibilityElement(children: .combine)
+        }
     }
 }
 

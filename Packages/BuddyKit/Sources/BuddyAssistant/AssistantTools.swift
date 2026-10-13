@@ -18,12 +18,16 @@ public enum AssistantAction: Equatable, Sendable {
     case getSchedule(from: CalendarDate, to: CalendarDate)
     /// Find openings of a given length in a range of days.
     case findFreeTime(FreeTimeRequest)
+    /// Find upcoming events by a name or words (or just what's next), from now on.
+    case findEvents(query: String?, daysAhead: Int, limit: Int)
     /// Show the user a new event to confirm.
     case proposeEvent(EventProposal)
     /// Show the user a change to an event to confirm.
     case proposeEventChange(EventChangeProposal)
     /// Ask the user to confirm deleting an event.
     case proposeEventDeletion(eventID: String)
+    /// Read the event on an invitation link the user shared (Partiful).
+    case readEventLink(url: String)
 }
 
 /// A calendar date as the model writes it: "2026-10-15", in the user's time zone.
@@ -106,9 +110,11 @@ public struct EventProposal: Equatable, Sendable {
     public var allDay: Bool
     public var location: String?
     public var notes: String?
+    /// The invitation the event comes from, when it was read from a link.
+    public var source: EventSource?
 
     public init(title: String, date: CalendarDate, start: ClockTime?, durationMinutes: Int?, allDay: Bool = false,
-                location: String? = nil, notes: String? = nil) {
+                location: String? = nil, notes: String? = nil, source: EventSource? = nil) {
         self.title = title
         self.date = date
         self.start = start
@@ -116,6 +122,7 @@ public struct EventProposal: Equatable, Sendable {
         self.allDay = allDay
         self.location = location
         self.notes = notes
+        self.source = source
     }
 }
 
@@ -146,8 +153,10 @@ public enum AssistantTools {
         tool("get_today",
              """
              Read the user's tasks for today (with ids, priority, estimates, due dates), their focus timer, \
-             and today's calendar if connected. Call this before saying anything about their plan, tasks, \
-             schedule, meetings or free time — you don't know any of it otherwise.
+             today's calendar if one is connected (every connected calendar, merged so an event in more than \
+             one appears once), free time left today and the next few events after today. Call this before \
+             saying anything about their plan, tasks, schedule, meetings or free time — you don't know any of \
+             it otherwise.
              """,
              properties: [:], required: []),
         tool("propose_tasks",
@@ -188,8 +197,9 @@ public enum AssistantTools {
              properties: ["task_id": ["type": "string"]], required: ["task_id"]),
         tool("get_schedule",
              """
-             Read the user's Google Calendar for a range of dates (inclusive, at most 31 days): each day's \
-             events with ids, the open stretches within their working hours, and totals. Call this before \
+             Read the user's calendars for a range of dates (inclusive, at most 31 days) — every connected \
+             calendar, merged so an event in more than one appears once: each day's events with ids, the \
+             open stretches within their working hours, and totals. Call this before \
              saying anything about any day other than today — what's on, how busy, conflicts. Work out dates \
              from the local date in the app's note; "this week" runs to Sunday.
              """,
@@ -211,10 +221,22 @@ public enum AssistantTools {
                 "earliest": ["type": "string", "description": "Optional HH:MM, 24-hour."],
                 "latest": ["type": "string", "description": "Optional HH:MM, 24-hour."],
              ], required: ["start_date", "end_date", "duration_minutes"]),
+        tool("find_events",
+             """
+             Search the user's calendars from now on for events whose title, place or attendees match a \
+             person's name or a few words — e.g. their next meeting with someone, or when the dentist is. \
+             Without a query, lists what's coming up next. Soonest first, with ids. The search runs on the \
+             user's Mac; attendee names are only mentioned when they match.
+             """,
+             properties: [
+                "query": ["type": "string", "description": "Optional: a name or words from the title or place, e.g. \"Sam\"."],
+                "days_ahead": ["type": "integer", "description": "1–31, default 14."],
+                "limit": ["type": "integer", "description": "1–20, default 5."],
+             ], required: []),
         tool("propose_event",
              """
-             Show the user a new calendar event to confirm. Nothing is created unless they confirm, and \
-             conflicts are shown to them. Check the day with get_schedule or find_free_time first. If the \
+             Show the user a new calendar event to confirm; it's added to their Google Calendar (the only \
+             calendar Coco can change). Nothing is created unless they confirm, and conflicts are shown to them. Check the day with get_schedule or find_free_time first. If the \
              title, day, time or length is unclear, ask a short question instead of guessing.
              """,
              properties: [
@@ -225,6 +247,10 @@ public enum AssistantTools {
                 "all_day": ["type": "boolean"],
                 "location": ["type": "string", "description": "Optional place or video link."],
                 "notes": ["type": "string", "description": "Optional description."],
+                "source_link": ["type": "string", "description": """
+                    The partiful.com/e/… link read_event_link returned, when the event comes from an invitation. \
+                    Keeps the link on the event and stops the same invitation being added twice.
+                    """],
              ], required: ["title", "date"]),
         tool("propose_event_change",
              """
@@ -246,6 +272,15 @@ public enum AssistantTools {
              deleted unless they confirm. Only events marked [editable].
              """,
              properties: ["event_id": ["type": "string"]], required: ["event_id"]),
+        tool("read_event_link",
+             """
+             Read a Partiful invitation the user shared (a partiful.com/e/… or go.partiful.com/… link): the \
+             title, date, start and end with time zone, place and description, plus the details to pass to \
+             propose_event. Call it whenever the user shares or asks about one — you can't see the page \
+             otherwise. Use only what it returns; for anything it says isn't listed, ask the user.
+             """,
+             properties: ["url": ["type": "string", "description": "The link exactly as the user gave it."]],
+             required: ["url"]),
     ]
 
     private static func tool(_ name: String, _ description: String, properties: [String: JSONValue], required: [String]) -> JSONValue {
@@ -352,7 +387,7 @@ public enum AssistantTools {
                                                           earliest: bounds[0], latest: bounds[1])))
 
         case "propose_event":
-            if let key = unexpected(["title", "date", "start_time", "duration_minutes", "all_day", "location", "notes"]) {
+            if let key = unexpected(["title", "date", "start_time", "duration_minutes", "all_day", "location", "notes", "source_link"]) {
                 return .failure(.invalid("unexpected field \(key)"))
             }
             guard let title = object["title"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
@@ -373,9 +408,16 @@ public enum AssistantTools {
                 start = time
                 minutes = length
             }
+            var source: EventSource?
+            if let link = text(object["source_link"], limit: 500) {
+                guard case .event(let id)? = Partiful.link(from: link)?.link else {
+                    return .failure(.invalid("source_link must be the partiful.com/e/… link read_event_link returned"))
+                }
+                source = EventSource(name: "Partiful", url: Partiful.canonicalURL(id: id), key: Partiful.sourceKey(id: id))
+            }
             return .success(.proposeEvent(EventProposal(
                 title: String(title.prefix(200)), date: date, start: start, durationMinutes: minutes, allDay: allDay,
-                location: text(object["location"], limit: 300), notes: text(object["notes"], limit: 1000))))
+                location: text(object["location"], limit: 300), notes: text(object["notes"], limit: 1000), source: source)))
 
         case "propose_event_change":
             if let key = unexpected(["event_id", "date", "start_time", "duration_minutes", "title", "location"]) {
@@ -404,6 +446,25 @@ public enum AssistantTools {
             if let key = unexpected(["event_id"]) { return .failure(.invalid("unexpected field \(key)")) }
             guard let id = object["event_id"]?.string, !id.isEmpty else { return .failure(.invalid("event_id is required")) }
             return .success(.proposeEventDeletion(eventID: id))
+
+        case "find_events":
+            if let key = unexpected(["query", "days_ahead", "limit"]) { return .failure(.invalid("unexpected field \(key)")) }
+            if let value = object["query"], value.string == nil { return .failure(.invalid("query must be a string")) }
+            var days = 14, limit = 5
+            if let value = object["days_ahead"] {
+                guard let number = value.int, (1...31).contains(number) else { return .failure(.invalid("days_ahead must be 1–31")) }
+                days = number
+            }
+            if let value = object["limit"] {
+                guard let number = value.int, (1...20).contains(number) else { return .failure(.invalid("limit must be 1–20")) }
+                limit = number
+            }
+            return .success(.findEvents(query: text(object["query"], limit: 100), daysAhead: days, limit: limit))
+
+        case "read_event_link":
+            if let key = unexpected(["url"]) { return .failure(.invalid("unexpected field \(key)")) }
+            guard let url = text(object["url"], limit: 2000) else { return .failure(.invalid("url is required")) }
+            return .success(.readEventLink(url: url))
 
         default:
             return .failure(.unknownTool(name))
@@ -467,9 +528,12 @@ public enum AssistantPrompt {
         you may mention it once.
 
         What you know, and what you don't:
-        - You only know the user's tasks, focus timer and today's calendar through get_today, and other \
-        days only through get_schedule. Call them before saying anything about them. If you're relying on \
-        an earlier result, it may be out of date.
+        - You only know the user's tasks, focus timer and today's calendar through get_today, other days \
+        through get_schedule, and particular upcoming events through find_events. Call them before saying \
+        anything about them. If you're relying on an earlier result, it may be out of date.
+        - Their calendars (Google Calendar, Apple Calendar…) come merged: an event that's in two of them \
+        is listed once, so count what the tools list — never add calendars up yourself. If a tool says a \
+        calendar couldn't be read, say the answer may be incomplete. Times are the user's local time.
         - Never work out whether a time is free yourself: use find_free_time, or the open stretches \
         get_schedule lists. Say why a time works or doesn't ("you're in Design review until 3").
         - Resolve dates like "tomorrow" or "next Wednesday" from the local date in the app's note, and say \
@@ -484,8 +548,14 @@ public enum AssistantPrompt {
         just show the user something to confirm — say that; never claim tasks were added, marked done, \
         or that an event was created, moved or deleted unless a later note from the app confirms it.
         - Only say something happened when the tool result confirms it. If a tool fails, say so plainly.
-        - You can't browse, message anyone, run commands, or change anything outside these tools. If \
-        asked, say so and suggest what the user could do.
+        - Partiful invitations: when the user shares a partiful.com or go.partiful.com link, call \
+        read_event_link before saying anything about the event. Use only the details it returns — never \
+        fill in a missing date, start, end, time zone or place; ask. When adding it, pass the source_link \
+        it gives you to propose_event. If the page can't be read, say why (it tells you) and offer to work \
+        from the invitation text if they paste it in.
+        - You can't browse, message anyone, run commands, or change anything outside these tools — the \
+        only web pages you can read are Partiful invitations, through read_event_link. If asked, say so \
+        and suggest what the user could do.
         """
     }
 
@@ -578,8 +648,13 @@ public enum AssistantPrompt {
         var tags = ["id \(event.id)"]
         if event.meetingLink != nil { tags.append("video call") }
         if !event.isBusy { tags.append("shown as free") }
-        if event.isRecurring { tags.append("repeats") }
-        tags.append(event.canEdit ? "editable" : "someone else's — read only")
+        if event.isRecurring { tags.append(event.recurrence.map { "repeats \($0)" } ?? "repeats") }
+        if event.provider == .google {
+            tags.append(event.canEdit ? "editable" : "someone else's — read only")
+        } else {
+            tags.append("\(event.sourceLabel) — read only in Coco")
+        }
+        if !event.alsoIn.isEmpty { tags.append("also in " + event.alsoIn.map(\.label).joined(separator: ", ")) }
         return text + " [" + tags.joined(separator: "] [") + "]"
     }
 
@@ -607,9 +682,12 @@ public enum AssistantPrompt {
     }
 
     /// What get_today returns — exactly what the model is told about the user's day.
+    /// `events` are today's, already merged across calendars; `sources` names the connected
+    /// calendars, `problems` the ones that couldn't be read, `upcoming` the next events after today.
     public static func today(tasks: [BuddyTask], focus: FocusSnapshot, focusedMinutesToday: Int,
                              calendarConnected: Bool, events: [CalendarEvent], now: Date,
-                             workdayEndHour: Int = 18, calendar: Calendar = .current) -> String {
+                             workdayEndHour: Int = 18, sources: String? = nil, problems: [String] = [],
+                             upcoming: [CalendarEvent] = [], calendar: Calendar = .current) -> String {
         let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
         var lines: [String] = []
         let open = tasks.filter { !$0.isCompleted }
@@ -637,6 +715,8 @@ public enum AssistantPrompt {
             lines.append("Calendar: not connected — you can't see their meetings.")
             return lines.joined(separator: "\n")
         }
+        if let sources { lines.append("Calendars: \(sources) (an event in more than one is listed once).") }
+        for problem in problems { lines.append("Couldn't read \(problem) — what follows may be incomplete.") }
         let schedule = DaySchedule(events: events)
         if schedule.events.isEmpty && schedule.allDayEvents.isEmpty {
             lines.append("Calendar: no events today.")
@@ -650,9 +730,42 @@ public enum AssistantPrompt {
             }
         }
         let free = schedule.freeBlocks(from: now, until: DaySchedule.workdayEnd(after: now, hour: workdayEndHour, calendar: calendar), minimum: 20 * 60)
-        if !free.isEmpty {
+        if free.isEmpty {
+            lines.append("No free stretch of 20+ min left before end of day.")
+        } else {
+            let total = Int(free.reduce(0) { $0 + $1.duration } / 60)
             lines.append("Free stretches (20+ min) before end of day: "
-                         + free.map { "\(time($0.start))–\(time($0.end))" }.joined(separator: ", "))
+                         + free.map { "\(time($0.start))–\(time($0.end))" }.joined(separator: ", ") + " (\(length(total)) in all)")
+        }
+        if !upcoming.isEmpty {
+            lines.append("Next after today:")
+            for event in upcoming {
+                lines.append("- \(dayLabel(event.start, calendar: calendar)) "
+                             + (event.isAllDay ? "all day" : "\(time(event.start))–\(time(event.end))") + " \(event.title)")
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// What find_events returns: matching events from now on, soonest first.
+    public static func foundEvents(_ events: [CalendarEvent], query: String?, through end: Date, now: Date,
+                                   calendar: Calendar = .current) -> String {
+        let until = dayLabel(end, calendar: calendar)
+        guard !events.isEmpty else {
+            return query.map { "No events matching “\($0)” (title, place or attendees) from now through \(until)." }
+                ?? "Nothing on the calendar from now through \(until)."
+        }
+        var lines = [query.map { "Events matching “\($0)” from now through \(until), soonest first:" }
+                     ?? "Coming up, soonest first (through \(until)):"]
+        for event in events {
+            var line = "- \(dayLabel(event.start, calendar: calendar)) "
+                + describe(event, on: Availability.dayInterval(event.start, calendar: calendar), calendar: calendar)
+            if event.start <= now { line += " (happening now)" }
+            if let query {
+                let names = CalendarSearch.matchingAttendees(event, query: query)
+                if !names.isEmpty { line += " — with \(names.joined(separator: ", "))" }
+            }
+            lines.append(line)
         }
         return lines.joined(separator: "\n")
     }

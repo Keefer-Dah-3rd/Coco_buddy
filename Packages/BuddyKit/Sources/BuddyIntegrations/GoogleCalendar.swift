@@ -1,46 +1,5 @@
 import Foundation
 
-public struct CalendarEvent: Codable, Equatable, Identifiable, Sendable {
-    public var id: String
-    public var title: String
-    public var start: Date
-    public var end: Date
-    public var isAllDay: Bool
-    public var location: String?
-    /// Video call link (Meet or another conferencing entry point), if any.
-    public var meetingLink: URL?
-    /// The event in Google Calendar on the web.
-    public var htmlLink: URL?
-    /// Google's event colour ("1"–"11"), when one was picked for this event.
-    public var colorID: String?
-    /// False when the event is marked "Free" in Google Calendar — it doesn't block time.
-    public var isBusy: Bool
-    /// One occurrence of a repeating event.
-    public var isRecurring: Bool
-    /// The user organises it (or guests may modify it), so Coco may move or delete it.
-    public var canEdit: Bool
-
-    public init(id: String, title: String, start: Date, end: Date, isAllDay: Bool = false,
-                location: String? = nil, meetingLink: URL? = nil, htmlLink: URL? = nil,
-                colorID: String? = nil, isBusy: Bool = true, isRecurring: Bool = false, canEdit: Bool = true) {
-        self.id = id
-        self.title = title
-        self.start = start
-        self.end = end
-        self.isAllDay = isAllDay
-        self.location = location
-        self.meetingLink = meetingLink
-        self.htmlLink = htmlLink
-        self.colorID = colorID
-        self.isBusy = isBusy
-        self.isRecurring = isRecurring
-        self.canEdit = canEdit
-    }
-
-    public var duration: TimeInterval { end.timeIntervalSince(start) }
-    public var interval: DateInterval { DateInterval(start: start, end: max(start, end)) }
-}
-
 /// A new event, as the user confirmed it.
 public struct EventDraft: Equatable, Sendable {
     public var title: String
@@ -49,14 +8,41 @@ public struct EventDraft: Equatable, Sendable {
     public var isAllDay: Bool
     public var location: String?
     public var notes: String?
+    /// The invitation it came from, kept on the event so the same one is never added twice.
+    public var source: EventSource?
 
-    public init(title: String, start: Date, end: Date, isAllDay: Bool = false, location: String? = nil, notes: String? = nil) {
+    public init(title: String, start: Date, end: Date, isAllDay: Bool = false, location: String? = nil, notes: String? = nil,
+                source: EventSource? = nil) {
         self.title = title
         self.start = start
         self.end = end
         self.isAllDay = isAllDay
         self.location = location
         self.notes = notes
+        self.source = source
+    }
+
+    /// The description as saved: the notes, then the invitation link (never dropped).
+    public var description: String? {
+        let notes = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard let source else { return notes.isEmpty ? nil : notes }
+        if notes.contains(source.url.absoluteString) { return notes }
+        let link = "\(source.name) invite: \(source.url.absoluteString)"
+        return notes.isEmpty ? link : notes + "\n\n" + link
+    }
+}
+
+/// Where an event came from: an invitation page such as a Partiful link.
+public struct EventSource: Equatable, Sendable {
+    public var name: String
+    public var url: URL
+    /// Stable id for the invitation ("partiful:<id>"), stored on the event in Google Calendar.
+    public var key: String
+
+    public init(name: String, url: URL, key: String) {
+        self.name = name
+        self.url = url
+        self.key = key
     }
 }
 
@@ -81,10 +67,14 @@ public struct EventChanges: Equatable, Sendable {
 /// has allowed it — creating, changing and deleting events.
 public enum GoogleCalendarAPI {
     static let base = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
-    /// Only the fields the buddy shows or needs to decide what it may change. Attendee
-    /// lists, descriptions and other people's details are never requested.
+    /// Only the fields the buddy shows or needs to decide what it may change, plus the
+    /// identifiers that recognise the same event in Apple Calendar (iCalUID, the original
+    /// start of a repeating occurrence, when it was last changed, and Coco's own invitation
+    /// key — no other private properties). Attendee lists, descriptions and other people's
+    /// details are never requested.
     static let eventFields = "id,status,summary,start,end,location,hangoutLink,htmlLink,eventType,colorId,transparency,"
-        + "recurringEventId,guestsCanModify,organizer(self),attendees(self,responseStatus),conferenceData(entryPoints(entryPointType,uri))"
+        + "recurringEventId,guestsCanModify,organizer(self),attendees(self,responseStatus),conferenceData(entryPoints(entryPointType,uri)),"
+        + "iCalUID,originalStartTime,updated,extendedProperties/private/\(sourceProperty)"
     static let fields = "summary,nextPageToken,items(\(eventFields))"
 
     public static func eventsRequest(for day: Date, calendar: Calendar = .current, accessToken: String) -> URLRequest {
@@ -122,8 +112,33 @@ public enum GoogleCalendarAPI {
             "end": time(draft.end, allDay: draft.isAllDay, calendar: calendar),
         ]
         if let location = draft.location, !location.isEmpty { body["location"] = location }
-        if let notes = draft.notes, !notes.isEmpty { body["description"] = notes }
+        if let description = draft.description { body["description"] = description }
+        if let source = draft.source {
+            // Google shows the source as a link on the event; the private property finds it again.
+            body["source"] = ["title": source.name, "url": source.url.absoluteString]
+            body["extendedProperties"] = ["private": [sourceProperty: source.key]]
+        }
         return jsonRequest("POST", url: eventURL(nil), body: body, accessToken: accessToken)
+    }
+
+    /// The private property Coco stores an invitation's key under.
+    public static let sourceProperty = "cocoSource"
+
+    /// Events Coco already created from this invitation (any date; cancelled ones excluded).
+    public static func eventsRequest(sourceKey: String, calendar: Calendar = .current, accessToken: String) -> URLRequest {
+        var components = URLComponents(string: base)!
+        // Encoded fully: the property's value itself contains "=" and ":".
+        let unreserved = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
+        components.percentEncodedQueryItems = [
+            ("privateExtendedProperty", "\(sourceProperty)=\(sourceKey)"),
+            ("singleEvents", "true"),
+            ("maxResults", "10"),
+            ("timeZone", calendar.timeZone.identifier),
+            ("fields", fields),
+        ].map { URLQueryItem(name: $0.0, value: $0.1.addingPercentEncoding(withAllowedCharacters: unreserved)) }
+        var request = URLRequest(url: components.url!)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        return request
     }
 
     /// PATCH keeps the event's id, attendees and everything not mentioned.
@@ -218,6 +233,15 @@ public enum GoogleCalendarAPI {
                 .flatMap { $0["uri"] as? String }.flatMap(URL.init(string:))
         }
         let title = (item["summary"] as? String).map { $0.trimmingCharacters(in: .whitespaces) }
+        // The same event seen through Apple Calendar carries the same iCalendar UID; an
+        // event added from an invitation also carries the invitation's key.
+        var keys: [String] = []
+        if let uid = item["iCalUID"] as? String, !uid.isEmpty { keys.append(uid) }
+        if let invitation = ((item["extendedProperties"] as? [String: Any])?["private"] as? [String: Any])?[sourceProperty] as? String,
+           !invitation.isEmpty {
+            keys.append(invitation)
+        }
+        let seriesID = item["recurringEventId"] as? String
         return CalendarEvent(
             id: id,
             title: (title?.isEmpty ?? true) ? "(No title)" : title!,
@@ -229,9 +253,24 @@ public enum GoogleCalendarAPI {
             htmlLink: (item["htmlLink"] as? String).flatMap(URL.init(string:)),
             colorID: item["colorId"] as? String,
             isBusy: item["transparency"] as? String != "transparent",
-            isRecurring: item["recurringEventId"] != nil,
-            canEdit: (item["organizer"] as? [String: Any])?["self"] as? Bool == true || item["guestsCanModify"] as? Bool == true
+            isRecurring: seriesID != nil,
+            canEdit: (item["organizer"] as? [String: Any])?["self"] as? Bool == true || item["guestsCanModify"] as? Bool == true,
+            provider: .google,
+            calendarID: "primary",
+            matchKeys: keys,
+            occurrenceStart: seriesID == nil ? nil : moment(item["originalStartTime"], calendar: calendar)?.date,
+            seriesID: seriesID,
+            timeZone: (item["start"] as? [String: Any])?["timeZone"] as? String,
+            lastModified: (item["updated"] as? String).flatMap(timestamp)
         )
+    }
+
+    /// An RFC 3339 time, with or without fractional seconds.
+    private static func timestamp(_ text: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: text) { return date }
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: text)
     }
 
     /// `{"dateTime": "2026-10-10T09:30:00-04:00"}` or, for all-day events, `{"date": "2026-10-10"}`.

@@ -56,6 +56,17 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 - [ ] Settings: switch the shortcut off. ⌃⌥C does nothing. Switch it on again; it works.
 - [ ] Give ⌃⌥C to another app (e.g. a Shortcuts keyboard shortcut) and relaunch Desktop Buddy. Settings explains the shortcut is taken.
 
+## Calling Coco (hold Right ⌥, click)
+
+- [ ] Hold Right ⌥: the circle appears under the cursor right away and her eyes follow it. Let go: it disappears. Left ⌥ does nothing.
+- [ ] Click while holding: the app underneath gets no click. She spots the place, play-bows, dashes there and sits facing you.
+- [ ] Click on the menu bar or Dock: she stops at the nearest spot where she's fully visible, and the marker shows that spot.
+- [ ] Click again mid-run: she curves to the new spot without stopping. Call her again while she's braking: she sets straight off.
+- [ ] Grab her mid-run: she stops where she is. Her speech bubble hides while she runs and comes back when she arrives.
+- [ ] Two displays: call her across to the other one.
+- [ ] Reduce Motion on: she fades out and back in at the spot.
+- [ ] Settings: switch "Call Coco over" off; Right ⌥ does nothing.
+
 ## Keyboard
 
 - [ ] Open the panel, type a task, press Return. Press ↓ to enter the list.

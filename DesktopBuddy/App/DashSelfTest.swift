@@ -31,6 +31,7 @@ enum DashSelfTest {
         controller.call(to: first)
         spin(until: { model.dash.map { CharacterModel.clock > $0.launchTime + 0.45 } ?? true }, limit: 3)
         controller.call(to: second)
+        let lastDash = model.dash
         spin(until: { finished > 0 }, limit: 6)
 
         let elapsed = CharacterModel.clock - started
@@ -40,6 +41,10 @@ enum DashSelfTest {
         let paws = CGPoint(x: controller.window.frame.minX + CharacterLayout.artFrame.midX,
                            y: controller.window.frame.minY + CharacterLayout.artFrame.minY + CharacterLayout.artFrame.height * 0.07)
         let gaps = zip(moves.dropFirst(), moves).map { $0.t - $1.t }
+        if let worst = gaps.indices.max(by: { gaps[$0] < gaps[$1] }), let dash = model.dash ?? lastDash {
+            print(String(format: "dash selftest: longest gap ends %.3f s after launch (arrival at %.3f s)",
+                         moves[worst + 1].t - dash.launchTime, dash.arrivalTime - dash.launchTime))
+        }
         let jumps = zip(moves.dropFirst(), moves).map { hypot($0.origin.x - $1.origin.x, $0.origin.y - $1.origin.y) }
         print(String(format: "dash selftest: finished=%d, landed %.1f pt from the click target, %d moves in %.2f s",
                      finished, hypot(paws.x - expected.x, paws.y - expected.y), moves.count, elapsed))

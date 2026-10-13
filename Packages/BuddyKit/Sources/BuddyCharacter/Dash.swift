@@ -23,9 +23,9 @@ public struct Dash: Sendable, Equatable {
     /// Leg cycles per second at full tilt — short corgi legs go fast.
     public static let topCadence: Double = 5.5
     /// The wind-up before she launches.
-    public static let windUp: TimeInterval = 0.42
+    public static let windUp: TimeInterval = 0.5
     /// From arriving to sitting back down.
-    public static let settle: TimeInterval = 0.38
+    public static let settle: TimeInterval = 0.5
 
     public let start: SIMD2<Double>
     public let end: SIMD2<Double>
@@ -152,6 +152,9 @@ public struct Dash: Sendable, Equatable {
         case .running:
             return Dash(from: position(at: t), to: newEnd, at: t, readyDuration: 0,
                         speed: speed(at: t), heading: direction(at: t), strideOffset: strides(at: t))
+        case .settling(let k) where k < CharacterAnimator.handback:
+            // Still on her feet: straight off again, no second wind-up.
+            return Dash(from: end, to: newEnd, at: t, readyDuration: 0, speed: 0, heading: nil, strideOffset: strides(at: t))
         case .settling, .finished:
             return Dash(from: end, to: newEnd, at: t)
         }

@@ -71,6 +71,7 @@ cd Packages/BuddyKit && swift test
 | Hover near Coco | Her eyes follow the cursor (Interactive presence) |
 | Watch for a minute | She blinks, glances around, flicks an ear, wags, pants and tilts her head, on a schedule rather than constantly |
 | Drag her | Legs dangle and ears flop while carried. She squashes on landing and snaps back if dropped off-screen |
+| Hold **Right ⌥** and click anywhere | A faint circle shows where she'll land. She spots it, drops into a play bow, dashes there (32 facings, blended as she turns), then turns and sits. Click again mid-run to change course |
 | Click her, or press **⌃⌥C** from any app | The panel opens beside her. Type a task, e.g. `Draft homepage ~45m !!` |
 | **↓** from the add field, then **↑ ↓ Space ↩ ⌫ F** | Move through tasks, tick, edit, delete, start focus on the selected one |
 | Tick a task | She barks and celebrates: hops, tongue out, tail going |
@@ -151,6 +152,8 @@ She's drawn with Core Animation layers: each frame only sets transforms and opac
 They join every Space, follow display changes and stay on a visible screen. Settings, Connections and Welcome are ordinary titled windows.
 
 **Global shortcut.** ⌃⌥C uses the Carbon hot-key API, which needs no Accessibility or Input Monitoring permission. If another app already owns the combination, Settings says so instead of failing silently.
+
+**Calling Coco.** Holding right Option shows an invisible layer over every display, so the click calls her instead of reaching the app underneath. The key is read from modifier and mouse events, with no Accessibility or Input Monitoring permission. Her route is a `Dash` (BuddyKit): a pure function of time that eases her up to speed and down to a stop and keeps her speed and heading when she changes course. While she runs, the sitting drawing hands over to a small 3D model of her, drawn flat in her palette and redrawn each frame, so she can face any direction. The handovers are single-frame swaps hidden in a squash. With Reduce Motion on, she fades across instead. Debug builds render review sheets and GIFs with `--run-preview <folder>`.
 
 **Unobtrusive by rule.** Lines have an importance (`ambient`, `acknowledge`, `important`). Ambient chatter only happens in Interactive presence and never during focus. Coco greets at most once a day, and nothing interrupts a focus session except its end.
 

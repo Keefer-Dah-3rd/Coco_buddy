@@ -330,40 +330,82 @@ extension CharacterAnimator {
         }
     }
 
-    /// Called somewhere: eyes on the spot and a crouch, then the running Coco takes over
-    /// and bounds there, then she turns to face you and sits back down.
+    /// Called somewhere. Each handover between the sitting and running drawings is a
+    /// single-frame swap hidden inside a squash, so the two never show at once.
     static func apply(_ dash: Dash, at t: TimeInterval, to p: inout CharacterPose) {
-        let heading = dash.direction(at: t)
         switch dash.phase(at: t) {
         case .ready(let k):
-            let crouch = ease(k / 0.6)
-            p.earPerk = 1
-            p.eyeScale += 0.12
-            p.gazeX = heading.x
-            p.gazeY = -heading.y
-            p.squash += 0.07 * crouch
-            p.tail += 0.35 * sin(t * 24) * crouch
-            // The running Coco fades in at the very end, already facing the spot.
-            let takeover = ease((k - 0.8) / 0.2)
-            if takeover > 0 {
-                p = .blend(p, runningPose(from: p, facing: dash.facing(at: t), strides: dash.strides(at: t), effort: 0, at: t), takeover)
-                p.run = takeover
+            if k < spotted {
+                // Spots the place: eyes lock on, ears shoot up, a little "!" hop.
+                let s = k / spotted
+                let heading = dash.direction(at: t)
+                p.earPerk = 1
+                p.eyeScale += 0.2 * ease(s / 0.4)
+                p.gazeX = heading.x
+                p.gazeY = -heading.y
+                p.lift += 3 * sin(s * .pi)
+                p.squash += 0.06 * ease((s - 0.6) / 0.4)
+                p.mouthOpen = max(p.mouthOpen, 0.25 * sin(s * .pi))
+            } else {
+                p = windUp(dash, (k - spotted) / (1 - spotted), at: t, from: p)
             }
         case .running:
-            p = runningPose(from: p, facing: dash.facing(at: t), strides: dash.strides(at: t), effort: dash.effort(at: t), at: t)
+            var r = runningPose(from: p, facing: dash.facing(at: t), strides: dash.strides(at: t),
+                                effort: dash.effort(at: t), at: t)
+            // Leans into turns: how fast her facing is swinging round, signed left-positive.
+            let now = dash.facing(at: t)
+            let before = dash.facing(at: t - 0.05)
+            let swing = (before.x * now.y - before.y * now.x) / 0.05
+            r.bank = min(0.3, max(-0.3, swing * 0.06))
+            p = r
         case .settling(let k):
-            // Turns to face you, then the sitting Coco takes back over.
-            let facing = turn(from: dash.facing(at: t), to: SIMD2(0, -1), by: ease(k / 0.6))
-            let running = runningPose(from: p, facing: facing, strides: dash.strides(at: t), effort: 0, at: t)
-            let handback = ease((k - 0.6) / 0.4)
-            p = .blend(running, p, handback)
-            p.run = 1 - handback
-            p.squash += 0.1 * exp(-k * 5) * cos(k * 14) * handback
-            p.tongue = max(p.tongue, 1 - k)
-            p.mouthOpen = max(p.mouthOpen, 0.45 * (1 - k))
+            if k < handback {
+                // Brakes low and turns to face you, gathering for the sit.
+                let s = k / handback
+                let facing = turn(from: dash.facing(at: t), to: SIMD2(0, -1), by: ease(s / 0.85))
+                var r = runningPose(from: p, facing: facing, strides: dash.strides(at: t), effort: 0, at: t)
+                r.crouch = 0.4 * ease(s)
+                r.earBack = 0.4 * (1 - s)
+                p = r
+            } else {
+                // Plops down: the sitting drawing lands squashed and wobbles back up.
+                let s = (k - handback) / (1 - handback)
+                p.squash += 0.13 * exp(-s * 5) * cos(s * 13)
+                p.tongue = max(p.tongue, 1)
+                p.mouthOpen = max(p.mouthOpen, 0.45)
+                p.eyeSmile = max(p.eyeSmile, 0.7 * (1 - s))
+                p.tail += 0.5 * sin(t * 18)
+            }
         case .finished:
             break
         }
+    }
+
+    /// Share of the wind-up spent spotting the place, in the sitting drawing.
+    static let spotted = 0.2
+    /// Share of the settle spent braking and turning, in the running drawing.
+    static let handback = 0.45
+
+    /// Getting ready, s from 0 to 1: she turns to the spot and drops into a play bow — front
+    /// down, butt up and wiggling, tail going — gathers low, then lets go into the dash.
+    static func windUp(_ dash: Dash, _ s: Double, at t: TimeInterval, from base: CharacterPose) -> CharacterPose {
+        let target = dash.facing(at: t)
+        let bow = ease(s / 0.25) * (1 - ease((s - 0.8) / 0.2))
+        // A quick wiggle from side to side while she's down in the bow.
+        let wiggle = 0.09 * sin(t * 34) * bow
+        let toward = turn(from: SIMD2(0, -1), to: target, by: ease(s / 0.35))
+        let facing = SIMD2(toward.x * cos(wiggle) - toward.y * sin(wiggle), toward.x * sin(wiggle) + toward.y * cos(wiggle))
+        var p = runningPose(from: base, facing: facing, strides: 0, effort: 0, at: t)
+        p.bow = bow
+        // Lands from the swap squashed, then sinks lower just before the launch.
+        p.crouch = 0.6 * exp(-s * 14) + 0.45 * ease((s - 0.45) / 0.35) * (1 - ease((s - 0.88) / 0.12))
+        p.tail = 0.65 * sin(t * 28)
+        p.earBack = 0
+        p.eyeSmile = 0
+        p.eyeScale = 1.12
+        p.mouthOpen = 0.35
+        p.tongue = 0.5
+        return p
     }
 
     /// The running Coco mid-dash: bounding along in a direction with a happy, open-mouthed
@@ -376,7 +418,7 @@ extension CharacterAnimator {
         p.headingY = facing.y
         p.stride = strides
         // Even a short trot bounds a little.
-        p.gallop = effort > 0 ? min(1, 0.35 + effort) : 0
+        p.gallop = min(1, 0.35 * min(1, effort / 0.03) + effort)
         p.earBack = min(1, 0.2 + effort)
         p.earPerk = 1
         p.eyeSmile = 0.85

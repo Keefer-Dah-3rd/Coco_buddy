@@ -149,6 +149,31 @@ import Testing
         return min(d, 2 * Double.pi - d)
     }
 
+    @Test func neverShowsBothDrawingsAtOnce() {
+        var animator = CharacterAnimator()
+        let dash = Dash(from: home, to: home + SIMD2(-600, 200), at: t0)
+        animator.setDash(dash)
+        var swaps = 0
+        var previous = animator.pose(at: t0).run
+        for t in stride(from: t0, through: dash.endTime + 0.1, by: 1.0 / 240) {
+            let run = animator.pose(at: t).run
+            #expect(run == 0 || run == 1)
+            if run != previous { swaps += 1 }
+            previous = run
+        }
+        // Sitting → running for the wind-up, running → sitting to finish.
+        #expect(swaps == 2)
+    }
+
+    @Test func callingAgainWhileBrakingGoesStraightOff() {
+        let first = Dash(from: home, to: home + SIMD2(-400, 0), at: t0)
+        let braking = first.arrivalTime + first.settleDuration * 0.2
+        let again = first.redirected(to: home + SIMD2(-400, 300), at: braking)
+        #expect(again.launchTime == braking)
+        let sitting = first.arrivalTime + first.settleDuration * 0.8
+        #expect(first.redirected(to: home, at: sitting).readyDuration == Dash.windUp)
+    }
+
     @Test func animatorDrawsEveryFrameOnlyWhileDashing() {
         var animator = CharacterAnimator()
         animator.setState(.focused, at: t0 - 10)

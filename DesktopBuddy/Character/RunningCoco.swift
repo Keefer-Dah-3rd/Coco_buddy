@@ -185,7 +185,7 @@ final class RunningCoco {
             front = rotate(front, about: across, by: back * side)
 
             let base = frame.point(Anatomy.earBase.x, Anatomy.earBase.y * side, Anatomy.earBase.z)
-            let scale = 1.08
+            let scale = 1.14
             let lengthwise = Camera.vector(up * -scale)
             let crosswise = Self.readableWidth(Camera.vector(across * scale), along: lengthwise,
                                                outward: Camera.vector(out), minimum: 0.45 * scale)
@@ -376,13 +376,13 @@ private enum Anatomy {
     static let bib = Ellipsoid(center: Vec(19.5, 0, 22), radii: Vec(6.5, 9, 9.5))
 
     static let neck = Vec(20, 0, 32)
-    static let skull = Ellipsoid(center: Vec(30, 0, 43), radii: Vec(15, 18, 16))
-    static let muzzle = Ellipsoid(center: Vec(42, 0, 35.5), radii: Vec(9.5, 7.5, 6.5))
-    static let nose = Ellipsoid(center: Vec(51, 0, 38), radii: Vec(2.4, 3.3, 2.5))
+    static let skull = Ellipsoid(center: Vec(30, 0, 43), radii: Vec(16, 19.5, 17))
+    static let muzzle = Ellipsoid(center: Vec(43, 0, 35.5), radii: Vec(10, 8, 7))
+    static let nose = Ellipsoid(center: Vec(52.5, 0, 38.3), radii: Vec(2.6, 3.5, 2.7))
     // A thin marking on the front of the face, leaning back with the forehead.
-    static let blaze = Ellipsoid(center: Vec(42, 0, 46.5), radii: Vec(2, 3.4, 7.5), pitch: 0.35)
-    static let mouth = Vec(47.5, 0, 31.5)
-    static let earBase = Vec(25.5, 10, 54)
+    static let blaze = Ellipsoid(center: Vec(43.2, 0, 46.5), radii: Vec(2, 3.6, 8), pitch: 0.35)
+    static let mouth = Vec(48.5, 0, 31.2)
+    static let earBase = Vec(25.5, 10.5, 55.5)
 
     static let collarCenter = Vec(21, 0, 32)
     static let collarAxis = Vec(0.62, 0, 0.78)
@@ -575,12 +575,16 @@ private enum Camera {
     /// From the scene toward the viewer.
     static let toViewer = Vec(0, -cosE, sinE)
 
+    /// The model is a touch larger than its units, so seen from the front she's about the
+    /// size of the sitting drawing she swaps with.
+    static let scale = 1.12
+
     static func point(_ p: Vec) -> CGPoint {
-        CGPoint(x: 50 + p.x, y: 93 - (p.y * sinE + p.z * cosE))
+        CGPoint(x: 50 + p.x * scale, y: 93 - (p.y * sinE + p.z * cosE) * scale)
     }
 
     static func vector(_ v: Vec) -> CGVector {
-        CGVector(dx: v.x, dy: -(v.y * sinE + v.z * cosE))
+        CGVector(dx: v.x * scale, dy: -(v.y * sinE + v.z * cosE) * scale)
     }
 
     /// Larger is farther from the viewer.

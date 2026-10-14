@@ -32,7 +32,6 @@ final class Preferences {
     var alwaysOnTop: Bool { didSet { defaults.set(alwaysOnTop, forKey: Key.onTop) } }
     var soundsMuted: Bool { didSet { defaults.set(soundsMuted, forKey: Key.muted) } }
     /// The buddy speaks her lines aloud as well as showing them.
-    var voiceEnabled: Bool { didSet { defaults.set(voiceEnabled, forKey: Key.voice) } }
     var presence: Presence { didSet { defaults.set(presence.rawValue, forKey: Key.presence) } }
     var focusPresentation: FocusPresentation {
         didSet { defaults.set(focusPresentation.rawValue, forKey: Key.focusPresentation) }
@@ -81,7 +80,6 @@ final class Preferences {
         isBuddyVisible = true
         alwaysOnTop = true
         soundsMuted = false
-        voiceEnabled = false
         presence = .interactive
         focusPresentation = .smaller
         focusSettings = FocusSettings()
@@ -108,7 +106,8 @@ final class Preferences {
         isBuddyVisible = defaults.bool(forKey: Key.visible)
         alwaysOnTop = defaults.bool(forKey: Key.onTop)
         soundsMuted = defaults.bool(forKey: Key.muted)
-        voiceEnabled = defaults.bool(forKey: Key.voice)
+        // Coco no longer reads lines aloud; forget the old setting.
+        defaults.removeObject(forKey: Key.voice)
         presence = defaults.string(forKey: Key.presence).flatMap(Presence.init) ?? .interactive
         focusPresentation = defaults.string(forKey: Key.focusPresentation)
             .flatMap(FocusPresentation.init) ?? .smaller

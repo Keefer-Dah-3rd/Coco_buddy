@@ -98,10 +98,8 @@ struct OnboardingView: View {
             StepTitle("Optional extras")
             StepText("All off until you choose them. Everything else works without.")
             Extra(symbol: "waveform", title: "Voice",
-                  detail: "Switch on and she reads her lines aloud. To talk to her, press the mic (⌘L) in her panel — macOS asks for microphone access the first time.") {
-                Toggle("Speak aloud", isOn: Binding(get: { model.preferences.voiceEnabled }, set: { model.preferences.voiceEnabled = $0 }))
-                    .toggleStyle(.switch).controlSize(.small).labelsHidden()
-                    .help("\(Buddy.name) speaks her lines aloud")
+                  detail: "To talk to her, press the mic (⌘L) in her panel — macOS asks for microphone access the first time. She answers with a bark and a speech bubble.") {
+                MonoLabel("⌘L")
             }
             Extra(symbol: "calendar", title: "Calendar",
                   detail: "Apple Calendar, Google Calendar or both — shown as one schedule, with open time and meeting reminders. Events change only when you confirm.") {

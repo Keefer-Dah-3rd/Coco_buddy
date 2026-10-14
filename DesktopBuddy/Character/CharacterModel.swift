@@ -134,19 +134,6 @@ final class CharacterModel {
         apply()
     }
 
-    /// Keeps the mouth moving for as long as the voice is actually speaking.
-    func setVoiceActive(_ active: Bool) {
-        if active, transient == nil || transient == .talking {
-            transientTask?.cancel()
-            transient = .talking
-            apply()
-        } else if !active, transient == .talking {
-            transientTask?.cancel()
-            transient = nil
-            apply()
-        }
-    }
-
     /// Mouth movement without a bubble — used when the line appears in the open panel.
     func mouthAlong(_ text: String) {
         guard transient == nil || transient == .talking else { return }

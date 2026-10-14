@@ -54,8 +54,6 @@ struct SettingsView: View {
                     ToggleRow("Mute all sounds", isOn: $preferences.soundsMuted)
                     ToggleRow("\(Buddy.name) barks at big moments", isOn: $preferences.barksEnabled)
                         .disabled(preferences.soundsMuted)
-                    ToggleRow("\(Buddy.name) speaks her lines aloud", isOn: $preferences.voiceEnabled)
-                        .disabled(preferences.soundsMuted)
                     Caption("Voice input asks for microphone and speech-recognition access the first time you press the mic. Recognition runs on this Mac when your language supports it.")
                 }
 

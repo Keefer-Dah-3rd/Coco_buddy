@@ -15,7 +15,7 @@ A screen recording for a portfolio page or a LinkedIn post. It shows Coco as a c
 - **Notifications:** turn on Do Not Disturb, except for Desktop Buddy (System Settings › Focus › Do Not Disturb › Allowed Apps).
 - **Data:** start from Settings › *Delete all my data* so the welcome shows. Have the Claude key and Google Calendar connected *after* the welcome (or keep a second user account set up for demos). Put one real meeting on today's calendar about 40 minutes out.
 - **Focus length:** Settings › Focus › 5 min. You'll speed up the wait in the edit.
-- **Sound:** barks and voice on, system volume at about 60%. Record system audio with QuickTime or a tool like Audio Hijack. The barks sell it.
+- **Sound:** barks on, system volume at about 60%. Record system audio with QuickTime or a tool like Audio Hijack. The barks sell it.
 - **Capture:** ⌘⇧5 › *Record Selected Portion*, 1920×1080 around the bottom-right quarter of the screen, with *Show Mouse Clicks* on.
 
 ## Shot list

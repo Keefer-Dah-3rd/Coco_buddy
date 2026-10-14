@@ -50,7 +50,6 @@ final class AppModel {
     /// browser, reminders and chat read this; changes go to the Google service itself.
     let agenda: Agenda
     let character = CharacterModel()
-    let voiceOut = VoiceOutput()
     let voiceIn = VoiceInput()
 
     var panelTab: PanelTab = .today
@@ -199,15 +198,7 @@ final class AppModel {
             case .writing: self?.character.hold(.talking)
             }
         }
-        assistant.onReplyFinished = { [weak self] reply in
-            guard let self, self.voiceAudible, !reply.isEmpty else { return }
-            self.voiceOut.speak(reply)
-        }
         voiceIn.onFinish = { [weak self] transcript in self?.handleTranscript(transcript) }
-        voiceOut.onSpeakingChanged = { [weak self] speaking in self?.character.setVoiceActive(speaking) }
-        track({ [weak self] in self?.preferences.voiceEnabled ?? false }) { [weak self] enabled in
-            if enabled { self?.voiceOut.prepare() }
-        }
 
         track({ [weak self] in self?.characterSync }) { [weak self] sync in
             guard let self, let sync else { return }
@@ -595,8 +586,6 @@ final class AppModel {
             voiceIn.finish()
             return
         }
-        // Never let the microphone hear Coco's own voice.
-        voiceOut.stop()
         character.dismissSpeech()
         taskDrafts = []
         Task {
@@ -1156,16 +1145,11 @@ final class AppModel {
 
     // MARK: - Speaking
 
-    /// Whether lines are also spoken aloud right now.
-    private var voiceAudible: Bool {
-        preferences.voiceEnabled && !preferences.soundsMuted && !voiceIn.isListening
-    }
-
     func speak(_ text: String, _ importance: Importance) {
         buddyLine = text
         lastSpokeAt = .now
         if isPanelOpen {
-            if voiceAudible { voiceOut.speak(text) } else { character.mouthAlong(text) }
+            character.mouthAlong(text)
             return
         }
         let interactive = preferences.presence == .interactive
@@ -1179,7 +1163,6 @@ final class AppModel {
         }
         guard preferences.isBuddyVisible else { return }
         character.say(text)
-        if voiceAudible { voiceOut.speak(text) }
     }
 
     private func greetOncePerDay() {

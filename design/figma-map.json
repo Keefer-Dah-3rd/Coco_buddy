@@ -640,7 +640,7 @@
         "file": "DesktopBuddy/Panel/PanelRootView.swift",
         "anchor": ".frame(width: 22, height: 18)"
       },
-      "notes": "Active ↔ calendar.isConnected (link) / preferences.voiceEnabled (speaker.wave.2.fill vs speaker.slash). Exposed inside Panel / Status Bar as “connections” and “voice”."
+      "notes": "Active ↔ agenda.isConnected (link). Exposed inside Panel / Status Bar as “connections”; the old “voice” key is no longer in the app."
     },
     {
       "figma": {
@@ -745,26 +745,6 @@
       },
       "swift": {
         "symbol": "Image(systemName: \"waveform\")"
-      }
-    },
-    {
-      "figma": {
-        "name": "Icon/speaker.wave.2.fill",
-        "nodeId": "6:31",
-        "key": "9c54486279c74e6cc09e06d48f4ca89c56f44ec1"
-      },
-      "swift": {
-        "symbol": "Image(systemName: \"speaker.wave.2.fill\")"
-      }
-    },
-    {
-      "figma": {
-        "name": "Icon/speaker.slash",
-        "nodeId": "6:34",
-        "key": "84c8f584ade68a455fa5c7356228d447dca33a07"
-      },
-      "swift": {
-        "symbol": "Image(systemName: \"speaker.slash\")"
       }
     },
     {

@@ -8,7 +8,7 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 
 - [ ] Reset first: Settings › *Delete all my data…* › *Delete everything*. The welcome window appears.
 - [ ] Welcome step 2: type a task and press Return. It appears under the field and in the Today panel.
-- [ ] Welcome step 3: the voice switch, *Set up…* and *Add key…* don't trigger any macOS permission prompt by themselves.
+- [ ] Welcome step 3: *Set up…* and *Add key…* don't trigger any macOS permission prompt by themselves.
 - [ ] Closing the welcome window with the red button doesn't show it again on the next launch.
 - [ ] *Start* closes it. Coco barks once and says "All set!".
 
@@ -182,8 +182,8 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 ## Sound and voice
 
 - [ ] Tick a task outside focus: one bark. During focus: a soft pop, no bark.
-- [ ] Settings › *Barks* off: no barks, other sounds remain. *Mute all sounds*: silence, including her voice.
-- [ ] Voice on: lines are spoken and her mouth moves with them. She never hears herself while the mic is open.
+- [ ] Settings › *Barks* off: no barks, other sounds remain. *Mute all sounds*: silence.
+- [ ] Nothing is ever read aloud: her lines appear as text, with barks only.
 
 ## Energy
 

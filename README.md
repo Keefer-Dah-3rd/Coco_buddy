@@ -23,7 +23,7 @@ A native macOS desktop companion. **Coco** is a black-and-white corgi with a whi
 - **A character, not a sprite sheet.** Coco is a few dozen Core Animation layers driven by a pure function of time: state + time + events → pose → layers. She has idle life (blinks, glances, ear flicks, wags, panting, head tilts, naps), reactions (hops, barks, celebrations) and a mouth synced to her voice and her barks.
 - **Energy-aware rendering.** The animator predicts when anything will next move. Quick motion runs at 60 fps, slow rhythms at 30 fps, and at rest a single timer ticks about 10× a second. Nothing renders while she's hidden or covered.
 - **Planning that stays honest.** A local task list with a quick-add syntax, *Up next* with its reason, focus sessions linked to tasks, and carry-over for today-only items. Nothing is ever marked done because time passed.
-- **Voice in and out.** On-device speech recognition and a tested rule-based parser. Commands run directly; everything else becomes draft tasks you review.
+- **Talk to her.** On-device speech recognition and a tested rule-based parser. Commands run directly; everything else becomes draft tasks you review.
 - **Claude, safely.** Raw HTTP + SSE to the Messages API, with narrow tools: read today and the calendar, read Partiful invites, *propose* tasks and calendar changes, start focus, and *ask* to complete a task. Adding or completing tasks always waits for your click; only a focus session (local, and stoppable) starts straight away.
 - **Google Calendar.** OAuth with PKCE; a week browser with open time; meeting reminders; Coco finds free slots and adds, moves or deletes events only after you confirm (Google asks once for that permission). Tokens stay in the Keychain.
 - **Apple Calendar, and one schedule.** Coco reads the calendars in Calendar.app (iCloud, Google, Exchange, On My Mac) through EventKit, read-only, after you allow it. Events from every connected calendar are merged into one schedule: a meeting that's in both Google and Apple Calendar shows once, everywhere — the Today card, the week, reminders, counts and the chat.
@@ -44,7 +44,7 @@ All five phases are done.
    - **Week**: the strip opens into a week you can click, drag across or step through with ←/→, each day's events in order with the open time between them;
    - meeting reminders and a focus-length heads-up.
    - Setup: [docs/INTEGRATIONS_SETUP.md](docs/INTEGRATIONS_SETUP.md).
-4. **Conversational assistant:** a Chat tab with Claude (Opus 5.5, low effort, streamed replies), voice in and out, and tools whose task changes are confirmed in the panel.
+4. **Conversational assistant:** a Chat tab with Claude (Opus 5.5, low effort, streamed replies), voice input, and tools whose task changes are confirmed in the panel.
 5. **Polish:**
    - a first-launch welcome, Settings, *Delete all my data*;
    - a global shortcut (⌃⌥C), keyboard navigation of the task list, VoiceOver labels;
@@ -87,7 +87,7 @@ cd Packages/BuddyKit && swift test
 | Say *"start focus on the homepage"*, *"pause"*, *"resume"*, *"stop"* or *"take a break"* | Runs the timer command directly |
 | Start a focus session | The panel tucks away. She acknowledges once, then sits on guard; a progress ring fills around her collar tag, with a countdown under her and in the menu bar |
 | Session ends | Chime, celebration and a notification. The Focus tab asks whether the task got done (it's never assumed) |
-| Chat tab › *"What should I work on next?"* | Coco looks at your tasks and calendar (the chat says so) and answers briefly. She thinks while waiting and talks while the reply streams |
+| Chat tab › *"What should I work on next?"* | Coco looks at your tasks and calendar (the chat says so) and answers briefly. She thinks while waiting and her mouth moves while the reply streams |
 | Chat › *"Break my top task into steps"* | Draft tasks appear for review; nothing is added until you press Add |
 | Chat › *"I finished the intro"* | A "Mark done?" card. Only your click marks it |
 | Today › calendar › **Week** | The week strip: drag across the days or use ←/→ (⇧ for a week, T for today). Each day lists events and the open time between them |
@@ -95,8 +95,8 @@ cd Packages/BuddyKit && swift test
 | Chat › *"When's my next meeting with Sam?"* | Coco searches your calendars on the Mac (titles, places, attendees) and answers with the soonest match |
 | Connections › **Apple Calendar** › *Connect* | macOS asks once for calendar access. Your calendars appear with switches; events already in Google Calendar aren't shown twice |
 | Chat › *"Schedule a design review next Tuesday at 2"* | An "Add to Google Calendar" card with any clash shown. Only **Add** creates it; the first time, Google asks you to allow changes |
-| Right-click her | Talk, presence, focus behaviour, always-on-top, mute, voice, hide, reset position, Settings |
-| Menu bar › Settings… | Presence, sounds and barks, voice, focus lengths, workday end, reminders, open at login, the shortcut, *Show welcome again*, *Delete all my data* |
+| Right-click her | Talk, presence, focus behaviour, always-on-top, mute, hide, reset position, Settings |
+| Menu bar › Settings… | Presence, sounds and barks, focus lengths, workday end, reminders, open at login, the shortcut, *Show welcome again*, *Delete all my data* |
 | Leave the Mac idle 5 min | She dozes off (airplane ears, Zs) and wakes when you return |
 | `Esc` / `⌘1` `⌘2` `⌘3` / `Space` / `⌘L` / `⌘.` | Close panel / switch tabs / start-pause on Focus / talk / stop a reply |
 
@@ -138,10 +138,10 @@ She's drawn with Core Animation layers: each frame only sets transforms and opac
 
 **Voice.**
 - Input uses Apple's Speech framework, with on-device recognition whenever the language supports it.
-- The mic is open only while you're talking to her. It closes after a pause, after 30 s, or when you click again, and Coco's voice is stopped first so she never hears herself.
+- The mic is open only while you're talking to her. It closes after a pause, after 30 s, or when you click again.
 - Transcripts go through a small, tested rule-based parser. Timer commands run directly; anything else becomes tasks to review.
 - Splitting on "and" uses Apple's on-device NaturalLanguage tagger, so "finish the homepage and send emails" splits but "buy salt and pepper" doesn't.
-- Output uses the system speech synthesizer, which works offline.
+- She answers in text (her speech bubble and the panel) with barks at big moments — she doesn't read lines aloud.
 - Her four barks are trimmed single-bark cuts. They're played only at big moments and never twice in a row.
 
 **Assistant.** Swift has no official Anthropic SDK, so the chat speaks the Messages API over HTTP with server-sent events.
@@ -192,7 +192,7 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 
 Coco has a full design system in [Figma](https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco):
 - foundations: variables in light and dark, plus text styles;
-- 52 components and 20 SF Symbol icons, each mapped to its SwiftUI source;
+- 52 components and 20 SF Symbol icons, mapped to their SwiftUI source (the two speaker icons are no longer used in the app);
 - Coco's 14 poses as vectors exported from her real artwork;
 - every app screen, built from instances;
 - a clickable prototype of the whole user flow: [onboarding](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-241&starting-point-node-id=40%3A241) and [daily use](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-1378&starting-point-node-id=40%3A1378).

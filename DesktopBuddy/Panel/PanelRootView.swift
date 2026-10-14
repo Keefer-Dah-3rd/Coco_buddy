@@ -43,16 +43,6 @@ struct PanelRootView: View {
                 .buttonStyle(.plain)
                 .help("Connections — Claude and Google Calendar")
                 .accessibilityLabel("Connections")
-                Button { model.preferences.voiceEnabled.toggle() } label: {
-                    Image(systemName: model.preferences.voiceEnabled ? "speaker.wave.2.fill" : "speaker.slash")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(model.preferences.voiceEnabled ? Theme.ink : Theme.inkTertiary)
-                        .frame(width: 22, height: 18)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(model.preferences.voiceEnabled ? "\(Buddy.name) speaks aloud — click for text only" : "Text only — click to have \(Buddy.name) speak aloud")
-                .accessibilityLabel(model.preferences.voiceEnabled ? "Voice on" : "Voice off")
                 Button { model.setPanelOpen(false) } label: {
                     Text("ESC").font(.style(.monoTiny)).tracking(0.6)
                         .foregroundStyle(Theme.inkTertiary)

@@ -35,7 +35,6 @@ struct MenuBarMenu: View {
         Toggle("Show \(Buddy.name)", isOn: $preferences.isBuddyVisible)
         Toggle("Always on Top", isOn: $preferences.alwaysOnTop)
         Toggle("Mute Sounds", isOn: $preferences.soundsMuted)
-        Toggle("\(Buddy.name) Speaks Aloud", isOn: $preferences.voiceEnabled)
         Picker("Presence", selection: $preferences.presence) {
             ForEach(Preferences.Presence.allCases) { Text($0.label).tag($0) }
         }
@@ -158,9 +157,6 @@ enum BuddyContextMenu {
         })
         menu.addItem(NSMenuItem.action("Mute Sounds", checked: preferences.soundsMuted) {
             preferences.soundsMuted.toggle()
-        })
-        menu.addItem(NSMenuItem.action("\(Buddy.name) Speaks Aloud", checked: preferences.voiceEnabled) {
-            preferences.voiceEnabled.toggle()
         })
         menu.addItem(.separator())
         menu.addItem(NSMenuItem.action("Hide \(Buddy.name)") { preferences.isBuddyVisible = false })

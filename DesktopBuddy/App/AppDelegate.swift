@@ -5,7 +5,7 @@ import SwiftUI
 /// about both AppKit window controllers and app state.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     // Snapshot runs (Debug only) use in-memory stores so they never touch real data.
-    let model = AppModel(preview: CommandLine.arguments.contains("--snapshots"))
+    let model = AppModel(preview: CommandLine.arguments.contains("--snapshots") || AppDelegate.isExperimentSnapshotRun)
 
     private var character: CharacterWindowController!
     private var bubble: BubbleWindowController!
@@ -19,6 +19,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let treatKey = CallKeyMonitor(key: .rightShift)
     private let callOverlay = CallOverlayController()
     private var isOccluded = false
+    #if DEBUG
+    /// Design experiment, only with `--editorial-orange` (see DesktopBuddy/Experiments).
+    private var editorialOrange: EditorialOrangeWindowController?
+    private var tactileOrange: TactileOrangeWindowController?
+    private static let isExperimentSnapshotRun = CommandLine.arguments.contains("--editorial-orange-snapshots")
+        || CommandLine.arguments.contains("--tactile-orange-snapshots")
+    #else
+    private static let isExperimentSnapshotRun = false
+    #endif
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
@@ -57,6 +66,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SnapshotRenderer.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
             exit(0)
         }
+        if let index = CommandLine.arguments.firstIndex(of: "--editorial-orange-snapshots"), index + 1 < CommandLine.arguments.count {
+            EditorialOrangeSnapshots.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
+            exit(0)
+        }
+        if let index = CommandLine.arguments.firstIndex(of: "--tactile-orange-snapshots"), index + 1 < CommandLine.arguments.count {
+            TactileOrangeSnapshots.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
+            exit(0)
+        }
         #endif
         character = CharacterWindowController(model: model.character)
         bubble = BubbleWindowController(parent: character.window)
@@ -88,6 +105,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.start()
         character.place(at: model.preferences.buddyOrigin)
         observeModel()
+        #if DEBUG
+        if CommandLine.arguments.contains("--editorial-orange") {
+            editorialOrange = EditorialOrangeWindowController(model: model)
+            editorialOrange?.show()
+        }
+        if CommandLine.arguments.contains("--tactile-orange") {
+            tactileOrange = TactileOrangeWindowController(model: model)
+            tactileOrange?.show()
+        }
+        #endif
         if !model.preferences.onboardingCompleted {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.onboarding.show() }
         }

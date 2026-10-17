@@ -75,6 +75,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             exit(0)
         }
         #endif
+        // A second copy hands over to the one already running (see SingleInstance).
+        guard SingleInstance.claim(onReopen: { [weak self] in self?.reopened() }) else {
+            NSApp.terminate(nil)
+            return
+        }
         character = CharacterWindowController(model: model.character)
         bubble = BubbleWindowController(parent: character.window)
         panel = PanelWindowController(model: model)
@@ -118,6 +123,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !model.preferences.onboardingCompleted {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.onboarding.show() }
         }
+    }
+
+    /// Launched again while running: show Coco and open her panel, as if she'd been clicked.
+    private func reopened() {
+        if !model.preferences.isBuddyVisible { model.preferences.isBuddyVisible = true }
+        model.openPanel()
     }
 
     private func connectCharacterWindow() {

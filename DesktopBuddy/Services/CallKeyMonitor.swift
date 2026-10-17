@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import os
 
 /// A right-hand modifier key held on its own: right Option calls Coco, right Command
@@ -91,6 +92,9 @@ final class CallKeyMonitor {
 
     private func start() {
         guard monitors.isEmpty else { return }
+        // Whether macOS has granted anything that would explain key events arriving: the
+        // tricks are meant to need neither, so both are normally false.
+        log.notice("\(self.key.displayName, privacy: .public) watching — Accessibility trusted: \(AXIsProcessTrusted(), privacy: .public), Input Monitoring: \(CGPreflightListenEventAccess(), privacy: .public)")
         let global: NSEvent.EventTypeMask = [.flagsChanged, .mouseMoved, .leftMouseDragged, .rightMouseDragged, .leftMouseDown]
         if let monitor = NSEvent.addGlobalMonitorForEvents(matching: global, handler: { [weak self] event in
             MainActor.assumeIsolated { self?.observe(event, from: "global") }

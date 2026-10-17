@@ -16,6 +16,7 @@ enum SnapshotRenderer {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         renderIcon(to: folder.appendingPathComponent("icon-1024.png"))
         exportMascot(to: folder.appendingPathComponent("mascot"))
+        RunPreview.exportTricks(to: folder.appendingPathComponent("mascot"))
         renderBubbleWindow(to: folder.appendingPathComponent("bubble-window.png"))
         write(callTargetSheet(), to: folder.appendingPathComponent("call-target.png"))
         for (name, background) in [("light", NSColor(hex: 0xD9E0E6)), ("dark", NSColor(hex: 0x1E252D))] {

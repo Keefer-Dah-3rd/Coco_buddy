@@ -30,10 +30,25 @@ DesktopBuddy/Generated/DesignTokens.generated.swift  →  Theme.*, Space, Radius
 | Cover | Title card. |
 | Getting started | The short version of this document. |
 | Foundations | Every variable and text style, with Light and Dark side by side (the same variables, each frame pinned to a mode), primitives, Coco's palette, type specimens, space and radius. |
-| Components | 52 components and 20 icons, in sections in dependency order: Icons → Atoms → Key Button → Key Segment → Today → Panel, Bubble & Chat → Settings & Welcome → Editor, Review & Focus → Editor, Chat & Connections → Text Groups → Pairings → Buttons & Pips. Repeated groupings are their own components, nested and exposed wherever they appear: `Text / Prompt Line` (Coco's line), `Text / Task Title` (task title + meta), `Text / Title & Detail` (welcome extras and step headings), `Text / Label & Title` (Up next), `Text / Activity` (chat activity), `Panel / Status Bar` (the panel's top row), `Today / Summary` and `Connections / Card Header`. Small controls are components too: `Pip` (every dot — Kind Step/Status/Activity/Thinking/Listening × On/Off), `Mic Key`, `Panel / Header Key` (the link key; the speaker key is no longer in the app) and `Text Button` (“New chat”); the Focus session bars are `Meter Segment`. Edit one main component to change that grouping everywhere; edit an instance's exposed properties to change one place. |
-| Mascot | `Mascot / Coco` (14 poses) and `Brand / App Icon`. |
-| Screens | Every window and panel state the app has: Today (Light and Dark), editing a task, voice review, Focus, Focus session complete, Chat, Settings, Connections, Welcome steps 1–4, and a desktop focus scene (Coco, her bubble, the LCD). Each screen is a `Screen / …` component built only from library instances. |
+| Components | 63 components and 24 icons, in sections in dependency order: Icons → Atoms → Key Button → Key Segment → Today → Panel, Bubble & Chat → Settings & Welcome → Editor, Review & Focus → Editor, Chat & Connections → Text Groups → Pairings → Buttons & Pips → Calendar → Calendar — Proposed. Repeated groupings are their own components, nested and exposed wherever they appear: `Text / Prompt Line` (Coco's line), `Text / Task Title` (task title + meta), `Text / Title & Detail` (welcome extras and step headings), `Text / Label & Title` (Up next), `Text / Activity` (chat activity), `Panel / Status Bar` (the panel's top row), `Today / Summary` and `Connections / Card Header`. Small controls are components too: `Pip` (every dot — Kind Step/Status/Activity/Thinking/Listening × On/Off), `Mic Key`, `Panel / Header Key` (the link key; the speaker key is no longer in the app) and `Text Button` (“New chat”); the Focus session bars are `Meter Segment`. Edit one main component to change that grouping everywhere; edit an instance's exposed properties to change one place. |
+| Mascot | `Mascot / Coco` (34 poses: 14 sitting; Run Right … Run Down-Right and Gallop 1–4 from the 3D running model; Dash Wind-up / Arrive; Fetch Pickup / Carry / Drop; Treat Beg / Eat / Jump), `Mascot / Tennis Ball`, `Mascot / Treat` and `Brand / App Icon`. |
+| Screens | Every window and panel state the app has: Today (Light and Dark), editing a task, voice review, Focus, Focus session complete, Chat, Settings, Connections, Welcome steps 1–4, and a desktop focus scene (Coco, her bubble, the LCD). Each screen is a `Screen / …` component built only from library instances. The **Calendar** section adds Today with the calendar, Today with the week open, two chat screens answering calendar questions, boards for every Today-card and calendar-access state, a duplicates board (one meeting from two calendars = one row; different meetings stay separate), and a clickable **Calendar access** flow (Connect → macOS asks → allowed / not allowed → Today → event detail). |
 | Prototype | A clickable prototype of the whole user flow: 16 desktop scenes (1280 × 800) showing the screens in place on a Mac desktop, with Coco, her bubbles and the menu-bar menu. Two flows: **Onboarding** (welcome → desktop) and **Daily use** (desktop → panel, editing, voice review, focus session, chat, Settings, Connections). |
+
+### The calendar
+
+The calendar UI is one schedule built from every connected calendar (Google Calendar, Apple Calendar, Partiful), with duplicates merged before anything is shown — so the components never carry a provider badge by default. In the **Calendar** section:
+
+- `Calendar / Event Row` — State Upcoming · Next · Soon · Now · Past; Title, Time, Location, Join, Repeat; exposed duration, note (“in 12m”, “18m left”) and source labels. *Show Source* is off: where an event lives belongs in the tooltip or Event Detail.
+- `Calendar / Open Row`, `Calendar / All-Day Row` (Today / Week), `Calendar / Coming Up Row` (Tomorrow / Thu / Oct 24), `Calendar / Day Key` (Default / Today / Selected × Light / Busy), `Calendar / Week Toggle`.
+- `Calendar / Schedule Card` — In Meeting · Today · No Meetings · All Done · Loading · Couldn't Refresh · Week. Built only from the rows above.
+- `Connections / Apple Calendar Card` — Not Connected · Asking · No Access · Add Only · Blocked · Connected · Read Failed, with `Connections / Calendar Choice Row`.
+
+**Calendar — Proposed (not in the app yet)** holds `Calendar / Event Detail` and `Chat / Calendar Summary`. They're designed from the same rows so they can be built without new styles; `design/figma-map.json` lists them under `proposed` until code exists.
+
+**Motion** (in each component's description): the week opens and closes in place; changing day cross-fades the agenda (0.12 s ease-out); relative times update once a minute; the proposed detail expands under its row (0.15 s, a cross-fade with Reduce Motion). Nothing animates for decoration.
+
+**Known gaps between Figma and code:** the app shows a small source label (“Apple · Home”) on non-Google rows, while the design keeps it off; the Today card's Loading state is designed but the app shows the empty message during the very first load; Event Detail and the chat summary card are proposed only.
 
 ### The prototype
 
@@ -110,7 +125,7 @@ Swift names come from the code and travel with the token. Each variable's **iOS 
 Coco is drawn in code (`DesktopBuddy/Character/CocoLayerView.swift`) and animated by `CharacterAnimator`. The Figma vectors are **exports, not the source**:
 
 1. Change her shapes in `CocoLayerView.swift`, or her colors through the Brand variables (sync as for any token).
-2. Run the snapshot tool (Debug, unsandboxed; command in the README). It writes `mascot/coco-<pose>.svg` for 14 poses via `LayerSVGExporter`, which reads her real layer tree, plus `icon-1024.png`.
+2. Run the snapshot tool (Debug, unsandboxed; command in the README). It writes `mascot/coco-<pose>.svg` for the 14 sitting poses via `LayerSVGExporter`, which reads her real layer tree, and `RunPreview.exportTricks` adds the running, dash, fetch and treat poses plus `prop-tennis-ball.svg` and `prop-treat.svg`, along with `icon-1024.png`. Upload the SVGs with the Figma MCP `upload_assets` tool (they arrive as editable vectors).
 3. Upload the SVGs to the Mascot page. Through Claude this is the Figma MCP `upload_assets`; by hand, drag them in.
 4. Swap them into `Mascot / Coco` and re-bind colors to the Brand variables. Claude's import script matched colors by hex and bound 564 paints automatically.
 5. Pure black (ground shadow) and white (eye shine) are literals in the code too, so they stay unbound.

@@ -654,6 +654,123 @@
         "anchor": "Button(\"New chat\")"
       },
       "notes": "State=Disabled ↔ assistant.turns.isEmpty. Exposed inside Chat / Composer as “new chat”."
+    },
+    {
+      "figma": {
+        "name": "Calendar / Event Row",
+        "nodeId": "88:693",
+        "key": "9c954c42693924e6c9872572e58d02d253c439da"
+      },
+      "swift": {
+        "symbol": "EventRow",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "struct EventRow: View"
+      },
+      "notes": "State ↔ start/end vs now: Upcoming, Next (RelativeTiming.untilStart), Soon (≤15 min, accent), Now (RelativeTiming.remaining, Join primary), Past (opacity 0.5, no Join). Show Source is off in the design; code shows a source label for non-Google events (open gap)."
+    },
+    {
+      "figma": {
+        "name": "Calendar / Open Row",
+        "nodeId": "89:606",
+        "key": "d1cb5eb3e62773eec4580bcf56ce5dd7993077c4"
+      },
+      "swift": {
+        "symbol": "OpenRow",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "struct OpenRow: View"
+      },
+      "notes": "Open time from Availability.openings; 30+ min on the Today card."
+    },
+    {
+      "figma": {
+        "name": "Calendar / All-Day Row",
+        "nodeId": "89:624",
+        "key": "51dae1dc75c933c6d96fd09c965eb3a1909dc61d"
+      },
+      "swift": {
+        "symbol": "All-day rows",
+        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
+        "anchor": "MonoLabel(\"All day\")"
+      },
+      "notes": "Context=Today ↔ ScheduleStrip.today; Context=Week ↔ DayAgenda.agenda (well fill, “free” when !isBusy)."
+    },
+    {
+      "figma": {
+        "name": "Calendar / Coming Up Row",
+        "nodeId": "89:625",
+        "key": "1aed78268194f54a52370d8d27835d424b4ef075"
+      },
+      "swift": {
+        "symbol": "ScheduleStrip.comingUp",
+        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
+        "anchor": "private func comingUp(now: Date)"
+      },
+      "notes": "Agenda.comingUp(after:limit: 3); day label from RelativeTiming.day."
+    },
+    {
+      "figma": {
+        "name": "Calendar / Day Key",
+        "nodeId": "89:656",
+        "key": "900d2666e3a153dd649e66252c81b20e74415ed7"
+      },
+      "swift": {
+        "symbol": "DayKey",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "private struct DayKey: View"
+      },
+      "notes": "Load=Busy ↔ booked ≥ 0.85 of working hours."
+    },
+    {
+      "figma": {
+        "name": "Calendar / Week Toggle",
+        "nodeId": "89:678",
+        "key": "81295ce3c40376307791a98bb23650c6a2f903bb"
+      },
+      "swift": {
+        "symbol": "ScheduleStrip Week button",
+        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
+        "anchor": "Text(\"Week\")"
+      },
+      "notes": "Expanded ↔ model.scheduleExpanded."
+    },
+    {
+      "figma": {
+        "name": "Connections / Calendar Choice Row",
+        "nodeId": "89:695",
+        "key": "47bda8ace13291f9c8c689709ced6cbd6e5ac723"
+      },
+      "swift": {
+        "symbol": "AppleCalendarSection calendar list",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "ForEach(service.calendars) { info in"
+      },
+      "notes": "Included ↔ AppleCalendarService.isIncluded (AppleCalendarInfo.isIncludedByDefault until switched)."
+    },
+    {
+      "figma": {
+        "name": "Calendar / Schedule Card",
+        "nodeId": "91:1208",
+        "key": "0a61c69a1e8f72122b90a5cdebf852012e3f09ba"
+      },
+      "swift": {
+        "symbol": "ScheduleStrip",
+        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
+        "anchor": "struct ScheduleStrip: View"
+      },
+      "notes": "Reads model.agenda (merged Google + Apple + Partiful). State=Week ↔ WeekScheduleView. State=Loading is designed but not built (code shows the empty message during the first load)."
+    },
+    {
+      "figma": {
+        "name": "Connections / Apple Calendar Card",
+        "nodeId": "92:1287",
+        "key": "7033f50a01d886a338089ac69ad0f7b4855b795c"
+      },
+      "swift": {
+        "symbol": "AppleCalendarSection",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct AppleCalendarSection: View"
+      },
+      "notes": "State ↔ AppleCalendarService.Access + isEnabled + isRequesting; Read Failed ↔ problem(for: .now)."
     }
   ],
   "icons": [
@@ -836,6 +953,64 @@
       "swift": {
         "symbol": "Image(systemName: \"arrow.up.right.square\")"
       }
+    },
+    {
+      "figma": {
+        "name": "Icon/chevron.left",
+        "nodeId": "87:599",
+        "key": "7cb943470e82645abed53da56052bfe385f1a4ef"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"chevron.left\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/chevron.up",
+        "nodeId": "87:602",
+        "key": "11eb9c5df1174655f2f20303d74d16fa7b3a41b8"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"chevron.up\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/chevron.down",
+        "nodeId": "87:605",
+        "key": "29994a63928a41bc3eb08a2a25114491398fa129"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"chevron.down\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/repeat",
+        "nodeId": "87:608",
+        "key": "e3c84ac4d26f41d837614f2b80cbe9c1616e4cc9"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"repeat\")"
+      }
+    }
+  ],
+  "proposed": [
+    {
+      "figma": {
+        "name": "Calendar / Event Detail",
+        "nodeId": "93:1229",
+        "key": "67177309b617ffc26b540ec211d80c2a6d61179b"
+      },
+      "notes": "Designed, not built: event details (title, when, place, notes, every calendar it's in, Join). Today the row tooltip lists the calendars."
+    },
+    {
+      "figma": {
+        "name": "Chat / Calendar Summary",
+        "nodeId": "93:1375",
+        "key": "8401e414cec336f2f2eea33564ae05838ef4a098"
+      },
+      "notes": "Designed, not built: a card under Coco's chat reply (Today, Next Meeting, Coming Up, Free Time). Today the chat answers in text with an activity line."
     }
   ]
 }

@@ -379,6 +379,83 @@ enum RunPreview {
         }
     }
 
+    // MARK: - SVG for Figma
+
+    /// Her running, fetch, treat and dash poses (and the ball and treat) as SVG, straight
+    /// from her layers like the sitting poses — the Figma Mascot page's “Running & tricks”.
+    static func exportTricks(to folder: URL) {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let t = 800_000_000.0
+        let art = CocoLayerView(frame: NSRect(x: 0, y: 0, width: 192, height: 228))
+        let window = NSWindow(contentRect: NSRect(x: -20_000, y: -20_000, width: 192, height: 228),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.contentView = art
+        window.orderFrontRegardless()
+        defer { window.orderOut(nil) }
+        func write(_ pose: CharacterPose, _ name: String) {
+            art.layoutSubtreeIfNeeded()
+            art.render(pose, focusProgress: nil)
+            try? LayerSVGExporter.svg(of: art).write(to: folder.appendingPathComponent("coco-\(name).svg"), atomically: true, encoding: .utf8)
+        }
+
+        // Running: eight facings mid-stride, and one stride seen side-on.
+        for k in 0..<8 {
+            let angle = Double(k) * .pi / 4
+            write(CharacterAnimator.runningPose(facing: SIMD2(cos(angle), sin(angle)), strides: 0.3, effort: 1, at: t),
+                  String(format: "run-%03d", k * 45))
+        }
+        for (index, phase) in [0.0, 0.25, 0.5, 0.75].enumerated() {
+            write(CharacterAnimator.runningPose(facing: SIMD2(1, 0), strides: phase, effort: 1, at: t), "gallop-\(index + 1)")
+        }
+
+        // Called somewhere: the wind-up, then the sit-down when she arrives.
+        var dasher = CharacterAnimator()
+        // Heading down-left, towards the viewer, so the wind-up shows her face.
+        let dash = Dash(from: SIMD2(600, 260), to: SIMD2(120, 60), at: t)
+        dasher.setDash(dash)
+        write(dasher.pose(at: dash.launchTime - 0.08), "dash-windup")
+        write(dasher.pose(at: dash.endTime + 0.15), "dash-arrive")
+
+        // Fetch: the pickup, carrying it home, the drop.
+        let geometry = RunningCoco.fetchReach(artWidth: 96)
+        let flight = BallFlight(from: SIMD2(536, 66), height: 46, to: SIMD2(170, 250), at: t)
+        let fetch = Fetch(home: SIMD2(560, 60), ball: flight, at: t, reach: geometry.reach, mouthHeight: geometry.mouthHeight)
+        var fetcher = CharacterAnimator()
+        fetcher.setFetch(fetch)
+        // The pickup from a throw towards the viewer, so her face and the ball show.
+        let toward = Fetch(home: SIMD2(560, 260), ball: BallFlight(from: SIMD2(536, 266), height: 46, to: SIMD2(170, 60), at: t),
+                           at: t, reach: geometry.reach, mouthHeight: geometry.mouthHeight)
+        var picker = CharacterAnimator()
+        picker.setFetch(toward)
+        write(picker.pose(at: toward.pickupStart + Fetch.pickupDuration * 0.45), "fetch-pickup")
+        write(fetcher.pose(at: (fetch.pickupStart + Fetch.pickupDuration + fetch.dropStart) / 2), "fetch-carry")
+        write(fetcher.pose(at: fetch.dropStart + Fetch.dropDuration * 0.43), "fetch-drop")
+
+        // Treats: begging, eating, the happy jump.
+        var beggar = CharacterAnimator()
+        beggar.setBegging(true, at: t)
+        write(beggar.pose(at: t + 0.4), "treat-beg")
+        let toss = BallFlight(from: SIMD2(528, 270), height: 70, to: SIMD2(230, 70), at: t + 1.2, material: .treat)
+        let treat = TreatGame(home: SIMD2(540, 270), treat: toss, at: t + 1.2, reach: geometry.reach)
+        var eater = CharacterAnimator()
+        eater.setTreat(treat)
+        write(eater.pose(at: treat.eatStart + TreatGame.eatDuration * 0.5), "treat-eat")
+        write(eater.pose(at: treat.celebrateStart + TreatGame.celebrateDuration * 0.6), "treat-jump")
+
+        // The props, on their own.
+        for (name, thing) in [("prop-tennis-ball", TennisBallLayer() as TossedThing), ("prop-treat", TreatLayer())] {
+            // At the same scale as the 192-wide poses (twice the on-screen art).
+            let host = NSView(frame: NSRect(x: 0, y: 0, width: 64, height: 64))
+            host.wantsLayer = true
+            host.layer?.addSublayer(thing.layer)
+            thing.setScale(2)
+            thing.place(ground: CGPoint(x: 32, y: 18), height: 0, spin: 0)
+            try? LayerSVGExporter.svg(of: host).write(to: folder.appendingPathComponent("\(name).svg"), atomically: true, encoding: .utf8)
+        }
+    }
+
     private static func labelled(_ items: [(CGImage, String)], columns: Int) -> NSImage {
         let rows = (items.count + columns - 1) / columns
         return NSImage(size: NSSize(width: 160 * columns, height: 150 * rows), flipped: true) { _ in

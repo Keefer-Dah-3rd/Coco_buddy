@@ -192,8 +192,8 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 
 Coco has a full design system in [Figma](https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco):
 - foundations: variables in light and dark, plus text styles;
-- 52 components and 20 SF Symbol icons, mapped to their SwiftUI source (the two speaker icons are no longer used in the app);
-- Coco's 14 poses as vectors exported from her real artwork;
+- 63 components (two marked *Proposed*) and 24 SF Symbol icons, mapped to their SwiftUI source (the two speaker icons are no longer used in the app), including the calendar: schedule card states, event rows, the week browser and Apple Calendar access states;
+- Coco's 34 poses as vectors exported from her real artwork: 14 sitting, running in 8 directions and a 4-phase stride, the dash, fetch and treats, plus the ball and the treat;
 - every app screen, built from instances;
 - a clickable prototype of the whole user flow: [onboarding](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-241&starting-point-node-id=40%3A241) and [daily use](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-1378&starting-point-node-id=40%3A1378).
 

@@ -29,9 +29,12 @@ const missing = [];
 const findText = (root, chars) => root && root.findOne(n => n.type === 'TEXT' && n.characters === chars);
 const instanceAbove = n => { let p = n && n.parent; while (p && p.type !== 'INSTANCE') p = p.parent; return p; };
 
-async function hotspot(sceneKey, target, to, label) {
+async function hotspot(sceneKey, target, to, label, direct = false) {
   const scene = scenes[sceneKey];
   if (!target) { missing.push(`${scene.name}: ${label}`); return; }
+  // Rows in the Today list scroll (the calendar card can push them below the fold), so their
+  // click lives on the row itself, inside the screen instance, and scrolls with it.
+  if (direct) { await target.setReactionsAsync([{ trigger: { type: 'ON_CLICK' }, actions: [action(to)] }]); return; }
   // A control inside a window gets its hotspot in the window, so it scrolls with the content
   // and stays below the fixed title-bar controls.
   const win = scene.findChild(n => n.name === 'window');
@@ -76,7 +79,7 @@ const FLOW = {
 const PANELS = { '07': ['Focus', 'Chat'], '08': ['Focus', 'Chat'], '09': ['Focus', 'Chat'], '10': ['Today', 'Chat'], '13': ['Today', 'Chat'], '14': ['Today', 'Focus'] };
 const TAB_TARGET = { Today: '07', Focus: '10', Chat: '14' };
 
-for (const [k, links] of Object.entries(FLOW)) for (const [spec, to] of links) await hotspot(k, target(k, spec), to, typeof spec === 'string' ? spec : spec.text || spec.layer);
+for (const [k, links] of Object.entries(FLOW)) for (const [spec, to] of links) await hotspot(k, target(k, spec), to, typeof spec === 'string' ? spec : spec.text || spec.layer, !!spec.row);
 for (const [k, tabs] of Object.entries(PANELS)) {
   for (const t of tabs) await hotspot(k, instanceAbove(findText(scenes[k].findOne(n => n.name === 'tabs'), t)), TAB_TARGET[t], `${t} tab`);
   await hotspot(k, target(k, { layer: 'esc' }), '05', 'ESC');

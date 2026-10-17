@@ -48,7 +48,7 @@ The calendar UI is one schedule built from every connected calendar (Google Cale
 
 **Motion** (in each component's description): the week opens and closes in place; changing day cross-fades the agenda (0.12 s ease-out); relative times update once a minute; the proposed detail expands under its row (0.15 s, a cross-fade with Reduce Motion). Nothing animates for decoration.
 
-**Known gaps between Figma and code:** the app shows a small source label (“Apple · Home”) on non-Google rows, while the design keeps it off; the Today card's Loading state is designed but the app shows the empty message during the very first load; Event Detail and the chat summary card are proposed only.
+**Known gaps between Figma and code:** the app shows a small source label (“Apple · Home”) on non-Google rows, while the design keeps it off; Event Detail and the chat summary card are proposed only.
 
 ### The prototype
 

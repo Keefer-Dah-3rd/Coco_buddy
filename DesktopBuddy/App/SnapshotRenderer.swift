@@ -79,6 +79,11 @@ enum SnapshotRenderer {
             workspace: "Keefer's Notion")
         write(view(PanelRootView(model: connected), appearance: .aqua), to: folder.appendingPathComponent("panel-connected.png"))
 
+        // Signed in to Google, but today hasn't arrived yet: "Loading today…", not "wide open".
+        let loading = demoModel()
+        loading.calendar.loadTestSignIn(canChangeEvents: false)
+        write(view(PanelRootView(model: loading), appearance: .aqua), to: folder.appendingPathComponent("panel-calendar-loading.png"))
+
         // The week browser, with a sample week (snapshots only).
         let week = demoModel()
         let sample = sampleWeek(model: week)

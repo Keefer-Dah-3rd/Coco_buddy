@@ -757,7 +757,7 @@
         "file": "DesktopBuddy/Panel/ConnectionCards.swift",
         "anchor": "struct ScheduleStrip: View"
       },
-      "notes": "Reads model.agenda (merged Google + Apple + Partiful). State=Week ↔ WeekScheduleView. State=Loading is designed but not built (code shows the empty message during the first load)."
+      "notes": "Reads model.agenda (merged Google + Apple + Partiful). State=Week ↔ WeekScheduleView. State=Loading ↔ agenda.events(on: today) == nil (“Loading today…”)."
     },
     {
       "figma": {

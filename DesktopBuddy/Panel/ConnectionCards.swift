@@ -62,7 +62,9 @@ struct ScheduleStrip: View {
         let agenda = model.agenda
         let calendar = Calendar.current
         let _ = model.dayToken
-        let events = agenda.events(on: now) ?? []
+        // Nil until a connected calendar has today: not the same as an empty day.
+        let loaded = agenda.events(on: now)
+        let events = loaded ?? []
         let schedule = DaySchedule(events: events)
         let day = Availability.dayInterval(now, calendar: calendar)
         let remaining = schedule.events.filter { $0.end > now }
@@ -79,7 +81,17 @@ struct ScheduleStrip: View {
                               + (open.isEmpty ? "" : " · \(TodayView.duration(Int(open.reduce(0) { $0 + $1.duration } / 60))) open"))
                 }
             }
-            if schedule.events.isEmpty && schedule.allDayEvents.isEmpty {
+            if loaded == nil {
+                // A failure with nothing saved is explained by the problem line below.
+                if agenda.problem(for: now) == nil {
+                    HStack(spacing: Space.sm) {
+                        ProgressView().controlSize(.small)
+                        MonoLabel("Loading today…")
+                    }
+                    .padding(.vertical, Space.xxs)
+                    .accessibilityElement(children: .combine)
+                }
+            } else if schedule.events.isEmpty && schedule.allDayEvents.isEmpty {
                 Text("No meetings today — wide open.")
                     .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
             }
@@ -134,7 +146,10 @@ struct ScheduleStrip: View {
         Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, Space.xxs)
         MonoLabel("Coming up")
         if upcoming.isEmpty {
-            Text(agenda.events(on: weekAhead) == nil && agenda.isLoading(weekAhead) ? "Loading…" : "Nothing in the next 7 days.")
+            // Only "nothing" once the week ahead has actually been read.
+            Text(agenda.events(on: weekAhead) == nil
+                 ? (agenda.problem(for: weekAhead) == nil ? "Loading…" : "Couldn't read the next 7 days.")
+                 : "Nothing in the next 7 days.")
                 .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
         }
         ForEach(upcoming) { event in

@@ -176,6 +176,17 @@ private struct TurnView: View {
                         .foregroundStyle(Theme.accent)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                // App Review asks AI chat apps for a way to report a reply. Opens an email to
+                // support with the reply quoted; nothing is sent unless the user sends it.
+                if !turn.isStreaming, !turn.text.isEmpty, let report = Support.reportReply(turn.text) {
+                    Button { NSWorkspace.shared.open(report) } label: {
+                        Text("Report").font(.style(.caption)).foregroundStyle(Theme.inkTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, 14)
+                    .help("Report this reply — opens an email to \(Support.email)")
+                    .accessibilityLabel("Report this reply")
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

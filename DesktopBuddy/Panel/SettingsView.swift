@@ -105,6 +105,9 @@ struct SettingsView: View {
                     HStack {
                         Button("Show welcome again") { model.showOnboarding() }
                             .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                        Button("Contact support") { if let url = Support.mail(subject: "Desktop Buddy") { NSWorkspace.shared.open(url) } }
+                            .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                            .help("Email \(Support.email)")
                         Spacer()
                         Button(erasing ? "Deleting…" : "Delete all my data…") { confirmingErase = true }
                             .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))

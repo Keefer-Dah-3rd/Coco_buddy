@@ -96,6 +96,7 @@ enum SnapshotRenderer {
         let asking = demoModel()
         asking.calendar.loadPreview(events: sample.events, account: "keefer@example.com")
         asking.panelTab = .chat
+        asking.preferences.aiConsentVersion = AIConsent.version
         var found = AssistantService.Turn(role: .coco, text: "Tuesday afternoon is tight — your portfolio critique runs 2 to 3:30. 2:00 overlaps it; 3:30 is the first clear hour. Here's 2:00 as you asked:")
         found.activities = ["Looked at your calendar for Tue", "Suggested adding “Design review” — confirm below"]
         asking.assistant.loadPreview([AssistantService.Turn(role: .user, text: "Schedule a design review Tuesday at 2"), found], cost: 0.011)
@@ -120,8 +121,15 @@ enum SnapshotRenderer {
         write(view(ConnectionsView(model: AppModel(preview: true)), appearance: .darkAqua),
               to: folder.appendingPathComponent("connections-setup-dark.png"))
 
+        // The "Before you chat" consent screen (shown until the user chooses Allow).
+        let consent = demoModel()
+        consent.panelTab = .chat
+        consent.preferences.aiConsentVersion = 0
+        write(view(PanelRootView(model: consent), appearance: .aqua), to: folder.appendingPathComponent("panel-chat-consent.png"))
+
         let chatting = demoModel()
         chatting.panelTab = .chat
+        chatting.preferences.aiConsentVersion = AIConsent.version
         var reply = AssistantService.Turn(role: .coco, text: "Your 1:1 with Sam is at 2. Before then you've got a clean 90 minutes — I'd spend it on the homepage hero, since it's your only high-priority task. Want me to start a focus session on it?")
         reply.activities = ["Looked at your tasks and calendar"]
         var proposal = AssistantService.Turn(role: .coco, text: "Here's a first pass at breaking it down. Tweak anything before adding.")
@@ -143,6 +151,7 @@ enum SnapshotRenderer {
               to: folder.appendingPathComponent("panel-chat-empty-dark.png"))
         let starters = demoModel()
         starters.panelTab = .chat
+        starters.preferences.aiConsentVersion = AIConsent.version
         starters.assistant.loadPreview([], cost: 0)
         write(view(PanelRootView(model: starters), appearance: .aqua), to: folder.appendingPathComponent("panel-chat-starters.png"))
 

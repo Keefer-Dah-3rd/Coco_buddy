@@ -12,10 +12,12 @@ struct ChatView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if assistant.isReady {
+            if assistant.isReady && model.hasAIConsent {
                 conversation
                 Rectangle().fill(Theme.hairline).frame(height: 1)
                 composer
+            } else if assistant.isReady {
+                AIConsentCard(model: model)
             } else {
                 ConnectPrompt(model: model)
             }
@@ -245,6 +247,59 @@ private struct Starters: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+/// Asked once, before anything is sent: what the chat shares with Anthropic, and when.
+struct AIConsentCard: View {
+    let model: AppModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    Text("Before you chat").font(.style(.titleSection)).foregroundStyle(Theme.ink)
+                    Text("To answer you, \(Buddy.name) sends some of your information to \(AIConsent.recipient), using your API key. Here's exactly what.")
+                        .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                group("Every message", AIConsent.always)
+                group("Only when \(Buddy.name) needs it to answer", AIConsent.whenNeeded)
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    MonoLabel("Never sent")
+                    Text(AIConsent.never).font(.style(.bodySmall)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("The chat shows each time \(Buddy.name) looks something up. Anthropic handles it under its privacy policy, and usage is billed to your Anthropic account. Chats stay in memory on this Mac and are gone when you quit. You can turn this off any time in Settings › Privacy & data.")
+                    .font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Link("Anthropic's privacy policy", destination: AIConsent.privacyPolicy)
+                    .font(.style(.caption))
+                HStack(spacing: Space.sm) {
+                    Button("Allow") { model.allowAIChat() }
+                        .buttonStyle(KeyButtonStyle(kind: .primary, fillWidth: true, compact: true))
+                        .accessibilityLabel("Allow the chat to send this to Anthropic")
+                    Button("Not now") { model.panelTab = .today }
+                        .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                        .accessibilityLabel("Not now: keep the chat off")
+                }
+            }
+            .padding(Space.xl)
+        }
+        .scrollIndicators(.never)
+    }
+
+    private func group(_ title: String, _ items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            MonoLabel(title)
+            ForEach(items, id: \.self) { item in
+                HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                    Circle().fill(Theme.accent).frame(width: 4, height: 4).alignmentGuide(.firstTextBaseline) { $0[.bottom] + 4 }
+                    Text(item).font(.style(.bodySmall)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }

@@ -36,9 +36,9 @@ If your Google account is also added to Calendar.app, the same meetings arrive f
 - **Revoke:** turn it off in that same System Settings pane. *Stop using Apple Calendar* in Connections stops Coco reading it without changing the permission.
 - Apple events are read when shown and re-read whenever Calendar.app reports a change; Coco keeps no copy of them on disk.
 
-## Notion — paused
+## Notion — built, needs your token
 
-> Out of the plan until further notice. The code is kept but switched off (`Features.notion = false` in `DesktopBuddy/App/Buddy.swift`). Notes below are for when it returns.
+> Paused 2026-10-11, back on 2026-10-17. `Features.notion` in `DesktopBuddy/App/Buddy.swift` switches it off again if needed.
 
 How it works: Notion's public OAuth requires a client secret (verified against Notion's docs), which a desktop app can't keep private — so the app uses a token you paste: an **internal integration** secret (sees only databases you share with it — least access) or a **personal access token** (sees what you can see). It's verified with Notion before being saved to the Keychain. Uses Notion API version `2025-09-03` (data sources).
 

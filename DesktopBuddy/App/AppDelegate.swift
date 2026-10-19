@@ -46,6 +46,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FetchSelfTest.run()
             exit(0)
         }
+        if CommandLine.arguments.contains("--consent-selftest") {
+            ConsentSelfTest.run()
+            exit(0)
+        }
         if CommandLine.arguments.contains("--partiful-selftest") {
             PartifulSelfTest.run()
             exit(0)

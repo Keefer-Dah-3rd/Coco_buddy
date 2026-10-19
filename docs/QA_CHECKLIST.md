@@ -114,6 +114,14 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 - [ ] *Stop using Apple Calendar*: Apple events disappear; System Settings still shows access granted.
 - [ ] A day with no events: "No meetings today — wide open." After the last meeting: "That's all for today — no more meetings." *Coming up* lists the next days with "Tomorrow", a weekday or a date.
 
+## Chat permission (AI consent)
+
+- [ ] With a key added but permission not yet given, the Chat tab shows "Before you chat", not the conversation. Voice in the Chat tab doesn't send anything either.
+- [ ] "Not now" goes back to Today; the next visit to Chat asks again.
+- [ ] "Allow" opens the chat; starter prompts and messages work.
+- [ ] Settings › Privacy & data › "Chat may send what it needs to Anthropic": switching it off stops a reply in progress and clears the conversation. Switching it on opens the Chat tab's permission screen; it doesn't grant permission by itself.
+- [ ] Delete all my data: the permission screen shows again afterwards.
+
 ## Partiful invites (chat)
 
 - [ ] Paste a public Partiful link (partiful.com/e/…): the chat shows "Read the Partiful invite …" and Coco gives the title, day, time and place — no invented details.

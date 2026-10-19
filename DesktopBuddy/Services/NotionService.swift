@@ -48,7 +48,7 @@ final class NotionService {
     init(persistent: Bool = true, defaults: UserDefaults = .standard) {
         self.persistent = persistent
         self.defaults = defaults
-        // Notion is paused (Features.notion), so don't touch the Keychain for it at launch.
+        // When Notion is switched off (Features.notion), don't touch the Keychain for it at launch.
         guard persistent, Features.notion else { return }
         Task { [weak self] in
             guard let saved = await Keychain.stringInBackground(for: Key.token), let self, self.token == nil else { return }

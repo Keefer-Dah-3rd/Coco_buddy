@@ -67,6 +67,9 @@ final class Preferences {
     var treatKeyEnabled: Bool { didSet { defaults.set(treatKeyEnabled, forKey: Key.treatKey) } }
     /// Coco says something on her mind every half hour or so, when nothing else is going on.
     var chatterEnabled: Bool { didSet { defaults.set(chatterEnabled, forKey: Key.chatter) } }
+    /// The `AIConsent.version` the user allowed the chat to share data with Anthropic under;
+    /// 0 until they allow it (and again after they turn it off).
+    var aiConsentVersion: Int { didSet { defaults.set(aiConsentVersion, forKey: Key.aiConsent) } }
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -93,6 +96,7 @@ final class Preferences {
         throwKeyEnabled = true
         treatKeyEnabled = true
         chatterEnabled = true
+        aiConsentVersion = 0
         onboardingCompleted = false
     }
 
@@ -126,6 +130,7 @@ final class Preferences {
         throwKeyEnabled = defaults.bool(forKey: Key.throwKey)
         treatKeyEnabled = defaults.bool(forKey: Key.treatKey)
         chatterEnabled = defaults.bool(forKey: Key.chatter)
+        aiConsentVersion = defaults.integer(forKey: Key.aiConsent)
         onboardingCompleted = defaults.bool(forKey: Key.onboarding)
     }
 
@@ -147,6 +152,7 @@ final class Preferences {
         static let throwKey = "buddy.throwKey"
         static let treatKey = "buddy.treatKey"
         static let chatter = "buddy.chatter"
+        static let aiConsent = "buddy.aiConsentVersion"
         static let onboarding = "buddy.onboardingCompleted"
     }
 }

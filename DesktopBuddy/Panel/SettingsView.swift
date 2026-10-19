@@ -95,6 +95,13 @@ struct SettingsView: View {
 
                 Section("Privacy & data") {
                     Caption("Everything \(Buddy.name) keeps stays on this Mac: tasks, focus history and timer in the app's container; sign-ins and keys in your Keychain. Chats live in memory only. Calendar and task details go to Anthropic only when you ask the chat something that needs them.")
+                    ToggleRow("Chat may send what it needs to Anthropic", isOn: Binding(
+                        get: { model.hasAIConsent },
+                        // Switching on shows the details first; only "Allow" there grants it.
+                        set: { $0 ? model.openPanel(.chat) : model.revokeAIChat() }))
+                    Caption(model.hasAIConsent
+                            ? "Your messages, and your tasks, focus timer and calendar events when \(Buddy.name) needs them to answer. Turning this off stops the chat and forgets the conversation."
+                            : "The chat is off. Switching this on opens the Chat tab, which lists exactly what would be sent; nothing is until you choose Allow.")
                     HStack {
                         Button("Show welcome again") { model.showOnboarding() }
                             .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))

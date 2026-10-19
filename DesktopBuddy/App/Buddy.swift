@@ -3,8 +3,8 @@ enum Buddy {
     static let name = "Coco"
 }
 
-/// Product switches. Notion is paused (out of the plan until the user brings it back);
-/// its code stays in place but nothing in the app shows or runs it.
+/// Product switches. Notion was paused on 2026-10-11 and brought back on 2026-10-17; set
+/// this to false to hide it again (the code stays, nothing shows or runs).
 enum Features {
-    static let notion = false
+    static let notion = true
 }

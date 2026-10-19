@@ -47,6 +47,9 @@ final class AssistantService {
     /// The day the schedule card is showing, when it's open — mentioned in each message's note.
     @ObservationIgnored var viewingDay: (() -> Date?)?
     @ObservationIgnored var onChatCleared: (() -> Void)?
+    /// Whether the user has allowed the chat to send their data to Anthropic. Nothing is sent
+    /// while this says no — whichever screen or shortcut tries.
+    @ObservationIgnored var mayShare: () -> Bool = { false }
 
     @ObservationIgnored private var apiKey: String?
     @ObservationIgnored private var history: [JSONValue] = []
@@ -141,7 +144,7 @@ final class AssistantService {
 
     func send(_ raw: String) {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, isReady, !isResponding else { return }
+        guard !text.isEmpty, isReady, !isResponding, mayShare() else { return }
         turns.append(Turn(role: .user, text: text))
 
         let blocks: [JSONValue] = [

@@ -50,7 +50,7 @@ All five phases are done.
    - a global shortcut (⌃⌥C), keyboard navigation of the task list, VoiceOver labels;
    - an app icon, barks, handling for day change and wake, plus a [QA checklist](docs/QA_CHECKLIST.md) and a [60-second demo script](docs/DEMO_SCRIPT.md).
 
-**Notion is paused.** Its integration code and tests remain in `BuddyIntegrations`, switched off by `Features.notion`, so nothing in the app shows or runs it.
+**Notion.** Pick tasks from one Notion database for today (Connections › Notion, with an integration token kept in the Keychain). Picked tasks stay linked to Notion, and marking one done asks each time before changing Notion. `Features.notion` switches it off if needed.
 
 ## Build & run
 
@@ -115,7 +115,7 @@ DesktopBuddy/                    App target: AppKit windows + SwiftUI views only
 Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
   BuddyCore         Coco's dialogue pools + line picker, tasks, quick-add parser, day planner (Up next), focus log, voice parsing, focus timer, persistence
   BuddyCharacter    States, pose model, animator (blinks, idle life, reactions, frame scheduling)
-  BuddyIntegrations Google OAuth (PKCE) + Calendar parsing, Apple Calendar mapping, cross-calendar merge + search, free-time maths; Notion (paused)
+  BuddyIntegrations Google OAuth (PKCE) + Calendar parsing, Apple Calendar mapping, cross-calendar merge + search, free-time maths; Notion (token, database mapping, tasks)
   BuddyAssistant    Claude Messages API (raw HTTP + SSE), stream accumulation, tool schemas + validation, prompts
 ```
 
@@ -181,7 +181,7 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 - App Sandbox entitlements: microphone, calendars (Apple Calendar, read-only) and **outgoing** network (Google Calendar, the Claude API, and Partiful pages you share). Voice needs no network.
 - Links: when you share a Partiful invitation in chat, the app fetches that one page from partiful.com, the way a link preview would. It sends no cookies or sign-in, identifies itself, follows redirects only within Partiful, and never fetches any other site. Password-protected or sign-in-only invites are reported, not worked around. If you import your Partiful calendar, its link (a secret) is kept in the Keychain, the events are cached on this Mac, and the link is read about every half hour; *Disconnect* forgets both.
 - Integrations ask for the least access. Google Calendar reads events only, with a minimal field list (no descriptions or attendee lists), until you allow changes. Apple Calendar is read-only; event notes and attendee names stay on this Mac — the chat never receives them, except the name you searched for when it matches. Apple events aren't stored by Coco at all (Calendar.app has them). *Disconnect* revokes and forgets tokens and deletes cached data; *Stop using Apple Calendar* stops reading it, and System Settings › Privacy & Security › Calendars revokes the permission.
-- Calendar and task data go to Anthropic only when you ask the chat something that needs them, and the chat marks it. Chats are kept in memory only.
+- Nothing goes to Anthropic until you allow it: the Chat tab first lists what's sent with each message, what's sent only when Coco needs it, and what's never sent (Allow / Not now; off again in Settings › Privacy & data). After that, calendar and task data go only when you ask the chat something that needs them, and the chat marks it. Chats are kept in memory only.
 - A privacy manifest (`DesktopBuddy/Resources/PrivacyInfo.xcprivacy`) declares this for the App Store: no tracking; one collected data type (the chat content sent to Anthropic, for the chat to work); and UserDefaults as the only required-reason API (reason CA92.1, the app's own settings). Update it if any of that changes.
 - Audio is never recorded or stored. The transcript is used once and discarded.
 - **Settings › Delete all my data** removes all of the following, then shows the welcome again:
@@ -210,6 +210,7 @@ How it works, what syncs and what doesn't: [docs/DESIGN_SYSTEM.md](docs/DESIGN_S
 
 - [Design system](docs/DESIGN_SYSTEM.md): Figma ↔ code tokens, components, mascot assets and the sync workflow.
 - [Integrations setup](docs/INTEGRATIONS_SETUP.md): Google Calendar (personal OAuth client) and the Claude API key.
+- [Mac App Store checklist](docs/APP_STORE_CHECKLIST.md): what's left before submitting, with what's already done.
 - [QA checklist](docs/QA_CHECKLIST.md): manual checks for displays, Spaces, sleep, offline, date change, keyboard and VoiceOver.
 - [Demo script](docs/DEMO_SCRIPT.md): a 60-second screen recording, shot by shot.
 - [Personality](docs/PERSONALITY.md): Coco's traits, line categories, when she speaks up, and an example-conversation eval set for the chat prompt.

@@ -36,7 +36,7 @@ struct PanelRootView: View {
                 Button { model.openConnections() } label: {
                     Image(systemName: "link")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(model.agenda.isConnected ? Theme.ink : Theme.inkTertiary)
+                        .foregroundStyle(model.agenda.isConnected || (Features.notion && model.notion.isConnected) ? Theme.ink : Theme.inkTertiary)
                         .frame(width: 22, height: 18)
                         .contentShape(Rectangle())
                 }

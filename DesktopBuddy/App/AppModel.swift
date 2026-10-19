@@ -191,6 +191,7 @@ final class AppModel {
             return self.scheduleDay
         }
         assistant.onChatCleared = { [weak self] in self?.eventRequests = [] }
+        assistant.mayShare = { [weak self] in self?.hasAIConsent ?? false }
         assistant.onPhaseChanged = { [weak self] phase in
             switch phase {
             case .idle: self?.character.release()
@@ -405,6 +406,22 @@ final class AppModel {
 
     func setPanelOpen(_ open: Bool) {
         windows?.setPanelOpen(open)
+    }
+
+    // MARK: - Sharing with Anthropic
+
+    /// The user has allowed the chat to send what it needs to Anthropic (see `AIConsent`).
+    var hasAIConsent: Bool { preferences.aiConsentVersion >= AIConsent.version }
+
+    func allowAIChat() {
+        preferences.aiConsentVersion = AIConsent.version
+    }
+
+    /// Turns sharing off: any reply in progress stops and the conversation is forgotten.
+    func revokeAIChat() {
+        preferences.aiConsentVersion = 0
+        assistant.stop()
+        assistant.newChat()
     }
 
     /// She's eaten a treat you tossed and sat back down.
@@ -623,7 +640,7 @@ final class AppModel {
 
     private func handleTranscript(_ transcript: String) {
         // In the Chat tab, speech is a chat message.
-        if panelTab == .chat, assistant.isReady, !transcript.isEmpty {
+        if panelTab == .chat, assistant.isReady, hasAIConsent, !transcript.isEmpty {
             assistant.send(transcript)
             return
         }

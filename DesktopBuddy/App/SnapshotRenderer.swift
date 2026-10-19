@@ -105,6 +105,18 @@ enum SnapshotRenderer {
             conflicts: sample.events.filter { $0.id == "critique" })])
         write(view(PanelRootView(model: asking), appearance: .aqua), to: folder.appendingPathComponent("panel-chat-event.png"))
         write(view(ConnectionsView(model: connected), appearance: .aqua), to: folder.appendingPathComponent("connections-connected.png"))
+        write(view(ConnectionsView(model: connected, height: 2200), appearance: .aqua), to: folder.appendingPathComponent("connections-all.png"))
+        // Notion connected, no calendar: the picker card is the first thing in the list.
+        let notionOnly = demoModel()
+        notionOnly.notion.loadPreview(
+            mapping: NotionMapping(dataSourceID: "ds", dataSourceTitle: "Portfolio tasks", titleProperty: "Name"),
+            tasks: [
+                NotionTask(id: "n1", title: "Write case study intro", isDone: false, due: at(12), priority: .high),
+                NotionTask(id: "n2", title: "Export hero renders", isDone: false, due: nil, priority: .none),
+                NotionTask(id: "n3", title: "Email the printer", isDone: false, due: at(24 * 3), priority: .low),
+            ],
+            workspace: "Keefer's Notion")
+        write(view(PanelRootView(model: notionOnly), appearance: .aqua), to: folder.appendingPathComponent("panel-notion.png"))
         write(view(ConnectionsView(model: AppModel(preview: true)), appearance: .darkAqua),
               to: folder.appendingPathComponent("connections-setup-dark.png"))
 

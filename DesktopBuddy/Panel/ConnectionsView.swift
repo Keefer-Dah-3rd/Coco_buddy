@@ -2,10 +2,12 @@ import SwiftUI
 import BuddyCore
 import BuddyIntegrations
 
-/// Setup for Google Calendar and Notion. Each section says exactly what it can see,
+/// Setup for Claude, Apple Calendar, Google Calendar, Partiful and Notion. Each section says exactly what it can see,
 /// shows "Connected" only after a real request succeeded, and can delete its data.
 struct ConnectionsView: View {
     let model: AppModel
+    /// The window's height; snapshots render it taller to show every card at once.
+    var height: CGFloat = 680
 
     var body: some View {
         ScrollView {
@@ -33,7 +35,7 @@ struct ConnectionsView: View {
             .padding(.top, 34)
             .padding(.bottom, Space.xxl)
         }
-        .frame(width: 540, height: 680)
+        .frame(width: 540, height: height)
         .background(Theme.paper)
     }
 }

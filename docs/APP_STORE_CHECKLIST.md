@@ -16,7 +16,7 @@ These would likely get the app rejected or make it unusable for people who downl
   - [x] `NSHumanReadableCopyright`: "© 2026 John Keefe".
   - [x] `MARKETING_VERSION` 0.1 → **1.0**. Keep `CURRENT_PROJECT_VERSION` at 1, then raise it for every upload.
 - [x] **✓ done (2026-10-19)** **Likely reviewer ask for AI chat (Guidelines 1.2 / 4.7).** Each finished chat reply has a quiet **Report** link that opens an email to johnkeefedesign@gmail.com quoting the reply (with app and macOS versions), Settings › Privacy & data has **Contact support**, and the privacy policy says how reports are used. The address lives in one place: `Support.email` in `DesktopBuddy/App/Buddy.swift`. Original note: Apps with AI-generated content are expected to filter objectionable material, offer a way to report content and publish contact details. Claude's own safety filtering covers the first part. Consider adding "Report this reply" (a mailto: or a form) under chat replies, plus a support email, before the reviewer asks.
-- [ ] **Confirm you own the bark sounds** (`DesktopBuddy/Resources/Sounds/coco-bark-*.wav`). App Store Connect asks about content rights.
+- [x] **✓ done (2026-10-19)** **Bark sounds** (`DesktopBuddy/Resources/Sounds/coco-bark-*.wav`): the recording is **public domain**, so the app can ship it. Keep a note of where it came from (the page or archive it was downloaded from, and its public-domain statement) in case App Review or anyone else asks.
 
 ## 2. Already in good shape
 
@@ -25,6 +25,7 @@ These would likely get the app rejected or make it unusable for people who downl
 - [x] **✓ done** A privacy manifest (`PrivacyInfo.xcprivacy`) is bundled: no tracking, UserDefaults reason CA92.1, collected data limited to "other user content" for app functionality. No other required-reason APIs were found in the code.
 - [x] **✓ done** The app icon set is complete, 16 pt to 1024 px.
 - [x] **✓ done** The Release build compiles. The self-tests, snapshot tools and design experiments are compiled out (`#if DEBUG`): none of their flags are in the release binary.
+- [x] **✓ done (2026-10-19)** A Release **archive** (Product › Archive equivalent) builds cleanly and was audited: a universal binary (Apple Silicon and Intel), hardened runtime on, exactly the four entitlements above, version 1.0 (build 1), `ITSAppUsesNonExemptEncryption = NO`, copyright set, the asset catalog carries every icon size up to 1024 px, the privacy manifest and barks are bundled, and no self-test, snapshot, fake-service or experiment code is in the binary (checked by symbol). Raise the build number for every upload.
 - [x] **✓ done** Open at login is off until the user turns it on in Settings, via `SMAppService` (2.4.5(iii)).
 - [x] **✓ done** It has no Dock icon (`LSUIElement`), and Quit is in both of Coco's menus. There's no auto-updater (2.4.5(vii)), no downloaded code and no root access.
 - [x] **✓ done** The held-key tricks (Right ⌥ / ⌘ / ⇧) work in a sandboxed build without Accessibility or Input Monitoring (commit d8bbd97). Re-check this in the TestFlight build (step 5).
@@ -42,7 +43,7 @@ These would likely get the app rejected or make it unusable for people who downl
 
 - [x] **✓ drafted (2026-10-19)** The **privacy policy** is written: [docs/privacy/index.html](privacy/index.html). To finish it:
   - [x] Replace `[Developer name]` and `[contact email]` — done 2026-10-19: John Keefe, johnkeefedesign@gmail.com.
-  - [ ] Publish it: GitHub › Coco_buddy › Settings › Pages › Deploy from a branch › `main`, folder `/docs`. The URL will be `https://keefer-dah-3rd.github.io/Coco_buddy/privacy/`; paste it into App Store Connect › App Privacy.
+  - [x] **✓ done (2026-10-19)** Published with GitHub Pages (`main`, folder `/docs`) at `https://keefer-dah-3rd.github.io/Coco_buddy/privacy/`; it updates by itself on every push to `main`. Paste the URL into App Store Connect › App Privacy.
   - [ ] Re-read it whenever the app starts sending something new (and raise `AIConsent.version`).
 
   What it covers:
@@ -57,7 +58,7 @@ These would likely get the app rejected or make it unusable for people who downl
   - **No analytics or tracking.**
   - **How to delete everything:** Settings › Delete all my data.
   - **A contact email.**
-- [x] **✓ done** **Support page**: [docs/support/index.html](support/index.html), published with the privacy page at `https://keefer-dah-3rd.github.io/Coco_buddy/support/` once GitHub Pages is on. Listing text, review notes and suggested questionnaire answers are drafted in [APP_STORE_LISTING.md](APP_STORE_LISTING.md).
+- [x] **✓ done** **Support page**: [docs/support/index.html](support/index.html), published with the privacy page at `https://keefer-dah-3rd.github.io/Coco_buddy/support/` (live since 2026-10-19). Listing text, review notes and suggested questionnaire answers are drafted in [APP_STORE_LISTING.md](APP_STORE_LISTING.md).
 - [ ] Marketing URL (optional).
 - [ ] If you ship your own Google OAuth client: a homepage on a domain you've verified in Google Search Console, plus the privacy policy on that same domain.
 
@@ -92,7 +93,7 @@ These would likely get the app rejected or make it unusable for people who downl
 - [ ] App preview video (optional, up to 30 s). docs/DEMO_SCRIPT.md is already a shot list.
 - [ ] **Age rating questionnaire**. It's newer and covers capabilities as well as content. Answer the question about AI assistants / chatbots honestly. Coco can generate free text, which may raise the rating.
 - [ ] **App Privacy labels** (App Store Connect › App Privacy). Match them to the privacy manifest: no tracking; "Other User Content", linked to the user, for app functionality. Decide whether calendar details sent to Anthropic count as collected (Apple's definition is data that leaves the device and is kept longer than needed to serve the request). When unsure, declare it.
-- [ ] **Content rights**: "Yes, it accesses third-party content", meaning the user's own Google, Apple, Partiful and Notion data. Confirm you have the rights to everything bundled (barks, art).
+- [ ] **Content rights**: "Yes, it accesses third-party content", meaning the user's own Google, Apple, Partiful and Notion data. Everything bundled is cleared: the barks are public domain, and Coco's art and the icon are drawn in the app's own code.
 - [ ] **Export compliance**: "uses only exempt encryption (HTTPS)". Skipped automatically once `ITSAppUsesNonExemptEncryption` is set.
 - [ ] **Pricing and availability**: free or a price, which countries, and the EU decision from step 3.
 - [ ] Choose a release option: manual (recommended for v1) or automatic after approval.

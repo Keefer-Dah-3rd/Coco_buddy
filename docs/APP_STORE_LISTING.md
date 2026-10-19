@@ -83,7 +83,7 @@ desktop pet,corgi,dog,focus timer,pomodoro,planner,to do,tasks,calendar,producti
 
 ## Support, privacy and marketing URLs
 
-These work once GitHub Pages is on (repository Settings › Pages › `main`, folder `/docs`):
+Live on GitHub Pages since 2026-10-19 (repository Settings › Pages › `main`, folder `/docs`):
 
 - Support URL: `https://keefer-dah-3rd.github.io/Coco_buddy/support/`
 - Privacy Policy URL: `https://keefer-dah-3rd.github.io/Coco_buddy/privacy/`
@@ -147,5 +147,4 @@ Matches the privacy manifest (`DesktopBuddy/Resources/PrivacyInfo.xcprivacy`) an
 - Which name and subtitle.
 - Price, and which countries; leaving out the EU avoids publishing trader details.
 - Google Calendar in version 1 or not. This changes the description's calendar line and the review notes.
-- Whether the bark sounds are yours to use.
 - The test material: Claude key, Partiful links, Notion workspace and token.

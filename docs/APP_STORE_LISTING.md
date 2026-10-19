@@ -64,8 +64,8 @@ Text to paste into App Store Connect. Character limits are Apple's; counts are g
 >
 > GOOD TO KNOW
 > • The chat uses Claude by Anthropic with your own Anthropic API key. Usage is billed by Anthropic to your account. Everything else works without a key.
-> • Works with Notion: pick tasks from a Notion database (needs a Notion integration token).
-> • Partiful and Notion are trademarks of their owners; Desktop Buddy isn't made or endorsed by them.
+> • Works with Notion: pick tasks from a Notion database (paste a token from a Notion connection you create).
+> • Google Calendar, Partiful and Notion are trademarks of their owners; Desktop Buddy isn't made or endorsed by them.
 >
 > Requires macOS 14 or later.
 
@@ -137,7 +137,7 @@ Matches the privacy manifest (`DesktopBuddy/Resources/PrivacyInfo.xcprivacy`) an
 ## Other App Store Connect answers
 
 - **Category:** Productivity (primary). Secondary is optional: Lifestyle.
-- **Content rights:** "Yes, this app contains, shows or accesses third-party content", meaning the user's own calendar, Partiful and Notion data. You have the rights to the app's own art, plus the barks [once confirmed].
+- **Content rights:** "Yes, this app contains, shows or accesses third-party content", meaning the user's own calendar, Partiful and Notion data. Everything bundled is cleared: Coco's art and the icon are drawn in the app's own code, and the barks are a public-domain recording.
 - **Export compliance:** handled in the build: `ITSAppUsesNonExemptEncryption = NO` (only Apple's HTTPS).
 - **Sign-in required?** No. There's no account; App Review needs only the test key and tokens above.
 - **Release:** manual release after approval, for version 1.0.

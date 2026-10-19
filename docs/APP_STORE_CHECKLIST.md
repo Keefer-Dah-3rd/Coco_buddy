@@ -85,7 +85,7 @@ These would likely get the app rejected or make it unusable for people who downl
 
 - [ ] **Name** (30 characters max), e.g. "Desktop Buddy: Coco". Check it isn't taken.
 - [ ] **Subtitle** (30 max), e.g. "A corgi who plans your day".
-- [ ] **Description**: say clearly that the chat needs your own Anthropic API key and that usage is billed by Anthropic. Say which features work without it (Coco, tasks, focus timer, voice, calendars).
+- [ ] **✓ drafted (2026-10-19)** in [APP_STORE_LISTING.md](APP_STORE_LISTING.md), checked against the app (2,288 of 4,000 characters). **Description**: say clearly that the chat needs your own Anthropic API key and that usage is billed by Anthropic. Say which features work without it (Coco, tasks, focus timer, voice, calendars).
 - [ ] **Keywords** (100 characters, comma-separated): e.g. desktop pet, focus timer, pomodoro, planner, corgi, calendar.
 - [ ] Promotional text (optional, can change any time) and copyright.
 - [ ] **Category**: Productivity (already in the app). A secondary category is optional, e.g. Lifestyle.
@@ -136,7 +136,7 @@ To do:
 - [x] **✓ done** **Explain the two kinds of token in one line each** (Connections › Notion). An internal integration sees only the databases you share with it, which is least access and recommended. A personal access token sees everything you can see, **expires** after 7 days to 1 year (one year by default), and on Free and Business plans may be limited to workspace owners. Say that when a token expires, Coco asks you to reconnect.
 - [x] **✓ done** **Cover the people who can't make a token**: a 403 now says to ask the workspace owner; an expired token gets its own "needs reconnecting" note. Members of a workspace someone else owns may not be allowed to create integrations or tokens. Make sure the error text says to ask the workspace owner, or to use a personal workspace.
 - [x] **✓ done** The AI consent screen names tasks picked from Notion.
-- [ ] **Listing wording:** say "works with Notion". Don't use Notion's logo or suggest Notion made or endorses the app.
+- [x] **✓ done (2026-10-19)** **Listing wording:** the description says "Works with Notion", uses no logos, and says Desktop Buddy isn't made or endorsed by Notion, Partiful or Google ([APP_STORE_LISTING.md](APP_STORE_LISTING.md)). Keep Notion's logo out of the screenshots too.
 - [ ] **TestFlight check** (section 5):
   - [ ] Connect with an internal connection's API token.
   - [ ] Pick the database and map its fields.

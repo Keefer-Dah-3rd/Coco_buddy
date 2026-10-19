@@ -132,20 +132,17 @@ Already in the app:
 - [x] **✓ done** Nothing joins today's plan from Notion until you pick it, and a task is marked done in Notion only if you turned that on and confirm each time.
 
 To do:
-- [ ] **Check the in-app steps against Notion's current screens**, since Notion renames things. Today they are:
-  1. Go to notion.so › Settings › Connections (or *Integrations*) › **Develop or manage integrations**, then create an **internal** integration with *Read content*, plus *Update content* if Coco should mark tasks done.
-  2. Copy its secret into Coco.
-  3. In Notion, open the task database › **•••** › **Connections** › add the integration.
+- [x] **✓ done (2026-10-19)** **Checked the in-app steps against Notion's current docs.** Notion now calls integrations **connections** and makes them in a new developer portal (`app.notion.com/developers/connections`, workspace owners only); the secret is the connection's **API token** on its Configuration tab; access is given from its **Content access** tab or the database's **•••** › **Connections** › **Add connection**. Connections › Notion, its error messages and docs/INTEGRATIONS_SETUP.md now use those words. The API version the app sends (`2025-09-03`) is still accepted; Notion's newest is `2026-03-11`. Re-check the steps once more on your own Notion account before submitting, since the portal is new.
 - [x] **✓ done** **Explain the two kinds of token in one line each** (Connections › Notion). An internal integration sees only the databases you share with it, which is least access and recommended. A personal access token sees everything you can see, **expires** after 7 days to 1 year (one year by default), and on Free and Business plans may be limited to workspace owners. Say that when a token expires, Coco asks you to reconnect.
 - [x] **✓ done** **Cover the people who can't make a token**: a 403 now says to ask the workspace owner; an expired token gets its own "needs reconnecting" note. Members of a workspace someone else owns may not be allowed to create integrations or tokens. Make sure the error text says to ask the workspace owner, or to use a personal workspace.
 - [x] **✓ done** The AI consent screen names tasks picked from Notion.
 - [ ] **Listing wording:** say "works with Notion". Don't use Notion's logo or suggest Notion made or endorses the app.
 - [ ] **TestFlight check** (section 5):
-  - [ ] Connect with an internal-integration secret.
+  - [ ] Connect with an internal connection's API token.
   - [ ] Pick the database and map its fields.
   - [ ] Pick tasks for today.
   - [ ] Mark one done and confirm it changes in Notion.
-  - [ ] Revoke the integration in Notion and confirm Coco shows *needs reconnect*.
+  - [ ] Revoke the connection in Notion and confirm Coco shows *needs reconnect*.
   - [ ] Disconnect.
 
 ### What App Review needs for Notion
@@ -159,11 +156,11 @@ Reviewers won't create a Notion account or an integration themselves.
   - **Due** (date)
   - **Priority** (select)
   - about 5 tasks, some due today
-- [ ] Create an **internal integration** with Read + Update content, and share the database with it.
+- [ ] Create an **internal connection** with Read + Update content, and give it the database (Content access).
 - [ ] In the review notes, include:
-  - the secret;
+  - the API token;
   - "In Connections › Notion, paste this token, choose 'Review tasks', and accept the suggested fields. Open the panel › Notion › Pick to add tasks to today. Marking one done asks whether to update Notion."
-- [ ] After approval, **revoke that secret**, and make a new one for each later submission.
+- [ ] After approval, **revoke that token**, and make a new one for each later submission.
 
 ### Later: one-click "Connect Notion" (needs a small server)
 

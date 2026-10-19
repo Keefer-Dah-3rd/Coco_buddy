@@ -398,12 +398,12 @@ private struct NotionSection: View {
                         .bodyStyle()
                 }
                 SetupSteps(steps: [
-                    ("Create an internal integration (Read content; add Update content to mark tasks done).", URL(string: "https://www.notion.so/profile/integrations")),
-                    ("Copy its Internal Integration Secret.", nil),
-                    ("In Notion, open your task database › ••• › Connections, and add the integration.", nil),
-                    ("Paste the secret below. A personal access token works too.", nil),
+                    ("In Notion's developer portal, create an internal connection (Read content; add Update content to mark tasks done).", URL(string: "https://app.notion.com/developers/connections")),
+                    ("Copy its API token from the Configuration tab.", nil),
+                    ("Give it your task database: Content access › Edit access, or in Notion open the database › ••• › Connections › Add connection.", nil),
+                    ("Paste the token below. A personal access token works too.", nil),
                 ])
-                Text("An integration sees only the databases you share with it — the least access, and what we recommend. A personal access token sees everything you can see, and expires (Notion lets you pick 7 days to a year); \(Buddy.name) asks you to reconnect when it does. If Notion won't let you create either, ask your workspace's owner, or use a workspace of your own.")
+                Text("A connection sees only the databases you give it — the least access, and what we recommend. A personal access token sees everything you can see, and expires (Notion lets you pick 7 days to a year); \(Buddy.name) asks you to reconnect when it does. Only a workspace's owner can create connections, and some plans limit tokens too: if Notion won't let you create either, ask the owner, or use a workspace of your own.")
                     .bodyStyle()
                 SecureField("Token", text: $token, prompt: Text("ntn_…"))
                     .textFieldStyle(.roundedBorder)

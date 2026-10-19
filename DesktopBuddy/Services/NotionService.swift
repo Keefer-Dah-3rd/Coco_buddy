@@ -82,7 +82,7 @@ final class NotionService {
             problem = "Notion didn't accept that token. Check you copied the whole secret, and that it hasn't expired or been revoked."
         } catch IntegrationError.forbidden {
             status = .disconnected
-            problem = "Notion refused this token. Your workspace may not allow integrations or tokens for members — ask its owner, or use a workspace of your own."
+            problem = "Notion refused this token. Your workspace may not allow connections or tokens for members — ask its owner, or use a workspace of your own."
         } catch {
             status = .disconnected
             problem = (error as? IntegrationError)?.userMessage ?? error.localizedDescription
@@ -120,7 +120,7 @@ final class NotionService {
             } while cursor != nil && all.count < 200
             dataSources = all
             if all.isEmpty {
-                problem = "No databases are shared with this integration yet. In Notion, open your task database › ••• › Connections and add it."
+                problem = "No databases are shared with this connection yet. In Notion, open your task database › ••• › Connections › Add connection."
             }
         }
     }

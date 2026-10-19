@@ -40,12 +40,12 @@ If your Google account is also added to Calendar.app, the same meetings arrive f
 
 > Paused 2026-10-11, back on 2026-10-17. `Features.notion` in `DesktopBuddy/App/Buddy.swift` switches it off again if needed.
 
-How it works: Notion's public OAuth requires a client secret (verified against Notion's docs), which a desktop app can't keep private — so the app uses a token you paste: an **internal integration** secret (sees only databases you share with it — least access) or a **personal access token** (sees what you can see). It's verified with Notion before being saved to the Keychain. Uses Notion API version `2025-09-03` (data sources).
+How it works: Notion's public OAuth requires a client secret (verified against Notion's docs), which a desktop app can't keep private — so the app uses a token you paste: an **internal connection** API token (Notion's new name for an internal integration; sees only databases you give it — least access) or a **personal access token** (sees what you can see). It's verified with Notion before being saved to the Keychain. Uses Notion API version `2025-09-03` (data sources).
 
-- [ ] [Create an internal integration](https://www.notion.so/profile/integrations): capabilities *Read content*, plus *Update content* if you want Coco to be able to mark tasks done.
-- [ ] Copy its **Internal Integration Secret**.
-- [ ] In Notion, open your task database › **•••** › **Connections** › add the integration.
-- [ ] In the app: **Connections…** › paste the secret › **Connect** › choose the database › confirm the column mapping (task name, done status, due date, priority) — Coco suggests one, you can change it.
+- [ ] In Notion's [developer portal](https://app.notion.com/developers/connections) › **Internal connections** › create one (workspace owners only): capabilities *Read content*, plus *Update content* if you want Coco to be able to mark tasks done.
+- [ ] Copy its **API token** from the **Configuration** tab.
+- [ ] Give it your task database: **Content access** › **Edit access** in the portal, or in Notion open the database › **•••** › **Connections** › **Add connection**.
+- [ ] In the app: **Connections…** › paste the token › **Connect** › choose the database › confirm the column mapping (task name, done status, due date, priority) — Coco suggests one, you can change it.
 
 Behaviour: open tasks are offered in the panel under *Notion › Pick*; nothing joins today's plan until you pick it. Picked tasks stay linked (titles, due dates and done state follow Notion; a matching local task is linked rather than duplicated). Marking one done asks, every time, whether to update Notion too — and only if you turned that on in the mapping. *Disconnect* forgets the token and mapping; tasks already on your list stay as local tasks.
 

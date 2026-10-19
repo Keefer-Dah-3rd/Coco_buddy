@@ -98,7 +98,8 @@ enum AppleCalendarSelfTest {
             fake.event("A-bday", "Ana's birthday", day(busy), day(busy + 1), calendar: "birthdays", uid: "bday", allDay: true),
         ]
         await apple.reload()
-        do { try await agenda.load(from: day(busy), to: day(busy + 3)) } catch { check(false, "loading both calendars: \(error)") }
+        // Through busy + 4: the checks below look at that day, which can start a new week.
+        do { try await agenda.load(from: day(busy), to: day(busy + 4)) } catch { check(false, "loading both calendars: \(error)") }
 
         let shown = agenda.events(on: day(busy)) ?? []
         let titles = shown.map(\.title)

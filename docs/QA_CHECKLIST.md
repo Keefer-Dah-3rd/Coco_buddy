@@ -207,6 +207,19 @@ Quit any Xcode-launched copy first so only one Coco is running.
 - [ ] Cover Coco with a full-screen window. CPU drops to near 0%.
 - [ ] Hide Coco. CPU drops to near 0%.
 
+`scripts/energy-check.sh` measures this automatically (instructions at its top): a Release build under its own identity and home folder, so it never touches your real Coco. Don't use the Mac while it runs; its last column shows how long there was no input.
+
+Measured 2026-10-19 on the Release build (Intel i9-9880H, macOS 26.6), share of one core over 30 s, with little or no input:
+
+| Scenario | CPU | Idle wake-ups | Memory |
+|---|---|---|---|
+| Coco hidden | 0.03–0.13% | 0–2 a second | 33–47 MB |
+| Coco idle on the desktop, panel closed | 0.23% | about 7 a second | 47 MB |
+| Panel open (Today) | 0.8–0.9% | 40–55 a second | 58–60 MB |
+| Focus session running | 2.9% (4.2% while the Mac was in use) | 35–46 a second | 40–53 MB |
+
+Moving the mouse near Coco raises these for a moment, since she looks at it at full frame rate. All are well inside “low” Energy Impact. Repeat on Apple Silicon before release.
+
 ## Privacy
 
 - [ ] After *Delete all my data*: the task list is empty, Connections shows nothing connected, and Keychain Access has no `com.keefer.DesktopBuddy` items.

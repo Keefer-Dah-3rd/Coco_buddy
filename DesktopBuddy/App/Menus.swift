@@ -35,6 +35,8 @@ struct MenuBarMenu: View {
         Toggle("Show \(Buddy.name)", isOn: $preferences.isBuddyVisible)
         Toggle("Always on Top", isOn: $preferences.alwaysOnTop)
         Toggle("Mute Sounds", isOn: $preferences.soundsMuted)
+        Toggle("\(Buddy.name) Barks", isOn: $preferences.barksEnabled)
+            .disabled(preferences.soundsMuted)
         Picker("Presence", selection: $preferences.presence) {
             ForEach(Preferences.Presence.allCases) { Text($0.label).tag($0) }
         }
@@ -157,6 +159,9 @@ enum BuddyContextMenu {
         })
         menu.addItem(NSMenuItem.action("Mute Sounds", checked: preferences.soundsMuted) {
             preferences.soundsMuted.toggle()
+        })
+        menu.addItem(NSMenuItem.action("\(Buddy.name) Barks", checked: preferences.barksEnabled && !preferences.soundsMuted) {
+            model.setBarking(!(preferences.barksEnabled && !preferences.soundsMuted))
         })
         menu.addItem(.separator())
         menu.addItem(NSMenuItem.action("Hide \(Buddy.name)") { preferences.isBuddyVisible = false })

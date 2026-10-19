@@ -640,7 +640,7 @@
         "file": "DesktopBuddy/Panel/PanelRootView.swift",
         "anchor": ".frame(width: 22, height: 18)"
       },
-      "notes": "Active ↔ agenda.isConnected (link). Exposed inside Panel / Status Bar as “connections”; the old “voice” key is no longer in the app."
+      "notes": "Active ↔ agenda.isConnected or Notion connected (link) / barksEnabled && !soundsMuted (speaker.wave.2.fill vs speaker.slash — the mute key, barking on or off). Exposed inside Panel / Status Bar as “connections”."
     },
     {
       "figma": {
@@ -992,6 +992,24 @@
       },
       "swift": {
         "symbol": "Image(systemName: \"repeat\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/speaker.wave.2.fill",
+        "nodeId": "6:31"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"speaker.wave.2.fill\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/speaker.slash",
+        "nodeId": "6:34"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"speaker.slash\")"
       }
     }
   ],

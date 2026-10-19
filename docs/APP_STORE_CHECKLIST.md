@@ -40,7 +40,12 @@ These would likely get the app rejected or make it unusable for people who downl
 
 ## 4. Pages you need on the web
 
-- [ ] **Privacy policy URL** (required). It should cover:
+- [x] **✓ drafted (2026-10-19)** The **privacy policy** is written: [docs/privacy/index.html](privacy/index.html). To finish it:
+  - [ ] Replace `[Developer name]` and `[contact email]` (3 places).
+  - [ ] Publish it: GitHub › Coco_buddy › Settings › Pages › Deploy from a branch › `main`, folder `/docs`. The URL will be `https://keefer-dah-3rd.github.io/Coco_buddy/privacy/`; paste it into App Store Connect › App Privacy.
+  - [ ] Re-read it whenever the app starts sending something new (and raise `AIConsent.version`).
+
+  What it covers:
   - **Stays on the Mac:** tasks, focus history and settings, plus the Partiful calendar cache.
   - **Keychain:** the Claude API key, the Google sign-in and the Partiful calendar link.
   - **Sent to Anthropic, and only when the user chats:** messages, plus the tasks, calendar days and invitation details Coco looks up.

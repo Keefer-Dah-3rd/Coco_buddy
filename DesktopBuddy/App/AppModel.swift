@@ -404,6 +404,18 @@ final class AppModel {
         sounds.play(.bark)
     }
 
+    /// The mute key: barking on or off. Turning it on also lifts "Mute all sounds" (that's
+    /// what the click means) and gives one bark so you hear it worked.
+    func setBarking(_ on: Bool) {
+        if on {
+            preferences.barksEnabled = true
+            preferences.soundsMuted = false
+            bark(minimumGap: 0)
+        } else {
+            preferences.barksEnabled = false
+        }
+    }
+
     func setPanelOpen(_ open: Bool) {
         windows?.setPanelOpen(open)
     }

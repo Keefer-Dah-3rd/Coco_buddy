@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desktop Buddy Privacy Policy</title>
+<meta name="description" content="How Desktop Buddy (Coco) handles your data: what stays on your Mac, what is sent where, and how to delete it.">
+<style>
+  :root {
+    --paper: #F3F1EC; --well: #EAE7E0; --ink: #1A1A18; --ink-2: #6E6A61; --ink-3: #A6A196;
+    --accent: #D9480F; --hairline: rgba(26, 26, 24, 0.12);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1C1C1A; --well: #262624; --ink: #EFECE5; --ink-2: #9C988E; --ink-3: #64615A;
+      --accent: #FF6A33; --hairline: rgba(239, 236, 229, 0.14);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1C1C1A; --well: #262624; --ink: #EFECE5; --ink-2: #9C988E; --ink-3: #64615A;
+    --accent: #FF6A33; --hairline: rgba(239, 236, 229, 0.14);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 16px 80px; }
+  .label {
+    font: 600 12px/1.4 ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2);
+  }
+  h1 { font-size: 32px; line-height: 1.2; margin: 8px 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 20px; margin: 40px 0 8px; }
+  h3 { font-size: 16px; margin: 24px 0 4px; }
+  p, li { color: var(--ink); }
+  .lead { font-size: 18px; color: var(--ink-2); margin-top: 0; }
+  .muted { color: var(--ink-2); }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+  .summary {
+    background: var(--well); border-radius: 14px; padding: 20px 24px; margin: 32px 0 8px;
+  }
+  .summary ul { margin: 8px 0 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--hairline); }
+  th { font: 600 12px/1.4 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+  .table-wrap { overflow-x: auto; }
+  code { font: 14px ui-monospace, "SF Mono", Menlo, monospace; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--hairline); color: var(--ink-3); font-size: 14px; }
+  @media (max-width: 520px) {
+    main { padding-top: 32px; }
+    h1 { font-size: 26px; }
+    th, td { padding-right: 8px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="label">Desktop Buddy · Coco</div>
+  <h1>Privacy Policy</h1>
+  <p class="lead">Effective October 19, 2026</p>
+
+  <p>Desktop Buddy is a Mac app with a desktop companion named Coco. It helps you plan your day, run a focus timer and, if you choose, chat with an AI assistant and see your calendars. This policy explains what the app does with your information. It's written to match what the app actually does; if the two ever differ, the app is wrong and we'll fix it.</p>
+
+  <div class="summary">
+    <div class="label">In short</div>
+    <ul>
+      <li><strong>No account, no analytics, no ads, no tracking.</strong> We don't run servers that receive your data, and we never sell it.</li>
+      <li><strong>Your data stays on your Mac</strong> unless you connect a service or use the chat.</li>
+      <li><strong>The chat sends data to Anthropic only after you allow it</strong>, and only what it needs to answer you.</li>
+      <li><strong>You can delete everything</strong> at any time: Settings › Delete all my data.</li>
+    </ul>
+  </div>
+
+  <h2>Who we are</h2>
+  <p>Desktop Buddy is made by <strong>[Developer name]</strong> ("we"). Contact: <a href="mailto:[contact email]">[contact email]</a>.</p>
+
+  <h2>What stays on your Mac</h2>
+  <p>Everything the app keeps is stored on your Mac, inside the app's private storage area or your Keychain:</p>
+  <ul>
+    <li><strong>Your tasks</strong>, focus history and timer, saved as files in the app's container.</li>
+    <li><strong>Your settings</strong>, such as where Coco sits and your workday hours.</li>
+    <li><strong>A short-lived copy of calendar events</strong> (about a week back to a few weeks ahead), so your schedule shows quickly and offline.</li>
+    <li><strong>Keys and sign-ins</strong> (your Claude API key, Google sign-in, Notion token and Partiful calendar link), kept in the macOS Keychain.</li>
+    <li><strong>Chats</strong> are kept in memory only and are gone when you quit the app.</li>
+  </ul>
+  <p>We have no access to any of it.</p>
+
+  <h2>What leaves your Mac, and where it goes</h2>
+  <p>Data leaves your Mac only to talk to services you choose to use. The app connects directly to each one; nothing passes through servers of ours.</p>
+
+  <h3>The chat (Anthropic)</h3>
+  <p>The chat uses Claude, made by Anthropic, through an API key you supply. <strong>Before anything is sent, the app shows you exactly what will be shared and asks for your permission.</strong> If you allow it:</p>
+  <ul>
+    <li><strong>Sent with every message:</strong> what you type, or say in the chat.</li>
+    <li><strong>Sent only when Coco needs it to answer:</strong>
+      <ul>
+        <li>your tasks, with their notes, priorities and due dates (including tasks you picked from Notion);</li>
+        <li>your focus timer;</li>
+        <li>calendar events from Google Calendar, Apple Calendar and Partiful (titles, times and places), and a guest's name only when you ask about meetings with that person;</li>
+        <li>Partiful invitations you paste in;</li>
+        <li>short notes about what you just did, such as confirming a task the chat suggested.</li>
+      </ul>
+      The chat shows each time Coco looks something up.</li>
+    <li><strong>Never sent:</strong> voice recordings, event descriptions, guest lists, or your sign-ins and keys for other services.</li>
+  </ul>
+  <p>Anthropic handles this data under its own <a href="https://www.anthropic.com/legal/privacy">privacy policy</a> and the terms of your Anthropic account, and usage is billed to that account. You can withdraw permission at any time in Settings › Privacy & data, which also stops the chat and clears the conversation.</p>
+
+  <h3>Google Calendar (optional)</h3>
+  <ul>
+    <li><strong>Access:</strong> you sign in with Google. By default the app asks only to <em>read</em> events (<code>calendar.events.readonly</code>). Only the first time you confirm a change does it ask for permission to create, change and delete events (<code>calendar.events</code>).</li>
+    <li><strong>What it reads:</strong> events on your primary calendar for the days you look at, and only the fields it needs: title, time, place, video-call link, colour, and whether you can edit the event. It never requests event descriptions or other people's details.</li>
+    <li><strong>What it changes:</strong> an event is added, moved or deleted only after you confirm it on a card in the app.</li>
+    <li><strong>Limited Use:</strong> Desktop Buddy's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. Google data is used only to provide the app's features, is shared with Anthropic only as described above and only after you allow the chat, and is never used for advertising or to train AI models.</li>
+    <li><strong>Disconnecting:</strong> disconnecting revokes the app's access with Google and deletes the cached events.</li>
+  </ul>
+
+  <h3>Apple Calendar (optional)</h3>
+  <p>If you allow it, the app reads the calendars in the macOS Calendar app on your Mac. This is read-only: it never adds, changes or deletes those events. Event descriptions and guest names stay on your Mac. You can turn access off in System Settings › Privacy & Security › Calendars.</p>
+
+  <h3>Partiful (optional)</h3>
+  <ul>
+    <li><strong>Invitations:</strong> when you paste a Partiful invitation into the chat, the app fetches that one public page from partiful.com to read the event's details. It sends no cookies or sign-in, and never fetches other sites.</li>
+    <li><strong>Your Partiful calendar:</strong> if you add your personal Partiful calendar link, the app reads it about every half hour to show your Partiful events. The link is kept in your Keychain and the events are cached on your Mac.</li>
+    <li><strong>Writing:</strong> nothing is ever written to Partiful.</li>
+  </ul>
+
+  <h3>Notion (optional)</h3>
+  <p>If you connect Notion with a token you create, the app reads the task database you choose. It changes a task's status in Notion only when you confirm it each time, and only if you turned that on. The token is kept in your Keychain.</p>
+
+  <h3>Voice</h3>
+  <p>When you press the microphone, macOS speech recognition turns what you say into text. This happens on your Mac whenever your language supports it; otherwise Apple processes it under <a href="https://www.apple.com/legal/privacy/">Apple's privacy policy</a>. The app never records or stores audio, and uses the transcript once.</p>
+
+  <h3>Notifications</h3>
+  <p>Focus-timer and meeting reminders are scheduled locally on your Mac.</p>
+
+  <h2>Permissions the app asks for</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Permission</th><th>Why</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>Microphone</td><td>To hear what you say to Coco</td><td>The first time you press the mic</td></tr>
+      <tr><td>Speech recognition</td><td>To turn speech into tasks and timer commands</td><td>The first time you press the mic</td></tr>
+      <tr><td>Calendars</td><td>To show Apple Calendar events</td><td>When you connect Apple Calendar</td></tr>
+      <tr><td>Notifications</td><td>Timer and meeting reminders</td><td>The first time a timer or meeting reminder is scheduled</td></tr>
+      <tr><td>Sharing with Anthropic</td><td>For the chat to work</td><td>The first time you open the chat</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The keyboard tricks (holding the right-hand Option, Command or Shift key) watch only those modifier keys; the app does not record what you type.</p>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>No analytics, crash-reporting or advertising SDKs, and no tracking across apps or websites.</li>
+    <li>No selling or renting of your data, to anyone.</li>
+    <li>No accounts with us, and no servers of ours that receive your data.</li>
+  </ul>
+
+  <h2>Deleting your data</h2>
+  <p><strong>Settings › Delete all my data</strong> removes your tasks, focus history and timer, calendar sign-ins and cached events (Google access is revoked), your Partiful link and events, your Notion token, your Claude key and chat, your settings and your chat permission. Disconnecting any single service removes just that service's data. Deleting the app also removes its stored files.</p>
+  <p>Data already sent to Anthropic, Google or Notion is held under their own policies; contact them to delete it there.</p>
+
+  <h2>Children</h2>
+  <p>Desktop Buddy isn't directed at children under 13, and we don't knowingly collect their information. Since we don't collect personal information at all, there is nothing for us to hold or delete.</p>
+
+  <h2>Your rights</h2>
+  <p>Wherever you live, you can see, export or delete everything the app holds, because it's on your own Mac. For data held by a connected service, use that service's controls. For questions about this policy, email <a href="mailto:[contact email]">[contact email]</a>.</p>
+
+  <h2>Changes</h2>
+  <p>If the app starts sharing a new kind of data, we'll update this page and the app will ask your permission again before it does. The effective date above shows when this policy last changed.</p>
+
+  <footer>Desktop Buddy · Privacy Policy · Effective October 19, 2026</footer>
+</main>
+</body>
+</html>

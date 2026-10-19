@@ -41,8 +41,20 @@ struct PanelRootView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Connections — Claude and Google Calendar")
+                .help("Connections — Claude, calendars and Notion")
                 .accessibilityLabel("Connections")
+                // Mute: barking on or off (Coco doesn't speak aloud — her lines are text).
+                let barking = model.preferences.barksEnabled && !model.preferences.soundsMuted
+                Button { model.setBarking(!barking) } label: {
+                    Image(systemName: barking ? "speaker.wave.2.fill" : "speaker.slash")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(barking ? Theme.ink : Theme.inkTertiary)
+                        .frame(width: 22, height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(barking ? "\(Buddy.name) barks — click to mute her" : "Muted — click to let \(Buddy.name) bark")
+                .accessibilityLabel(barking ? "Barking on" : "Barking off")
                 Button { model.setPanelOpen(false) } label: {
                     Text("ESC").font(.style(.monoTiny)).tracking(0.6)
                         .foregroundStyle(Theme.inkTertiary)

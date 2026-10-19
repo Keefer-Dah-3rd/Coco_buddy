@@ -193,7 +193,7 @@ They join every Space, follow display changes and stay on a visible screen. Sett
 
 Coco has a full design system in [Figma](https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco):
 - foundations: variables in light and dark, plus text styles;
-- 63 components (two marked *Proposed*) and 24 SF Symbol icons, mapped to their SwiftUI source (the two speaker icons are no longer used in the app), including the calendar: schedule card states, event rows, the week browser and Apple Calendar access states;
+- 63 components (two marked *Proposed*) and 24 SF Symbol icons, mapped to their SwiftUI source (the speaker icons are the mute key: barking on or off), including the calendar: schedule card states, event rows, the week browser and Apple Calendar access states;
 - Coco's 34 poses as vectors exported from her real artwork: 14 sitting, running in 8 directions and a 4-phase stride, the dash, fetch and treats, plus the ball and the treat;
 - every app screen, built from instances;
 - a clickable prototype of the whole user flow: [onboarding](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-241&starting-point-node-id=40%3A241) and [daily use](https://www.figma.com/proto/FcDvsetj6U55hFCvRnIf5f/Coco?node-id=40-1378&starting-point-node-id=40%3A1378).
@@ -210,6 +210,7 @@ How it works, what syncs and what doesn't: [docs/DESIGN_SYSTEM.md](docs/DESIGN_S
 
 - [Design system](docs/DESIGN_SYSTEM.md): Figma ↔ code tokens, components, mascot assets and the sync workflow.
 - [Integrations setup](docs/INTEGRATIONS_SETUP.md): Google Calendar (personal OAuth client) and the Claude API key.
+- [Privacy policy](docs/privacy/index.html): the public page for the App Store (published with GitHub Pages).
 - [Mac App Store checklist](docs/APP_STORE_CHECKLIST.md): what's left before submitting, with what's already done.
 - [QA checklist](docs/QA_CHECKLIST.md): manual checks for displays, Spaces, sleep, offline, date change, keyboard and VoiceOver.
 - [Demo script](docs/DEMO_SCRIPT.md): a 60-second screen recording, shot by shot.

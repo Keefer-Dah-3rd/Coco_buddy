@@ -11,10 +11,10 @@ These would likely get the app rejected or make it unusable for people who downl
   - **Ship your own OAuth client** (iOS type, your bundle ID) and get it **verified by Google**. The Calendar scopes are *sensitive*, and verification takes weeks: you need a privacy policy, a homepage on a verified domain, a written justification for each scope and usually a demo video. Until it's verified, users see an "unverified app" screen. In *Testing* mode, sign-ins expire after 7 days and only listed test users can connect.
   - **Or leave direct Google out of v1.** People can add their Google account to the macOS Calendar app and Coco reads it through Apple Calendar. Coco just can't add or change events then.
 - [ ] **Notion is back on** (`Features.notion = true`, re-enabled 2026-10-17). It can ship as it is, but it needs its own test material and wording; see [section 9](#9-notion).
-- [ ] **Info.plist additions** (set in the target's build settings; the Info.plist is generated):
-  - [ ] `ITSAppUsesNonExemptEncryption = NO`. The app only uses Apple's HTTPS, which is exempt, so App Store Connect stops asking about export compliance on every build.
-  - [ ] `NSHumanReadableCopyright`: it's currently empty. Use e.g. "© 2026 Your Name".
-  - [ ] `MARKETING_VERSION` 0.1 → **1.0**. Keep `CURRENT_PROJECT_VERSION` at 1, then raise it for every upload.
+- [x] **✓ done (2026-10-19)** **Info.plist additions** (set in the target's build settings; the Info.plist is generated):
+  - [x] `ITSAppUsesNonExemptEncryption = NO`. The app only uses Apple's HTTPS, which is exempt, so App Store Connect stops asking about export compliance on every build.
+  - [x] `NSHumanReadableCopyright`: "© 2026 John Keefe".
+  - [x] `MARKETING_VERSION` 0.1 → **1.0**. Keep `CURRENT_PROJECT_VERSION` at 1, then raise it for every upload.
 - [x] **✓ done (2026-10-19)** **Likely reviewer ask for AI chat (Guidelines 1.2 / 4.7).** Each finished chat reply has a quiet **Report** link that opens an email to johnkeefedesign@gmail.com quoting the reply (with app and macOS versions), Settings › Privacy & data has **Contact support**, and the privacy policy says how reports are used. The address lives in one place: `Support.email` in `DesktopBuddy/App/Buddy.swift`. Original note: Apps with AI-generated content are expected to filter objectionable material, offer a way to report content and publish contact details. Claude's own safety filtering covers the first part. Consider adding "Report this reply" (a mailto: or a form) under chat replies, plus a support email, before the reviewer asks.
 - [ ] **Confirm you own the bark sounds** (`DesktopBuddy/Resources/Sounds/coco-bark-*.wav`). App Store Connect asks about content rights.
 
@@ -57,7 +57,7 @@ These would likely get the app rejected or make it unusable for people who downl
   - **No analytics or tracking.**
   - **How to delete everything:** Settings › Delete all my data.
   - **A contact email.**
-- [ ] **Support URL** (required): a page with a contact email or form. The README's Privacy section is a good start.
+- [x] **✓ done** **Support page**: [docs/support/index.html](support/index.html), published with the privacy page at `https://keefer-dah-3rd.github.io/Coco_buddy/support/` once GitHub Pages is on. Listing text, review notes and suggested questionnaire answers are drafted in [APP_STORE_LISTING.md](APP_STORE_LISTING.md).
 - [ ] Marketing URL (optional).
 - [ ] If you ship your own Google OAuth client: a homepage on a domain you've verified in Google Search Console, plus the privacy policy on that same domain.
 
@@ -135,8 +135,8 @@ To do:
   1. Go to notion.so › Settings › Connections (or *Integrations*) › **Develop or manage integrations**, then create an **internal** integration with *Read content*, plus *Update content* if Coco should mark tasks done.
   2. Copy its secret into Coco.
   3. In Notion, open the task database › **•••** › **Connections** › add the integration.
-- [ ] **Explain the two kinds of token in one line each.** An internal integration sees only the databases you share with it, which is least access and recommended. A personal access token sees everything you can see, **expires** after 7 days to 1 year (one year by default), and on Free and Business plans may be limited to workspace owners. Say that when a token expires, Coco asks you to reconnect.
-- [ ] **Cover the people who can't make a token.** Members of a workspace someone else owns may not be allowed to create integrations or tokens. Make sure the error text says to ask the workspace owner, or to use a personal workspace.
+- [x] **✓ done** **Explain the two kinds of token in one line each** (Connections › Notion). An internal integration sees only the databases you share with it, which is least access and recommended. A personal access token sees everything you can see, **expires** after 7 days to 1 year (one year by default), and on Free and Business plans may be limited to workspace owners. Say that when a token expires, Coco asks you to reconnect.
+- [x] **✓ done** **Cover the people who can't make a token**: a 403 now says to ask the workspace owner; an expired token gets its own "needs reconnecting" note. Members of a workspace someone else owns may not be allowed to create integrations or tokens. Make sure the error text says to ask the workspace owner, or to use a personal workspace.
 - [x] **✓ done** The AI consent screen names tasks picked from Notion.
 - [ ] **Listing wording:** say "works with Notion". Don't use Notion's logo or suggest Notion made or endorses the app.
 - [ ] **TestFlight check** (section 5):

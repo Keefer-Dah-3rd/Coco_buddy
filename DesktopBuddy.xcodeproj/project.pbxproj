@@ -212,16 +212,17 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 John Keefe";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Coco listens only while you're talking to her (after you click the microphone), to turn what you say into tasks and timer commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "What you say to Coco is transcribed — on this Mac whenever supported — so she can add tasks and run the focus timer by voice.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.keefer.DesktopBuddy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -248,16 +249,17 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 John Keefe";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Coco listens only while you're talking to her (after you click the microphone), to turn what you say into tasks and timer commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "What you say to Coco is transcribed — on this Mac whenever supported — so she can add tasks and run the focus timer by voice.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.keefer.DesktopBuddy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

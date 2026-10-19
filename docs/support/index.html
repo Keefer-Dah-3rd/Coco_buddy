@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desktop Buddy Support</title>
+<meta name="description" content="Help with Desktop Buddy (Coco): getting started, the chat, calendars, Partiful, Notion, voice and your data.">
+<style>
+  :root {
+    --paper: #F3F1EC; --well: #EAE7E0; --ink: #1A1A18; --ink-2: #6E6A61; --ink-3: #A6A196;
+    --accent: #D9480F; --hairline: rgba(26, 26, 24, 0.12);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1C1C1A; --well: #262624; --ink: #EFECE5; --ink-2: #9C988E; --ink-3: #64615A;
+      --accent: #FF6A33; --hairline: rgba(239, 236, 229, 0.14);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1C1C1A; --well: #262624; --ink: #EFECE5; --ink-2: #9C988E; --ink-3: #64615A;
+    --accent: #FF6A33; --hairline: rgba(239, 236, 229, 0.14);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 16px 80px; }
+  .label {
+    font: 600 12px/1.4 ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2);
+  }
+  h1 { font-size: 32px; line-height: 1.2; margin: 8px 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 20px; margin: 40px 0 8px; }
+  h3 { font-size: 16px; margin: 24px 0 4px; }
+  p, li { color: var(--ink); }
+  .lead { font-size: 18px; color: var(--ink-2); margin-top: 0; }
+  .muted { color: var(--ink-2); }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+  .summary {
+    background: var(--well); border-radius: 14px; padding: 20px 24px; margin: 32px 0 8px;
+  }
+  .summary ul { margin: 8px 0 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--hairline); }
+  th { font: 600 12px/1.4 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+  .table-wrap { overflow-x: auto; }
+  code { font: 14px ui-monospace, "SF Mono", Menlo, monospace; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--hairline); color: var(--ink-3); font-size: 14px; }
+  @media (max-width: 520px) {
+    main { padding-top: 32px; }
+    h1 { font-size: 26px; }
+    th, td { padding-right: 8px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="label">Desktop Buddy · Coco</div>
+  <h1>Support</h1>
+  <p class="lead">Questions, problems or ideas: email <a href="mailto:johnkeefedesign@gmail.com">johnkeefedesign@gmail.com</a>. Replies usually come within a few days.</p>
+
+  <div class="summary">
+    <div class="label">When you write in</div>
+    <ul>
+      <li>Say which version you have: right-click Coco › Settings shows it at the bottom.</li>
+      <li>Say what you did, what you expected and what happened instead. A screenshot helps.</li>
+      <li>To report a chat reply, use <strong>Report</strong> under it: it opens an email with the reply quoted, and nothing is sent until you send it.</li>
+    </ul>
+  </div>
+
+  <h2>Getting started</h2>
+  <h3>Where is the app?</h3>
+  <p>Desktop Buddy has no Dock icon. Coco sits on your desktop. Click her, or press <strong>⌃⌥C</strong> from any app, to open her panel. Right-click her for the menu, which includes Settings and Quit.</p>
+  <h3>Coco disappeared</h3>
+  <p>Open the panel with ⌃⌥C, then right-click Coco › Reset Position. If she's hidden, Settings › Show Coco on the desktop brings her back.</p>
+  <h3>The key tricks</h3>
+  <ul>
+    <li>Hold the <strong>right-hand Option</strong> key and click: Coco runs there.</li>
+    <li>Hold the <strong>right-hand Command</strong> key and click: you throw her ball.</li>
+    <li>Hold the <strong>right-hand Shift</strong> key and click: you toss her a treat.</li>
+  </ul>
+  <p>These need no special permissions. You can switch each one off in Settings.</p>
+
+  <h2>Chat</h2>
+  <h3>The chat asks for an API key</h3>
+  <p>The chat uses Claude by Anthropic with your own API key. Create one in the <a href="https://console.anthropic.com/">Anthropic Console</a>, then paste it in Connections › Claude. Usage is billed to your Anthropic account, and the chat shows an estimate. Everything else in the app works without a key.</p>
+  <h3>"Before you chat"</h3>
+  <p>The first time you open the chat, Coco lists exactly what it would send to Anthropic. Nothing is sent until you choose Allow. To turn it off later, go to Settings › Privacy &amp; data; this also clears the conversation. More detail is in the <a href="../privacy/">privacy policy</a>.</p>
+
+  <h2>Calendars and connections</h2>
+  <h3>Apple Calendar</h3>
+  <p>In Connections, choose Connect Apple Calendar and allow access when macOS asks. If you said no earlier, turn it on in System Settings › Privacy &amp; Security › Calendars. Accounts you've added to the Calendar app, including Google, iCloud and Exchange, show up in Coco.</p>
+  <h3>Partiful</h3>
+  <ul>
+    <li><strong>One invitation:</strong> paste a partiful.com link into the chat.</li>
+    <li><strong>All your events:</strong> on partiful.com (on a computer), open an event, click the calendar icon under the details, choose Google Calendar, then Copy Link. Paste that link in Connections › Partiful.</li>
+  </ul>
+  <p>Invitations that are private or password-protected can't be read from their page. If they're in your Partiful calendar, Coco reads them from there.</p>
+  <h3>Notion</h3>
+  <p>Create an internal integration in Notion, paste its secret in Connections › Notion, then share your task database with the integration (in the database, choose ••• › Connections). If you can't create an integration in a workspace someone else owns, ask its owner.</p>
+  <h3>"Needs reconnecting"</h3>
+  <p>A service stopped accepting the saved sign-in or token, for example because it expired or was revoked. Open Connections and connect it again. Coco keeps showing the last data she had until you do.</p>
+
+  <h2>Voice and sounds</h2>
+  <p>Press the microphone and allow microphone and speech access when macOS asks. If you said no earlier, turn it on in System Settings › Privacy &amp; Security › Microphone, and in Speech Recognition. To silence Coco's barks, right-click her › Mute Sounds, or use Settings › Sound &amp; voice.</p>
+
+  <h2>Your data</h2>
+  <p>Everything stays on your Mac unless you connect a service or use the chat. Settings › Delete all my data removes all of it. See the <a href="../privacy/">privacy policy</a>.</p>
+
+  <footer>Desktop Buddy · Support · <a href="../privacy/">Privacy policy</a></footer>
+</main>
+</body>
+</html>

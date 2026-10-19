@@ -79,7 +79,10 @@ final class NotionService {
             await loadDataSources()
         } catch IntegrationError.unauthorized {
             status = .disconnected
-            problem = "Notion didn't accept that token. Check you copied the whole secret."
+            problem = "Notion didn't accept that token. Check you copied the whole secret, and that it hasn't expired or been revoked."
+        } catch IntegrationError.forbidden {
+            status = .disconnected
+            problem = "Notion refused this token. Your workspace may not allow integrations or tokens for members — ask its owner, or use a workspace of your own."
         } catch {
             status = .disconnected
             problem = (error as? IntegrationError)?.userMessage ?? error.localizedDescription

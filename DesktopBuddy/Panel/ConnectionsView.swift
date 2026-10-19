@@ -393,12 +393,18 @@ private struct NotionSection: View {
 
             switch service.status {
             case .disconnected, .verifying, .needsReconnect:
+                if service.status == .needsReconnect {
+                    Text("Notion stopped accepting the saved token — it may have expired or been revoked. Paste a new one to carry on; tasks already on your list stay.")
+                        .bodyStyle()
+                }
                 SetupSteps(steps: [
                     ("Create an internal integration (Read content; add Update content to mark tasks done).", URL(string: "https://www.notion.so/profile/integrations")),
                     ("Copy its Internal Integration Secret.", nil),
                     ("In Notion, open your task database › ••• › Connections, and add the integration.", nil),
                     ("Paste the secret below. A personal access token works too.", nil),
                 ])
+                Text("An integration sees only the databases you share with it — the least access, and what we recommend. A personal access token sees everything you can see, and expires (Notion lets you pick 7 days to a year); \(Buddy.name) asks you to reconnect when it does. If Notion won't let you create either, ask your workspace's owner, or use a workspace of your own.")
+                    .bodyStyle()
                 SecureField("Token", text: $token, prompt: Text("ntn_…"))
                     .textFieldStyle(.roundedBorder)
                 HStack {

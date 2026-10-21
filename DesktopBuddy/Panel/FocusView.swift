@@ -11,38 +11,41 @@ struct FocusView: View {
     private var timer: FocusTimer { focus.timer }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SkySegment(selection: phaseBinding, items: [
-                .init(.focus, "Focus"),
-                .init(.shortBreak, "Short"),
-                .init(.longBreak, "Long"),
-            ], height: 30)
-            .disabled(timer.isActive)
-            .opacity(timer.isActive ? 0.5 : 1)
+        // Scrolls when the footer doesn't fit, so the header and tabs stay where they are.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                SkySegment(selection: phaseBinding, items: [
+                    .init(.focus, "Focus"),
+                    .init(.shortBreak, "Short"),
+                    .init(.longBreak, "Long"),
+                ], height: 30)
+                .disabled(timer.isActive)
+                .opacity(timer.isActive ? 0.5 : 1)
 
-            timeDisplay
+                timeDisplay
 
-            if !timer.isActive && !timer.isFinished {
-                lengthSlider
+                if !timer.isActive && !timer.isFinished {
+                    lengthSlider
+                }
+
+                if timer.phase == .focus && !timer.isFinished {
+                    taskPicker
+                }
+
+                if timer.isFinished {
+                    CompletionCard(model: model)
+                } else {
+                    meetingHeadsUp
+                    controls
+                }
+
+                footer
             }
-
-            if timer.phase == .focus && !timer.isFinished {
-                taskPicker
-            }
-
-            if timer.isFinished {
-                CompletionCard(model: model)
-            } else {
-                meetingHeadsUp
-                controls
-            }
-
-            Spacer(minLength: 0)
-            footer
+            .padding(.horizontal, 20)
+            .padding(.top, 6)
+            .padding(.bottom, 12)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 6)
-        .padding(.bottom, 12)
+        .scrollIndicators(.never)
     }
 
     private var phaseBinding: Binding<FocusPhase> {

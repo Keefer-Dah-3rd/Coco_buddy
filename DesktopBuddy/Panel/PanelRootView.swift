@@ -16,7 +16,8 @@ struct PanelRootView: View {
                 case .chat: ChatView(model: model)
                 }
             }
-            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .clipped()
             nav
         }
         .frame(width: Metrics.panelWidth, height: Metrics.panelHeight)

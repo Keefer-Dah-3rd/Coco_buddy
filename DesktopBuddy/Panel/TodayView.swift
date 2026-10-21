@@ -28,16 +28,16 @@ struct TodayView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 8)
 
-            if !model.taskDrafts.isEmpty {
-                TaskDraftReviewCard(model: model)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 0) {
+                        if !model.taskDrafts.isEmpty {
+                            TaskDraftReviewCard(model: model)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 10)
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                                .id("drafts")
+                        }
                         SkyFocusBanner(model: model)
                             .padding(.horizontal, 20)
                             .padding(.bottom, 10)
@@ -95,6 +95,9 @@ struct TodayView: View {
                 .accessibilityHint("Use the arrow keys to move between tasks, Space to tick, Return to edit")
                 .onAppear { reveal(model.editingTaskID, with: proxy, animated: false) }
                 .onChange(of: model.editingTaskID) { _, id in reveal(id, with: proxy, animated: true) }
+                .onChange(of: model.taskDrafts.count) { old, new in
+                    if new > old { withAnimation(.snappy) { proxy.scrollTo("drafts", anchor: .top) } }
+                }
             }
 
             if let removed = model.recentlyRemoved {

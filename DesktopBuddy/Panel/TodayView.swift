@@ -1,7 +1,8 @@
 import SwiftUI
 import BuddyCore
 
-/// Today's list: a counter, a one-line quick-add field and the tasks.
+/// Today. The day's wins and the one-line add field stay at the top; below them scroll Coco's
+/// focus banner, the quick actions, the calendar and the tasks.
 struct TodayView: View {
     let model: AppModel
     @State private var draft = ""
@@ -14,55 +15,60 @@ struct TodayView: View {
         let _ = model.dayToken  // recompute "today" when the date changes
         let tasks = model.tasks.today()
         let done = tasks.filter(\.isCompleted).count
+        let leftovers = model.tasks.leftovers
+        let hasConnections = model.agenda.isConnected || (Features.notion && model.notion.isReady)
+        let nothingYet = tasks.isEmpty && leftovers.isEmpty && !hasConnections
 
         VStack(alignment: .leading, spacing: 0) {
             summary(done: done, tasks: tasks)
-                .padding(.horizontal, Space.xl)
-                .padding(.top, 14)
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
             quickAdd
-                .padding(.horizontal, Space.xl)
-                .padding(.vertical, Space.lg)
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
 
             if !model.taskDrafts.isEmpty {
                 TaskDraftReviewCard(model: model)
-                    .padding(.horizontal, Space.xl)
-                    .padding(.bottom, Space.lg)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            let leftovers = model.tasks.leftovers
-            let hasConnections = model.agenda.isConnected || (Features.notion && model.notion.isReady)
-            if tasks.isEmpty && leftovers.isEmpty && !hasConnections {
-                EmptyTodayView()
-            } else {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            if let pending = model.pendingNotionCompletion {
-                                NotionCompletionCard(model: model, task: pending)
-                                    .padding(.horizontal, Space.xl)
-                                    .padding(.bottom, Space.sm)
-                            }
-                            if model.agenda.isConnected {
-                                ScheduleStrip(model: model)
-                                    .padding(.horizontal, Space.xl)
-                                    .padding(.bottom, Space.sm)
-                            }
-                            if Features.notion, model.notion.isReady, !model.notionCandidates.isEmpty {
-                                NotionPickerCard(model: model)
-                                    .padding(.horizontal, Space.xl)
-                                    .padding(.bottom, Space.sm)
-                            }
-                            if !leftovers.isEmpty {
-                                LeftoversBanner(count: leftovers.count, model: model)
-                                    .padding(.horizontal, Space.xl)
-                                    .padding(.bottom, Space.sm)
-                            }
-                            if model.taskDrafts.isEmpty, !model.focus.timer.isActive, let next = model.upNext {
-                                UpNextCard(task: next.task, reason: next.reason, model: model)
-                                    .padding(.horizontal, Space.xl)
-                                    .padding(.bottom, Space.xxs)
-                            }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        SkyFocusBanner(model: model)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 10)
+                        if let pending = model.pendingNotionCompletion {
+                            NotionCompletionCard(model: model, task: pending)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                        }
+                        if model.agenda.isConnected {
+                            ScheduleStrip(model: model)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                        }
+                        if Features.notion, model.notion.isReady, !model.notionCandidates.isEmpty {
+                            NotionPickerCard(model: model)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                        }
+                        if !leftovers.isEmpty {
+                            LeftoversBanner(count: leftovers.count, model: model)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                        }
+                        if model.taskDrafts.isEmpty, !model.focus.timer.isActive, let next = model.upNext {
+                            UpNextCard(task: next.task, reason: next.reason, model: model)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 6)
+                        }
+                        if nothingYet {
+                            EmptyTodayView()
+                        } else {
                             ForEach(tasks) { task in
                                 TaskRow(
                                     task: task,
@@ -73,29 +79,32 @@ struct TodayView: View {
                                 .id(task.id)
                             }
                         }
-                        .padding(.bottom, Space.sm)
+                        SkyHelpRows(model: model, makePlan: { fieldFocused = true }, openChat: { model.panelTab = .chat })
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 10)
                     }
-                    .scrollIndicators(.never)
-                    .focusable()
-                    .focused($listFocused)
-                    .focusEffectDisabled()
-                    .onKeyPress(keys: [.upArrow, .downArrow, .space, .return, .delete, "f"]) { press in
-                        handleListKey(press.key, tasks: tasks, proxy: proxy)
-                    }
-                    .accessibilityHint("Use the arrow keys to move between tasks, Space to tick, Return to edit")
-                    .onAppear { reveal(model.editingTaskID, with: proxy, animated: false) }
-                    .onChange(of: model.editingTaskID) { _, id in reveal(id, with: proxy, animated: true) }
+                    .padding(.bottom, 8)
                 }
+                .scrollIndicators(.never)
+                .focusable()
+                .focused($listFocused)
+                .focusEffectDisabled()
+                .onKeyPress(keys: [.upArrow, .downArrow, .space, .return, .delete, "f"]) { press in
+                    handleListKey(press.key, tasks: tasks, proxy: proxy)
+                }
+                .accessibilityHint("Use the arrow keys to move between tasks, Space to tick, Return to edit")
+                .onAppear { reveal(model.editingTaskID, with: proxy, animated: false) }
+                .onChange(of: model.editingTaskID) { _, id in reveal(id, with: proxy, animated: true) }
             }
 
             if let removed = model.recentlyRemoved {
                 undoBar(removed)
             } else if let problem = model.tasks.storageProblem {
                 Text(problem)
-                    .font(.style(.caption))
-                    .foregroundStyle(Theme.accent)
-                    .padding(.horizontal, Space.xl)
-                    .padding(.vertical, Space.sm)
+                    .font(Sky.text(11))
+                    .foregroundStyle(Sky.accentText)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
             }
         }
         .animation(.snappy(duration: 0.25), value: model.taskDrafts.isEmpty)
@@ -109,29 +118,16 @@ struct TodayView: View {
     private func summary(done: Int, tasks: [BuddyTask]) -> some View {
         let remainingMinutes = tasks.filter { !$0.isCompleted }.compactMap(\.estimateMinutes).reduce(0, +)
         let focused = model.focusLog.today
-        return VStack(alignment: .leading, spacing: Space.sm) {
-            HStack(alignment: .lastTextBaseline, spacing: 0) {
-                Text("\(done)")
-                    .foregroundStyle(Theme.ink)
-                Text("/\(tasks.count)")
-                    .foregroundStyle(Theme.inkTertiary)
-                MonoLabel("done").padding(.leading, Space.sm)
-                Spacer()
-            }
-            .font(.style(.displayCount).monospacedDigit())
-            .contentTransition(.numericText())
-            .animation(.snappy, value: done)
-
-            SegmentMeter(done: done, total: tasks.count)
-
+        return VStack(alignment: .leading, spacing: 8) {
+            SkyWinsCard(done: done, total: tasks.count)
             if focused.minutes > 0 || remainingMinutes > 0 {
                 HStack {
                     if focused.minutes > 0 {
-                        MonoLabel("Focused \(Self.duration(focused.minutes)) today", color: Theme.ink)
+                        SkyKicker("Focused \(Self.duration(focused.minutes)) today", color: Sky.ink)
                     }
                     Spacer()
                     if remainingMinutes > 0 {
-                        MonoLabel("≈ \(Self.duration(remainingMinutes)) left")
+                        SkyKicker("≈ \(Self.duration(remainingMinutes)) left")
                     }
                 }
             }
@@ -143,22 +139,24 @@ struct TodayView: View {
     private var quickAdd: some View {
         let parsed = QuickAddParser.parse(draft)
         let voice = model.voiceIn
-        return VStack(alignment: .leading, spacing: Space.xs) {
-            HStack(spacing: Space.sm) {
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
                 if voice.isListening {
                     ListeningDot()
                     Text(voice.transcript.isEmpty ? "Listening… say a task or “start focus”" : voice.transcript)
-                        .font(.style(.body))
-                        .foregroundStyle(voice.transcript.isEmpty ? Theme.inkTertiary : Theme.ink)
+                        .font(Sky.text(13))
+                        .foregroundStyle(voice.transcript.isEmpty ? Sky.faint : Sky.ink)
                         .lineLimit(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Text("+").font(Theme.mono(15, .semibold)).foregroundStyle(Theme.accent)
+                    Text("+")
+                        .font(Sky.text(16, .semibold))
+                        .foregroundStyle(Sky.accent)
                     TextField("Add task", text: $draft, prompt: Text("Add a task… try “Draft intro ~30m !!”")
-                        .foregroundStyle(Theme.inkTertiary))
+                        .foregroundStyle(Sky.faint))
                         .textFieldStyle(.plain)
-                        .font(.style(.body))
-                        .foregroundStyle(Theme.ink)
+                        .font(Sky.text(13))
+                        .foregroundStyle(Sky.ink)
                         .focused($fieldFocused)
                         .onSubmit(submit)
                         .onKeyPress(.downArrow) {
@@ -168,20 +166,23 @@ struct TodayView: View {
                             return .handled
                         }
                     if !draft.isEmpty {
-                        Text("↵").font(.style(.monoValue)).foregroundStyle(Theme.inkTertiary)
+                        Text("↵")
+                            .font(Sky.text(11, .medium))
+                            .foregroundStyle(Sky.faint)
                     }
                 }
                 MicButton(isListening: voice.isListening) { model.toggleListening() }
             }
-            .padding(.horizontal, Space.md)
-            .frame(height: 34)
-            .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                .strokeBorder(fieldFocused ? Theme.ink.opacity(0.5) : .clear, lineWidth: 1))
+            .padding(.leading, 12)
+            .padding(.trailing, 5)
+            .frame(height: 40)
+            .background(RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous).fill(Sky.well))
+            .overlay(RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous)
+                .strokeBorder(fieldFocused ? Sky.accent.opacity(0.55) : .clear, lineWidth: 1.5))
 
             if voice.isListening, !voice.isOnDevice {
-                MonoLabel("Transcribed by Apple's speech service")
-                    .padding(.leading, Space.xxxs)
+                SkyKicker("Transcribed by Apple's speech service")
+                    .padding(.leading, 4)
             }
             switch voice.status {
             case .denied(let message), .unavailable(let message):
@@ -195,11 +196,11 @@ struct TodayView: View {
 
             // Live read-back of the shorthand, so the syntax teaches itself.
             if !voice.isListening, let parsed, parsed.priority != .none || parsed.estimateMinutes != nil {
-                HStack(spacing: Space.md) {
-                    if let minutes = parsed.estimateMinutes { MonoLabel("Est. \(Self.duration(minutes))") }
-                    if parsed.priority != .none { MonoLabel("\(parsed.priority.label) priority", color: Theme.accent) }
+                HStack(spacing: 12) {
+                    if let minutes = parsed.estimateMinutes { SkyKicker("Est. \(Self.duration(minutes))") }
+                    if parsed.priority != .none { SkyKicker("\(parsed.priority.label) priority", color: Sky.accentText) }
                 }
-                .padding(.leading, Space.xxxs)
+                .padding(.leading, 4)
                 .transition(.opacity)
             }
         }
@@ -210,17 +211,21 @@ struct TodayView: View {
     private func undoBar(_ task: BuddyTask) -> some View {
         HStack {
             Text("Removed “\(BuddyVoice.short(task.title, limit: 26))”")
-                .font(.style(.bodySmall))
-                .foregroundStyle(Theme.inkSecondary)
+                .font(Sky.text(12))
+                .foregroundStyle(.white)
                 .lineLimit(1)
             Spacer()
             Button("Undo") { model.undoRemove() }
-                .buttonStyle(KeyButtonStyle(kind: .secondary))
+                .buttonStyle(.plain)
+                .font(Sky.text(12, .medium))
+                .foregroundStyle(Sky.accentSoft)
                 .keyboardShortcut("z", modifiers: .command)
         }
-        .padding(.horizontal, Space.xl)
-        .padding(.vertical, Space.sm)
-        .background(Theme.well)
+        .padding(.horizontal, 15)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Sky.ink))
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
@@ -272,58 +277,27 @@ struct TodayView: View {
     }
 }
 
-/// One block per task — an LED-style meter. Becomes a continuous bar for long lists.
-private struct SegmentMeter: View {
-    let done: Int
-    let total: Int
-
-    var body: some View {
-        GeometryReader { proxy in
-            if total == 0 {
-                Rectangle().fill(Theme.hairline).frame(height: 1).frame(maxHeight: .infinity)
-            } else if total <= 16 {
-                HStack(spacing: 3) {
-                    ForEach(0..<total, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: Radius.bar)
-                            .fill(index < done ? Theme.ink : Theme.hairline)
-                    }
-                }
-            } else {
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: Radius.bar).fill(Theme.hairline)
-                    RoundedRectangle(cornerRadius: Radius.bar).fill(Theme.ink)
-                        .frame(width: proxy.size.width * CGFloat(done) / CGFloat(total))
-                }
-            }
-        }
-        .frame(height: 6)
-        .animation(.snappy, value: done)
-        .animation(.snappy, value: total)
-    }
-}
-
 private struct EmptyTodayView: View {
     var body: some View {
-        VStack(spacing: Space.lg) {
-            Spacer()
-            RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                .strokeBorder(Theme.inkTertiary, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                .frame(width: 44, height: 30)
-                .overlay(Text("+").font(Theme.mono(14, .medium)).foregroundStyle(Theme.inkTertiary))
-            VStack(spacing: Space.xxs) {
+        VStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous)
+                .strokeBorder(Sky.ring, style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                .frame(width: 46, height: 32)
+                .overlay(Text("+").font(Sky.text(15, .medium)).foregroundStyle(Sky.muted))
+            VStack(spacing: 4) {
                 Text("Nothing on the list yet.")
-                    .font(.style(.bodyEmphasis))
-                    .foregroundStyle(Theme.ink)
+                    .font(Sky.text(14, .semibold))
+                    .foregroundStyle(Sky.ink)
                 Text("Type above and press Return.\nAdd ~25m for an estimate, ! to !!! for priority,\n@today for a one-day item.")
-                    .font(.style(.bodySmall))
-                    .foregroundStyle(Theme.inkSecondary)
+                    .font(Sky.text(12))
+                    .foregroundStyle(Sky.muted)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
             }
-            Spacer()
-            Spacer()
         }
         .frame(maxWidth: .infinity)
+        .padding(.top, 26)
+        .padding(.bottom, 20)
     }
 }
 
@@ -332,20 +306,17 @@ private struct EmptyTodayView: View {
 private struct MicButton: View {
     let isListening: Bool
     let action: () -> Void
-    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
             Image(systemName: isListening ? "stop.fill" : "mic.fill")
                 .font(.system(size: isListening ? 9 : 11, weight: .semibold))
-                .foregroundStyle(isListening ? Theme.onAccent : (hovering ? Theme.ink : Theme.inkSecondary))
-                .frame(width: 24, height: 24)
-                .background(isListening ? Theme.accent : (hovering ? Theme.hairline : .clear),
-                            in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
-                .contentShape(Rectangle())
+                .foregroundStyle(isListening ? Sky.ink : Sky.muted)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(isListening ? Sky.accent : Sky.paper))
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .onHover { hovering = $0 }
         .keyboardShortcut("l", modifiers: .command)
         .help(isListening ? "Stop listening (⌘L)" : "Talk to \(Buddy.name) (⌘L)")
         .accessibilityLabel(isListening ? "Stop listening" : "Talk to \(Buddy.name)")
@@ -358,7 +329,7 @@ private struct ListeningDot: View {
 
     var body: some View {
         Circle()
-            .fill(Theme.accent)
+            .fill(Sky.accent)
             .frame(width: 8, height: 8)
             .opacity(pulse ? 0.35 : 1)
             .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse)
@@ -373,20 +344,19 @@ private struct VoiceProblem: View {
     let dismiss: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: Space.sm) {
+        HStack(alignment: .top, spacing: 8) {
             Text(message)
-                .font(.style(.caption))
-                .foregroundStyle(Theme.inkSecondary)
+                .font(Sky.text(11))
+                .foregroundStyle(Sky.muted)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
             Button("Settings") { NSWorkspace.shared.open(settingsURL) }
-                .buttonStyle(KeyButtonStyle(kind: .secondary))
+                .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             Button { dismiss() } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)) }
-                .buttonStyle(.plain)
-                .foregroundStyle(Theme.inkTertiary)
+                .buttonStyle(SkyRoundStyle(size: 22, fill: .clear, tint: Sky.faint))
                 .help("Dismiss")
         }
-        .padding(.top, Space.xxxs)
+        .padding(.top, 2)
     }
 }
 
@@ -395,50 +365,46 @@ struct TaskDraftReviewCard: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            HStack {
-                MonoLabel((model.draftOrigin == .chat ? "Suggested by \(Buddy.name)" : "Heard") + " — review before adding",
-                          color: Theme.accent)
-                Spacer()
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            SkyKicker((model.draftOrigin == .chat ? "Suggested by \(Buddy.name)" : "Heard") + " — review before adding",
+                      color: Sky.accentText)
             ForEach($model.taskDrafts) { $draft in
-                HStack(spacing: Space.sm) {
+                HStack(spacing: 8) {
                     TextField("Task", text: $draft.title)
                         .textFieldStyle(.plain)
-                        .font(.style(.body))
-                        .foregroundStyle(Theme.ink)
+                        .font(Sky.text(13, .medium))
+                        .foregroundStyle(Sky.ink)
                     if draft.priority != .none {
                         Text(String(repeating: "!", count: draft.priority.rawValue))
-                            .font(.style(.monoMark))
-                            .foregroundStyle(Theme.accent)
+                            .font(Sky.text(11, .bold))
+                            .foregroundStyle(Sky.accentText)
                     }
                     if let minutes = draft.estimateMinutes {
-                        MonoLabel(TodayView.duration(minutes), color: Theme.inkTertiary)
+                        SkyKicker(TodayView.duration(minutes), color: Sky.faint)
                     }
                     Button {
                         model.taskDrafts.removeAll { $0.id == draft.id }
                     } label: {
                         Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Theme.inkTertiary)
+                    .buttonStyle(SkyRoundStyle(size: 22, fill: .clear, tint: Sky.faint))
                     .help("Leave this one out")
                 }
-                .padding(.horizontal, Space.sm)
-                .frame(height: 28)
-                .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
+                .padding(.horizontal, 12)
+                .frame(height: 34)
+                .background(RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous).fill(Sky.paper))
             }
-            HStack(spacing: Space.sm) {
+            HStack(spacing: 8) {
                 let count = model.taskDrafts.count
                 Button(count == 1 ? "Add task" : "Add \(count) tasks") { model.addTaskDrafts() }
-                    .buttonStyle(KeyButtonStyle(kind: .primary, fillWidth: true))
+                    .buttonStyle(SkyButtonStyle(kind: .accent, compact: true, fillWidth: true))
                     .keyboardShortcut(.return, modifiers: .command)
                 Button("Discard") { model.discardTaskDrafts() }
-                    .buttonStyle(KeyButtonStyle(kind: .secondary))
+                    .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             }
         }
-        .padding(Space.md)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.well))
     }
 }
 
@@ -452,22 +418,22 @@ private struct UpNextCard: View {
     let model: AppModel
 
     var body: some View {
-        HStack(spacing: Space.md) {
+        HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
-                MonoLabel("Up next · " + TaskLabels.reason(reason), color: Theme.accent)
+                SkyKicker("Up next · " + TaskLabels.reason(reason), color: Sky.accentText)
                 Text(task.title)
-                    .font(.style(.bodyEmphasis))
-                    .foregroundStyle(Theme.ink)
+                    .font(Sky.text(13.5, .semibold))
+                    .foregroundStyle(Sky.ink)
                     .lineLimit(1)
             }
             Spacer(minLength: 6)
             Button { model.focus(on: task.id) } label: { Label("Focus", systemImage: "play.fill") }
-                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                 .help("Start a focus session on this task")
         }
-        .padding(.horizontal, Space.md)
-        .padding(.vertical, Space.sm)
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .skyCard(radius: Sky.Radius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Up next: \(task.title). \(TaskLabels.reason(reason)).")
     }
@@ -479,20 +445,20 @@ private struct LeftoversBanner: View {
     let model: AppModel
 
     var body: some View {
-        HStack(spacing: Space.sm) {
+        HStack(spacing: 8) {
             Text("\(count) left over")
-                .font(.style(.bodySmall))
-                .foregroundStyle(Theme.inkSecondary)
+                .font(Sky.text(12))
+                .foregroundStyle(Sky.muted)
                 .lineLimit(1)
                 .help("Unfinished “today only” items from an earlier day")
             Spacer(minLength: 4)
             Button("Carry over") { model.carryOverLeftovers() }
-                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             Button("Let go") { model.letGoOfLeftovers() }
-                .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
         }
-        .padding(.horizontal, Space.md)
-        .padding(.vertical, 7)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.well))
     }
 }

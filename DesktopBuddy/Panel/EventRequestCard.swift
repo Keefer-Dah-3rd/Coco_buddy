@@ -9,22 +9,22 @@ struct EventRequestCard: View {
     let model: AppModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            MonoLabel(heading, color: Theme.ink)
+        VStack(alignment: .leading, spacing: 8) {
+            SkyKicker(heading, color: Sky.ink)
             content
             if !request.conflicts.isEmpty, case .waiting = request.state {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(request.conflicts) { event in
                         Text("Overlaps “\(event.title)” \(AppModel.describe(event.start, event.end, allDay: false))")
-                            .font(.style(.caption)).foregroundStyle(Theme.accent)
+                            .font(Sky.text(11))
+                            .foregroundStyle(Sky.accentText)
                     }
                 }
             }
             footer
         }
-        .padding(Space.md)
-        .background(Theme.well.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
+        .padding(14)
+        .skyCard(radius: Sky.Radius.card)
         .accessibilityElement(children: .contain)
     }
 
@@ -44,32 +44,32 @@ struct EventRequestCard: View {
                 line(draft.title, AppModel.describe(draft.start, draft.end, allDay: draft.isAllDay), draft.location)
                 if let source = draft.source {
                     Link("From \(source.name) · keeps the invite link", destination: source.url)
-                        .font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                        .font(Sky.text(11)).foregroundStyle(Sky.muted)
                         .accessibilityLabel("Open the \(source.name) invitation")
                 }
             }
         case .change(let event, let changes):
             VStack(alignment: .leading, spacing: 2) {
-                Text(changes.title ?? event.title).font(.style(.bodyEmphasis)).foregroundStyle(Theme.ink)
+                Text(changes.title ?? event.title).font(Sky.text(13.5, .semibold)).foregroundStyle(Sky.ink)
                 if let start = changes.start, let end = changes.end {
                     Text(AppModel.describe(event.start, event.end, allDay: event.isAllDay))
-                        .font(.style(.bodySmall)).foregroundStyle(Theme.inkTertiary).strikethrough()
+                        .font(Sky.text(12)).foregroundStyle(Sky.faint).strikethrough()
                     Text("→ " + AppModel.describe(start, end, allDay: event.isAllDay))
-                        .font(.style(.bodySmall)).foregroundStyle(Theme.ink)
+                        .font(Sky.text(12)).foregroundStyle(Sky.ink)
                 }
                 if let title = changes.title, title != event.title {
-                    Text("Was “\(event.title)”").font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                    Text("Was “\(event.title)”").font(Sky.text(11)).foregroundStyle(Sky.muted)
                 }
                 if let location = changes.location {
-                    Text("Location: \(location)").font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                    Text("Location: \(location)").font(Sky.text(11)).foregroundStyle(Sky.muted)
                 }
-                if event.isRecurring { MonoLabel("Only this occurrence") }
+                if event.isRecurring { SkyKicker("Only this occurrence") }
                 separateCopies(of: event)
             }
         case .delete(let event):
             VStack(alignment: .leading, spacing: 2) {
                 line(event.title, AppModel.describe(event.start, event.end, allDay: event.isAllDay), event.location)
-                if event.isRecurring { MonoLabel("Only this occurrence") }
+                if event.isRecurring { SkyKicker("Only this occurrence") }
                 separateCopies(of: event)
             }
         }
@@ -82,17 +82,17 @@ struct EventRequestCard: View {
         let copies = event.alsoIn.filter { $0.match == .details }
         if !copies.isEmpty {
             Text("Only the Google Calendar event changes — the copy in \(copies.map(\.label).joined(separator: " and ")) stays as it is.")
-                .font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                .font(Sky.text(11)).foregroundStyle(Sky.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func line(_ title: String, _ when: String, _ location: String?) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.style(.bodyEmphasis)).foregroundStyle(Theme.ink)
-            Text(when).font(.style(.bodySmall)).foregroundStyle(Theme.ink)
+            Text(title).font(Sky.text(13.5, .semibold)).foregroundStyle(Sky.ink)
+            Text(when).font(Sky.text(12)).foregroundStyle(Sky.ink)
             if let location, !location.isEmpty {
-                Text(location).font(.style(.caption)).foregroundStyle(Theme.inkSecondary).lineLimit(2)
+                Text(location).font(Sky.text(11)).foregroundStyle(Sky.muted).lineLimit(2)
             }
         }
     }
@@ -103,34 +103,34 @@ struct EventRequestCard: View {
         case .waiting:
             if !model.calendar.canChangeEvents {
                 Text("The first time, Google asks you to let Coco change events.")
-                    .font(.style(.caption)).foregroundStyle(Theme.inkSecondary)
+                    .font(Sky.text(11)).foregroundStyle(Sky.muted)
             }
-            HStack(spacing: Space.sm) {
+            HStack(spacing: 8) {
                 Button(confirmTitle) { model.confirmEventRequest(request.id) }
-                    .buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .accent, compact: true))
                 Button("Not now") { model.declineEventRequest(request.id) }
-                    .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             }
         case .working:
-            HStack(spacing: Space.sm) {
+            HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
-                MonoLabel("Saving to Google Calendar…")
+                SkyKicker("Saving to Google Calendar…")
             }
         case .failed(let message):
-            Text("Nothing changed: \(message)").font(.style(.caption)).foregroundStyle(Theme.accent)
-            HStack(spacing: Space.sm) {
+            Text("Nothing changed: \(message)").font(Sky.text(11)).foregroundStyle(Sky.accentText)
+            HStack(spacing: 8) {
                 Button("Try again") { model.confirmEventRequest(request.id) }
-                    .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                 Button("Dismiss") { model.dismissEventRequest(request.id) }
-                    .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
             }
         case .done(let outcome):
-            HStack(spacing: Space.sm) {
-                Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.ink)
-                Text(outcome).font(.style(.caption)).foregroundStyle(Theme.ink).lineLimit(2)
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Sky.accentText)
+                Text(outcome).font(Sky.text(11)).foregroundStyle(Sky.ink).lineLimit(2)
                 Spacer()
                 Button { model.dismissEventRequest(request.id) } label: { Image(systemName: "xmark") }
-                    .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                    .buttonStyle(SkyRoundStyle(size: 22, fill: .clear, tint: Sky.faint))
                     .accessibilityLabel("Dismiss")
             }
         }

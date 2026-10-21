@@ -9,18 +9,18 @@ struct ScheduleStrip: View {
     let model: AppModel
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: Space.xs) {
+        VStack(alignment: .trailing, spacing: 6) {
             // Outside the card, so it reads as its own control: opens and closes the week.
             Button {
                 if !model.scheduleExpanded { model.showScheduleDay(model.scheduleDay) }
                 model.scheduleExpanded.toggle()
             } label: {
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
                     Text("Week")
                     Image(systemName: model.scheduleExpanded ? "chevron.up" : "chevron.down").font(.system(size: 8, weight: .bold))
                 }
             }
-            .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+            .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             .help(model.scheduleExpanded ? "Show just today" : "Browse the week")
             .accessibilityLabel(model.scheduleExpanded ? "Collapse week" : "Show the week")
             Group {
@@ -33,9 +33,9 @@ struct ScheduleStrip: View {
                     }
                 }
             }
-            .padding(.horizontal, Space.md)
-            .padding(.vertical, Space.sm)
-            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .skyCard(radius: Sky.Radius.card)
         }
     }
 
@@ -72,33 +72,34 @@ struct ScheduleStrip: View {
         let open = remaining.isEmpty ? [] : Availability.openings(on: now, events: events, hours: model.workingHours,
                                                                   minimum: 30 * 60, notBefore: now, calendar: calendar)
         let items = (schedule.events.map(Item.event) + open.map(Item.open)).sorted { ($0.start, $0.id) < ($1.start, $1.id) }
-        return VStack(alignment: .leading, spacing: Space.xs) {
-            HStack(spacing: Space.sm) {
-                MonoLabel("Today")
-                Spacer(minLength: Space.xs)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                SkyKicker("Today", color: Sky.ink)
+                Spacer(minLength: 6)
                 if !schedule.events.isEmpty {
-                    MonoLabel(remaining.isEmpty ? "done" : "\(remaining.count) left"
+                    SkyKicker(remaining.isEmpty ? "done" : "\(remaining.count) left"
                               + (open.isEmpty ? "" : " · \(TodayView.duration(Int(open.reduce(0) { $0 + $1.duration } / 60))) open"))
                 }
             }
             if loaded == nil {
                 // A failure with nothing saved is explained by the problem line below.
                 if agenda.problem(for: now) == nil {
-                    HStack(spacing: Space.sm) {
+                    HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        MonoLabel("Loading today…")
+                        SkyKicker("Loading today…")
                     }
-                    .padding(.vertical, Space.xxs)
+                    .padding(.vertical, 4)
                     .accessibilityElement(children: .combine)
                 }
             } else if schedule.events.isEmpty && schedule.allDayEvents.isEmpty {
                 Text("No meetings today — wide open.")
-                    .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
+                    .font(Sky.text(12))
+                    .foregroundStyle(Sky.muted)
             }
             ForEach(schedule.allDayEvents) { event in
-                HStack(spacing: Space.sm) {
-                    MonoLabel("All day")
-                    Text(event.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
+                HStack(spacing: 8) {
+                    SkyKicker("All day")
+                    Text(event.title).font(Sky.text(12)).foregroundStyle(Sky.ink).lineLimit(1)
                 }
                 .help(event.sourcesDescription)
             }
@@ -110,7 +111,8 @@ struct ScheduleStrip: View {
             }
             if !schedule.events.isEmpty && remaining.isEmpty {
                 Text("That's all for today — no more meetings.")
-                    .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
+                    .font(Sky.text(12))
+                    .foregroundStyle(Sky.muted)
             }
             problemLine(now: now)
             comingUp(now: now)
@@ -129,9 +131,9 @@ struct ScheduleStrip: View {
         let failing = model.agenda.activeSources.filter { $0.problem(for: now) != nil }.map(\.sourceName)
         if model.calendar.status == .needsReconnect || !failing.isEmpty {
             Button { model.openConnections() } label: {
-                MonoLabel(model.calendar.status == .needsReconnect ? "Google Calendar needs reconnecting ›"
+                SkyKicker(model.calendar.status == .needsReconnect ? "Google Calendar needs reconnecting ›"
                           : "Couldn't refresh \(failing.joined(separator: " or ")) · showing what's saved ›",
-                          color: Theme.accent)
+                          color: Sky.accentText)
             }
             .buttonStyle(.plain)
         }
@@ -143,23 +145,25 @@ struct ScheduleStrip: View {
         let agenda = model.agenda
         let upcoming = agenda.comingUp(after: now, limit: 3)
         let weekAhead = Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
-        Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, Space.xxs)
-        MonoLabel("Coming up")
+        Rectangle().fill(Sky.line).frame(height: 1).padding(.vertical, 2)
+        SkyKicker("Coming up")
         if upcoming.isEmpty {
             // Only "nothing" once the week ahead has actually been read.
             Text(agenda.events(on: weekAhead) == nil
                  ? (agenda.problem(for: weekAhead) == nil ? "Loading…" : "Couldn't read the next 7 days.")
                  : "Nothing in the next 7 days.")
-                .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
+                .font(Sky.text(12))
+                .foregroundStyle(Sky.muted)
         }
         ForEach(upcoming) { event in
-            HStack(spacing: Space.sm) {
-                MonoLabel(RelativeTiming.day(of: event.start, now: now))
+            HStack(spacing: 8) {
+                SkyKicker(RelativeTiming.day(of: event.start, now: now))
                     .frame(width: 66, alignment: .leading)
-                Text(event.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
-                Spacer(minLength: Space.xs)
+                Text(event.title).font(Sky.text(12)).foregroundStyle(Sky.ink).lineLimit(1)
+                Spacer(minLength: 6)
                 Text(event.isAllDay ? "all day" : event.start.formatted(date: .omitted, time: .shortened))
-                    .font(.style(.monoValue)).foregroundStyle(Theme.inkSecondary)
+                    .font(Sky.text(10.5, .medium))
+                    .foregroundStyle(Sky.muted)
             }
             .help(event.sourcesDescription)
             .accessibilityElement(children: .combine)

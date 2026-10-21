@@ -16,63 +16,58 @@ struct TaskEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.md) {
+        VStack(alignment: .leading, spacing: 12) {
             TextField("Title", text: $draft.title)
                 .textFieldStyle(.plain)
-                .font(.style(.bodyEmphasis))
-                .foregroundStyle(Theme.ink)
+                .font(Sky.text(14, .semibold))
+                .foregroundStyle(Sky.ink)
                 .focused($titleFocused)
                 .onSubmit { model.editingTaskID = nil }
-                .fieldWell()
+                .skyField()
 
             TextField("Notes", text: $draft.notes, prompt: Text("Notes — links, details, the first step…")
-                .foregroundStyle(Theme.inkTertiary), axis: .vertical)
+                .foregroundStyle(Sky.faint), axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.style(.bodySmall))
-                .foregroundStyle(Theme.ink)
+                .font(Sky.text(12.5))
+                .foregroundStyle(Sky.ink)
                 .lineLimit(2...5)
-                .fieldWell()
+                .skyField()
 
             row("Priority") {
-                KeySegment(selection: $draft.priority, items: [
+                SkySegment(selection: $draft.priority, items: [
                     .init(.none, "–"), .init(.low, "!"), .init(.medium, "!!"), .init(.high, "!!!"),
-                ], height: 22)
-                .frame(width: 186)
+                ], height: 28)
+                .frame(width: 180)
                 .help("Priority: none, low, medium, high — the same marks as quick-add")
                 .accessibilityLabel("Priority \(draft.priority.label)")
             }
 
-            row("Estimate") {
-                HStack(spacing: Space.xs) {
-                    StepButton(symbol: "minus", help: "15 minutes less") { stepEstimate(-15) }
-                        .disabled(draft.estimateMinutes == nil)
-                    Text(draft.estimateMinutes.map(TodayView.duration) ?? "—")
-                        .font(Theme.mono(11, .semibold))
-                        .foregroundStyle(Theme.ink)
-                        .frame(minWidth: 52)
-                    StepButton(symbol: "plus", help: "15 minutes more") { stepEstimate(15) }
-                }
+            VStack(alignment: .leading, spacing: 2) {
+                SkyKicker("Estimate")
+                SkyTimeSlider(title: "Estimate", minutes: estimateBinding, range: 0...(12 * 60), step: 15,
+                              majorEvery: 4, noneLabel: "—")
             }
 
             row("Due") { deadlineControl }
 
             row("Keep") {
-                KeySegment(selection: scopeBinding, items: [
+                SkySegment(selection: scopeBinding, items: [
                     .init(.personal, "My list"), .init(.today, "Today only"),
-                ], height: 22)
-                .frame(width: 186)
+                ], height: 28)
+                .frame(width: 180)
                 .help("“My list” keeps a task until it's done. “Today only” is a temporary item for today.")
             }
 
-            HStack {
-                if task.focusMinutes > 0 {
-                    MonoLabel("Focused \(TodayView.duration(task.focusMinutes)) on this", color: Theme.inkTertiary)
-                }
+            if task.focusMinutes > 0 {
+                receipt
+            }
+
+            HStack(spacing: 8) {
                 Spacer()
                 Button("Remove") { model.removeTask(task.id) }
-                    .buttonStyle(KeyButtonStyle(kind: .quiet))
+                    .buttonStyle(SkyButtonStyle(kind: .quiet))
                 Button("Done") { model.editingTaskID = nil }
-                    .buttonStyle(KeyButtonStyle(kind: .secondary))
+                    .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             }
         }
         .onAppear { titleFocused = true }
@@ -84,18 +79,21 @@ struct TaskEditor: View {
     @ViewBuilder
     private var deadlineControl: some View {
         if let deadline = draft.deadline {
-            HStack(spacing: Space.xs) {
+            HStack(spacing: 6) {
                 DatePicker("Due date", selection: Binding(
                     get: { deadline },
                     set: { draft.deadline = Calendar.current.startOfDay(for: $0) }
                 ), displayedComponents: .date)
                 .labelsHidden()
                 .datePickerStyle(.field)
-                .font(.style(.bodySmall))
-                StepButton(symbol: "xmark", help: "No due date") { draft.deadline = nil }
+                .font(Sky.text(12))
+                Button { draft.deadline = nil } label: { Image(systemName: "xmark") }
+                    .buttonStyle(SkyRoundStyle(size: 24, tint: Sky.ink))
+                    .help("No due date")
+                    .accessibilityLabel("No due date")
             }
         } else {
-            HStack(spacing: Space.xxs) {
+            HStack(spacing: 6) {
                 quickDue("Today", days: 0)
                 quickDue("Tmrw", days: 1)
                 quickDue("+1 wk", days: 7)
@@ -108,16 +106,73 @@ struct TaskEditor: View {
             let today = Calendar.current.startOfDay(for: .now)
             draft.deadline = Calendar.current.date(byAdding: .day, value: days, to: today)
         }
-        .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+        .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
     }
 
     private func row<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         HStack {
-            MonoLabel(label)
+            SkyKicker(label)
             Spacer()
             content()
         }
         .frame(minHeight: 26)
+    }
+
+    /// Day Club's focus receipt, set out like a till slip: what this task has had so far.
+    private var receipt: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Your focus receipt")
+                .font(Receipt.display(15))
+                .tracking(-0.3)
+                .foregroundStyle(Receipt.brown)
+            Text("A little structure. Plenty of breathing room.")
+                .font(Sky.text(10))
+                .foregroundStyle(Receipt.muted)
+                .padding(.top, 2)
+                .padding(.bottom, 6)
+            receiptLine("Estimate", draft.estimateMinutes.map(TodayView.duration) ?? "—")
+            receiptLine("Focused on this", TodayView.duration(task.focusMinutes))
+            HStack(alignment: .lastTextBaseline) {
+                Text("Total time, well spent")
+                    .font(Sky.text(11))
+                    .foregroundStyle(Receipt.brown)
+                Spacer()
+                Text(TodayView.duration(task.focusMinutes))
+                    .font(Receipt.display(18))
+                    .monospacedDigit()
+                    .foregroundStyle(Receipt.orange)
+            }
+            .padding(.top, 10)
+            .overlay(alignment: .top) {
+                // A clipped path rather than a dashed border: the border drew doubled edges.
+                Path { path in
+                    path.move(to: .zero)
+                    path.addLine(to: CGPoint(x: 10_000, y: 0))
+                }
+                .stroke(Receipt.dash, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                .frame(height: 1)
+                .clipped()
+            }
+            .padding(.top, 6)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Receipt.card))
+        .accessibilityElement(children: .combine)
+    }
+
+    private func receiptLine(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(Sky.text(11))
+                .foregroundStyle(Receipt.brown)
+            Spacer()
+            Text(value)
+                .font(Sky.text(11, .bold))
+                .monospacedDigit()
+                .foregroundStyle(Receipt.brown)
+        }
+        .padding(.vertical, 4)
     }
 
     private var scopeBinding: Binding<TaskScope> {
@@ -128,10 +183,12 @@ struct TaskEditor: View {
         })
     }
 
-    private func stepEstimate(_ minutes: Int) {
-        let current = draft.estimateMinutes ?? 0
-        let next = current + minutes
-        draft.estimateMinutes = next <= 0 ? nil : min(next, 12 * 60)
+    /// The estimate in minutes, where 0 means none. The slider moves it in 15-minute steps.
+    private var estimateBinding: Binding<Int> {
+        Binding(
+            get: { draft.estimateMinutes ?? 0 },
+            set: { draft.estimateMinutes = $0 <= 0 ? nil : $0 }
+        )
     }
 
     private func save(_ edited: BuddyTask) {
@@ -147,31 +204,16 @@ struct TaskEditor: View {
     }
 }
 
-private struct StepButton: View {
-    let symbol: String
-    let help: String
-    let action: () -> Void
+/// The receipt's colours, from Coco Day Club's style (its headings use Titan One, which the
+/// app doesn't bundle, so a heavy rounded face stands in).
+private enum Receipt {
+    static let card = Color(hex: 0xF7F6F0)
+    static let brown = Color(hex: 0x38120C)
+    static let muted = Color(hex: 0x87756D)
+    static let orange = Color(hex: 0xEF833A)
+    static let dash = Color(hex: 0xBCAFA0)
 
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(Theme.ink)
-                .frame(width: 24, height: 22)
-                .overlay(RoundedRectangle(cornerRadius: Radius.keycap, style: .continuous).strokeBorder(Theme.hairline))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help(help)
-        .accessibilityLabel(help)
-    }
-}
-
-private extension View {
-    func fieldWell() -> some View {
-        padding(.horizontal, Space.sm)
-            .padding(.vertical, Space.xs)
-            .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.key, style: .continuous).strokeBorder(Theme.hairline))
+    static func display(_ size: CGFloat) -> Font {
+        .system(size: size, weight: .black, design: .rounded)
     }
 }

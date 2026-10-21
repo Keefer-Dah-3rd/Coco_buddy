@@ -17,11 +17,11 @@ struct WeekScheduleView: View {
         let day = model.scheduleDay
         let weekStart = model.calendar.weekStart(for: day)
         let days = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
-        VStack(alignment: .leading, spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: 10) {
             header(days)
             strip(days)
             WeekSummary(model: model, days: days)
-            Rectangle().fill(Theme.hairline).frame(height: 1)
+            Rectangle().fill(Sky.line).frame(height: 1)
             DayAgenda(model: model, day: day)
                 .id(day)
                 .transition(.opacity)
@@ -43,20 +43,20 @@ struct WeekScheduleView: View {
     }
 
     private func header(_ days: [Date]) -> some View {
-        HStack(spacing: Space.xs) {
-            MonoLabel(Self.weekLabel(days), color: Theme.ink)
+        HStack(spacing: 6) {
+            SkyKicker(Self.weekLabel(days), color: Sky.ink)
                 .accessibilityLabel("Week of \(days.first?.formatted(date: .long, time: .omitted) ?? "")")
-            Spacer(minLength: Space.xs)
+            Spacer(minLength: 6)
             Button { model.moveScheduleDay(by: -7) } label: { Image(systemName: "chevron.left") }
-                .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                .buttonStyle(SkyRoundStyle(size: 24, tint: Sky.ink))
                 .help("Previous week (⇧←)")
                 .accessibilityLabel("Previous week")
             Button("Today") { model.showScheduleDay(.now) }
-                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                 .disabled(calendar.isDateInToday(model.scheduleDay))
                 .help("Back to today (T)")
             Button { model.moveScheduleDay(by: 7) } label: { Image(systemName: "chevron.right") }
-                .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                .buttonStyle(SkyRoundStyle(size: 24, tint: Sky.ink))
                 .help("Next week (⇧→)")
                 .accessibilityLabel("Next week")
         }
@@ -90,7 +90,7 @@ struct WeekScheduleView: View {
                     }
             )
         }
-        .frame(height: 46)
+        .frame(height: 50)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Days of the week")
         .accessibilityHint("Use the left and right arrow keys to change day")
@@ -117,26 +117,26 @@ private struct DayKey: View {
         let load = booked
         VStack(spacing: 3) {
             Text(day.formatted(.dateTime.weekday(.narrow)))
-                .font(.style(.monoTiny))
-                .foregroundStyle(selected ? Theme.paper.opacity(0.75) : Theme.inkTertiary)
+                .font(Sky.text(9.5, .medium))
+                .foregroundStyle(selected ? Sky.ink.opacity(0.7) : Sky.faint)
             Text(day.formatted(.dateTime.day()))
-                .font(.style(.bodySmallEmphasis))
+                .font(Sky.text(13, .semibold))
                 .monospacedDigit()
-                .foregroundStyle(selected ? Theme.paper : today ? Theme.accent : Theme.ink)
+                .foregroundStyle(today && !selected ? Sky.accentText : Sky.ink)
             Capsule()
                 .fill(barColor(selected: selected, load: load))
-                .frame(width: max(4, 26 * CGFloat(load ?? 0)), height: 3)
+                .frame(width: max(4, 22 * CGFloat(load ?? 0)), height: 3)
                 .opacity(load == nil ? 0.35 : 1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
-            RoundedRectangle(cornerRadius: Radius.key, style: .continuous)
-                .fill(selected ? Theme.ink : .clear)
+            RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous)
+                .fill(selected ? Sky.accentSoft : Color.clear)
                 .padding(.horizontal, 2)
         }
         .overlay(alignment: .bottom) {
             if today && !selected {
-                Circle().fill(Theme.accent).frame(width: 3, height: 3).offset(y: 1)
+                Circle().fill(Sky.accent).frame(width: 3, height: 3).offset(y: 1)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -153,9 +153,9 @@ private struct DayKey: View {
     }
 
     private func barColor(selected: Bool, load: Double?) -> Color {
-        if selected { return Theme.paper.opacity(0.85) }
-        if let load, load >= 0.85 { return Theme.accent }
-        return Theme.inkSecondary
+        if selected { return Sky.ink.opacity(0.6) }
+        if let load, load >= 0.85 { return Sky.accent }
+        return Sky.muted
     }
 
     private func accessibilityText(today: Bool) -> String {
@@ -185,15 +185,15 @@ private struct WeekSummary: View {
             let minutes = perDay.reduce(0) { $0 + $1.2 }
             let workdays = perDay.filter { !calendar.isDateInWeekend($0.0) }
             let lightest = (workdays.isEmpty ? perDay : workdays).min { $0.2 < $1.2 }
-            HStack(spacing: Space.xs) {
-                MonoLabel("\(count) event\(count == 1 ? "" : "s")")
-                MonoLabel("· \(TodayView.duration(minutes)) booked")
+            HStack(spacing: 6) {
+                SkyKicker("\(count) event\(count == 1 ? "" : "s")")
+                SkyKicker("· \(TodayView.duration(minutes)) booked")
                 if let lightest, count > 0 {
-                    MonoLabel("· lightest \(lightest.0.formatted(.dateTime.weekday(.abbreviated)))")
+                    SkyKicker("· lightest \(lightest.0.formatted(.dateTime.weekday(.abbreviated)))")
                 }
             }
         } else {
-            MonoLabel(days.contains { model.agenda.isLoading($0) } ? "Loading the week…" : " ")
+            SkyKicker(days.contains { model.agenda.isLoading($0) } ? "Loading the week…" : " ")
         }
     }
 }
@@ -205,16 +205,16 @@ struct DayAgenda: View {
 
     var body: some View {
         let service = model.agenda
-        VStack(alignment: .leading, spacing: Space.xs) {
-            HStack(spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
                 Text(day.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)))
-                    .font(.style(.bodySmallEmphasis))
-                    .foregroundStyle(Theme.ink)
+                    .font(Sky.text(12.5, .semibold))
+                    .foregroundStyle(Sky.ink)
                 Spacer()
                 if let events = service.events(on: day) {
                     let timed = events.filter { !$0.isAllDay }
                     let minutes = Availability.bookedMinutes(timed, within: Availability.dayInterval(day, calendar: .current))
-                    MonoLabel(timed.isEmpty ? "free" : "\(timed.count) · \(TodayView.duration(minutes))")
+                    SkyKicker(timed.isEmpty ? "free" : "\(timed.count) · \(TodayView.duration(minutes))")
                 }
             }
             if let events = service.events(on: day) {
@@ -222,11 +222,11 @@ struct DayAgenda: View {
             } else if let problem = service.problem(for: day), !service.isLoading(day) {
                 problemView(problem)
             } else {
-                HStack(spacing: Space.sm) {
+                HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    MonoLabel("Loading \(day.formatted(.dateTime.weekday(.abbreviated)))…")
+                    SkyKicker("Loading \(day.formatted(.dateTime.weekday(.abbreviated)))…")
                 }
-                .padding(.vertical, Space.xs)
+                .padding(.vertical, 4)
             }
         }
     }
@@ -261,22 +261,22 @@ struct DayAgenda: View {
         let items = (timed.map(Item.event) + open.map(Item.open)).sorted { $0.start < $1.start }
 
         ForEach(allDay) { event in
-            HStack(spacing: Space.sm) {
-                MonoLabel("All day")
-                Text(event.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
-                if !event.isBusy { MonoLabel("free") }
+            HStack(spacing: 8) {
+                SkyKicker("All day")
+                Text(event.title).font(Sky.text(12)).foregroundStyle(Sky.ink).lineLimit(1)
+                if !event.isBusy { SkyKicker("free") }
                 Spacer()
             }
-            .padding(.horizontal, Space.sm)
-            .padding(.vertical, Space.xxs)
-            .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.keycap, style: .continuous))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous).fill(Sky.well))
         }
         if timed.isEmpty, let window = model.workingHours.interval(on: day, calendar: calendar) {
             Text(bounds.end <= now ? "Nothing was scheduled." :
                     "Nothing scheduled — open \(window.start.formatted(date: .omitted, time: .shortened))–\(window.end.formatted(date: .omitted, time: .shortened)).")
-                .font(.style(.bodySmall))
-                .foregroundStyle(Theme.inkSecondary)
-                .padding(.vertical, Space.xxs)
+                .font(Sky.text(12))
+                .foregroundStyle(Sky.muted)
+                .padding(.vertical, 4)
         } else {
             ForEach(items) { item in
                 switch item {
@@ -288,21 +288,21 @@ struct DayAgenda: View {
     }
 
     private func problemView(_ problem: String) -> some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            Text(problem).font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary)
-            HStack(spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(problem).font(Sky.text(12)).foregroundStyle(Sky.muted)
+            HStack(spacing: 8) {
                 if model.calendar.status == .needsReconnect {
                     Button("Reconnect…") { model.openConnections() }
-                        .buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .accent, compact: true))
                 } else {
                     Button("Try again") {
                         Task { try? await model.agenda.load(from: day, to: day) }
                     }
-                    .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                 }
             }
         }
-        .padding(.vertical, Space.xxs)
+        .padding(.vertical, 4)
     }
 }
 
@@ -316,39 +316,42 @@ struct EventRow: View {
     var body: some View {
         let past = event.end <= now
         let happening = event.start <= now && now < event.end
-        HStack(alignment: .top, spacing: Space.sm) {
+        HStack(alignment: .top, spacing: 8) {
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(EventColor.color(for: event.colorID))
                 .frame(width: 3)
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: Space.xs) {
-                    if happening { MonoLabel("Now", color: Theme.accent) }
+                HStack(spacing: 6) {
+                    if happening { SkyKicker("Now", color: Sky.accentText) }
                     Text(event.title)
-                        .font(.style(.bodySmallEmphasis))
-                        .foregroundStyle(Theme.ink)
+                        .font(Sky.text(12.5, .semibold))
+                        .foregroundStyle(Sky.ink)
                         .lineLimit(2)
                 }
-                HStack(spacing: Space.xs) {
-                    Text(timeText).font(.style(.monoValue)).foregroundStyle(Theme.inkSecondary)
-                    MonoLabel(TodayView.duration(Int(event.duration / 60)))
-                    if event.isRecurring { Image(systemName: "repeat").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.inkTertiary) }
-                    if !event.isBusy { MonoLabel("free") }
-                    if let note, !past { MonoLabel(note.text, color: note.urgent ? Theme.accent : Theme.inkSecondary) }
+                HStack(spacing: 6) {
+                    Text(timeText)
+                        .font(Sky.text(10.5, .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(Sky.muted)
+                    SkyKicker(TodayView.duration(Int(event.duration / 60)))
+                    if event.isRecurring { Image(systemName: "repeat").font(.system(size: 8, weight: .semibold)).foregroundStyle(Sky.faint) }
+                    if !event.isBusy { SkyKicker("free") }
+                    if let note, !past { SkyKicker(note.text, color: note.urgent ? Sky.accentText : Sky.muted) }
                     // Google is the default; anything else says where it lives.
-                    if event.provider != .google { MonoLabel(event.sourceLabel.replacingOccurrences(of: " Calendar", with: ""), color: Theme.inkTertiary) }
+                    if event.provider != .google { SkyKicker(event.sourceLabel.replacingOccurrences(of: " Calendar", with: ""), color: Sky.faint) }
                 }
                 if let location = event.location, !location.isEmpty {
-                    Text(location).font(.style(.caption)).foregroundStyle(Theme.inkSecondary).lineLimit(1)
+                    Text(location).font(Sky.text(11)).foregroundStyle(Sky.muted).lineLimit(1)
                 }
             }
-            Spacer(minLength: Space.xs)
+            Spacer(minLength: 6)
             if let link = event.meetingLink, !past {
                 Button("Join") { NSWorkspace.shared.open(link) }
-                    .buttonStyle(KeyButtonStyle(kind: happening ? .primary : .secondary, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: happening ? .accent : .outline, compact: true))
                     .help(link.absoluteString)
             }
         }
-        .padding(.vertical, Space.xxs)
+        .padding(.vertical, 4)
         .opacity(past ? 0.5 : 1)
         // Which calendar(s) it's in — one row even when it's in several.
         .help(event.sourcesDescription)
@@ -369,18 +372,19 @@ struct OpenRow: View {
     let interval: DateInterval
 
     var body: some View {
-        HStack(spacing: Space.sm) {
-            MonoLabel("Open", color: Theme.ink)
+        HStack(spacing: 8) {
+            SkyKicker("Open", color: Sky.ink)
             Text("\(interval.start.formatted(date: .omitted, time: .shortened))–\(interval.end.formatted(date: .omitted, time: .shortened))")
-                .font(.style(.monoValue))
-                .foregroundStyle(Theme.inkSecondary)
-            MonoLabel(TodayView.duration(Int(interval.duration / 60)))
+                .font(Sky.text(10.5, .medium))
+                .monospacedDigit()
+                .foregroundStyle(Sky.muted)
+            SkyKicker(TodayView.duration(Int(interval.duration / 60)))
             Spacer()
         }
-        .padding(.horizontal, Space.sm)
-        .padding(.vertical, Space.xxs)
-        .overlay(RoundedRectangle(cornerRadius: Radius.keycap, style: .continuous)
-            .strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous)
+            .strokeBorder(Sky.ring, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Open from \(interval.start.formatted(date: .omitted, time: .shortened)) to \(interval.end.formatted(date: .omitted, time: .shortened))")
     }
@@ -405,7 +409,7 @@ enum EventColor {
         case "9": Color(hex: 0x3F51B5)
         case "10": Color(hex: 0x0B8043)
         case "11": Color(hex: 0xD50000)
-        default: Theme.inkSecondary
+        default: Sky.muted
         }
     }
 }

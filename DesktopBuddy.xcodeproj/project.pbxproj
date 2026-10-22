@@ -211,8 +211,8 @@
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 John Keefe";
@@ -248,8 +248,8 @@
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 John Keefe";

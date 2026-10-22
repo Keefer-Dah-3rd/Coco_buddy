@@ -43,7 +43,9 @@ final class AppModel {
     /// Calendar.app's calendars, read-only, through EventKit.
     let appleCalendar: AppleCalendarService
     /// The user's Partiful events (read-only), from their personal calendar link.
-    let partiful: PartifulFeedService
+    let partiful: CalendarFeedService
+    /// Google Calendar read from the calendar's secret iCal address (no sign-in; read-only).
+    let googleFeed: CalendarFeedService
     let notion: NotionService
     let assistant: AssistantService
     /// Every connected calendar as one schedule, duplicates merged. The Today card, week
@@ -168,10 +170,11 @@ final class AppModel {
         focus = FocusController(preferences: preferences, notifications: notifications, persistent: !preview)
         focusLog = FocusLogStore(persistent: !preview)
         calendar = GoogleCalendarService(persistent: !preview)
-        partiful = PartifulFeedService(persistent: !preview)
+        partiful = CalendarFeedService(kind: .partiful, persistent: !preview)
+        googleFeed = CalendarFeedService(kind: .google, persistent: !preview)
         appleCalendar = preview ? AppleCalendarService(reader: NoAppleCalendar(), defaults: UserDefaults(suiteName: "DesktopBuddy.preview")!)
             : AppleCalendarService()
-        agenda = Agenda(sources: [calendar, appleCalendar, partiful])
+        agenda = Agenda(sources: [calendar, googleFeed, appleCalendar, partiful])
         notion = NotionService(persistent: !preview)
         assistant = AssistantService(persistent: !preview)
         sounds = SoundPlayer(preferences: preferences)
@@ -236,6 +239,7 @@ final class AppModel {
         notion.disconnect()
         await calendar.eraseAll()
         partiful.disconnect()
+        googleFeed.disconnect()
         appleCalendar.eraseAll()
         focus.eraseAll()
         focusLog.eraseAll()
@@ -273,6 +277,7 @@ final class AppModel {
         }
         calendar.startAutoRefresh()
         partiful.start()
+        googleFeed.start()
         scheduleMeetingReminder()
         // Never leave the mic open across sleep; what was heard so far is discarded.
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
@@ -878,6 +883,9 @@ final class AppModel {
                          activity: query.map { "Searched your calendar for “\(BuddyVoice.short($0))”" } ?? "Looked at what's coming up")
 
         case .proposeEvent(let proposal):
+            guard Features.googleSignIn else {
+                return .init(result: Self.readOnlyCalendars, isError: true)
+            }
             guard calendar.isConnected else {
                 return .init(result: "New events can only be added to Google Calendar, which isn't connected. Coco reads "
                              + "\(agenda.connectedNames) but can't add to it — they can add the event in that app.", isError: true)
@@ -1010,13 +1018,16 @@ final class AppModel {
     /// shown with, or any of its merged copies'). Apple Calendar and Partiful events are
     /// read-only here, so those are refused with where to change them instead.
     private func changeTarget(_ id: String, verb: String) -> Result<CalendarEvent, Refusal> {
+        guard Features.googleSignIn else {
+            return .failure(Refusal(outcome: .init(result: Self.readOnlyCalendars, isError: true)))
+        }
         guard let shown = agenda.event(id: id) else {
             return .failure(Refusal(outcome: .init(result: "No event with id \(id) in the loaded calendar. Call get_schedule for that day first.",
                                                    isError: true)))
         }
         guard var record = agenda.googleRecord(for: shown, in: calendar) else {
             return .failure(Refusal(outcome: .init(result: "“\(shown.title)” is in \(shown.sourceLabel), which Coco can only read, so it can't be "
-                                                   + "\(verb) from here. They can do it in \(shown.provider == .partiful ? "Partiful" : "the Calendar app").",
+                                                   + "\(verb) from here. They can do it in \(shown.provider == .partiful ? "Partiful" : shown.provider == .google ? "Google Calendar" : "the Calendar app").",
                                                    isError: true)))
         }
         // Remember the other copies so the card can say which ones won't change.
@@ -1116,6 +1127,12 @@ final class AppModel {
         let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
         return "\(shortDay(start)) \(time(start))–\(time(end))"
     }
+
+    /// What the chat hears when asked to add, move or delete an event while calendars are
+    /// connected read-only (by link, Apple Calendar or Partiful).
+    static let readOnlyCalendars = "Coco can't add, move or delete calendar events: the user's calendars are connected read-only. "
+        + "Tell them to make the change in Google Calendar, the Calendar app or Partiful, and offer to help with the details "
+        + "(title, time, place) so it's quick."
 
     /// The Partiful event id in a link (or in text containing one); nil for short links.
     static func partifulID(in text: String) -> String? {

@@ -14,6 +14,9 @@ import BuddyIntegrations
 /// the way a link preview would) and prints what the chat would see.
 enum PartifulSelfTest {
     static func run() {
+        // The invitation checks add events through Google sign-in, which ships switched off;
+        // the Google-by-link checks switch it back off.
+        Features.googleSignIn = true
         var finished = false
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot"), index + 1 < CommandLine.arguments.count {
             let folder = URL(fileURLWithPath: CommandLine.arguments[index + 1])
@@ -51,7 +54,10 @@ enum PartifulSelfTest {
     private static func snapshots(into folder: URL) async {
         let model = AppModel(preview: true)
         func render(_ name: String) {
-            let hosting = NSHostingView(rootView: PartifulSection(service: model.partiful).frame(width: 476).padding(32).background(Theme.paper))
+            let hosting = NSHostingView(rootView: VStack(spacing: 18) {
+                CalendarLinkSection(service: model.googleFeed)
+                CalendarLinkSection(service: model.partiful)
+            }.frame(width: 476).padding(32).background(Theme.paper))
             hosting.frame.size = hosting.fittingSize
             let window = NSWindow(contentRect: NSRect(origin: NSPoint(x: -20_000, y: -20_000), size: hosting.frame.size),
                                   styleMask: .borderless, backing: .buffered, defer: false)
@@ -77,6 +83,10 @@ enum PartifulSelfTest {
             .map { "BEGIN:VEVENT\nUID:Snap\($0.0.count)x\($0.1)\nSUMMARY:\($0.0)\nDTSTART:\(formatter.string(from: start + Double($0.1) * 86_400))\nDURATION:PT3H\nEND:VEVENT" }
         FakePartiful.feeds = ["/calendar/me.ics": (200, "BEGIN:VCALENDAR\nPRODID:Partiful\n" + events.joined(separator: "\n") + "\nEND:VCALENDAR")]
         _ = await model.partiful.connect("webcal://api.partiful.com/calendar/me.ics")
+        FakePartiful.feeds["/calendar/ical/me@gmail.com/private-abc/basic.ics"] = (200, "BEGIN:VCALENDAR\nX-WR-CALNAME:me@gmail.com\n"
+            + "BEGIN:VEVENT\nUID:standup@google.com\nSUMMARY:Standup\nDTSTART:\(formatter.string(from: start - 86_400 * 2))\nDURATION:PT15M\nRRULE:FREQ=DAILY\nEND:VEVENT\n"
+            + "END:VCALENDAR")
+        _ = await model.googleFeed.connect("https://calendar.google.com/calendar/ical/me%40gmail.com/private-abc/basic.ics")
         render("partiful-connected.png")
         print("Partiful snapshots written to \(folder.path)")
     }
@@ -235,6 +245,7 @@ enum PartifulSelfTest {
         check(FakeGoogle.inserts == 1, "still created only once")
 
         await feedChecks(model, calendar: calendar, partyDay: partyDay)
+        await googleLinkChecks(model, calendar: calendar)
 
         // A made-up or foreign source link is rejected before anything happens.
         var forged = input
@@ -342,6 +353,63 @@ enum PartifulSelfTest {
         check(!service.isConnected && service.feedEvents.isEmpty && service.events(on: dinnerDay) == nil, "disconnect forgets everything")
     }
 
+    /// Google Calendar by its secret iCal address, as it ships: no sign-in, read-only, repeats expanded.
+    @MainActor
+    private static func googleLinkChecks(_ model: AppModel, calendar: Calendar) async {
+        Features.googleSignIn = false
+        defer { Features.googleSignIn = true }
+        let feed = model.googleFeed
+        let day = calendar.date(byAdding: .day, value: 3, to: calendar.startOfDay(for: .now))!
+        let lunch = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: day)!
+        let firstStandup = calendar.date(bySettingHour: 9, minute: 30, second: 0, of: calendar.date(byAdding: .day, value: -10, to: day)!)!
+        let local = DateFormatter()
+        local.locale = Locale(identifier: "en_US_POSIX")
+        local.timeZone = calendar.timeZone
+        local.dateFormat = "yyyyMMdd'T'HHmmss"
+        let zone = calendar.timeZone.identifier
+        FakePartiful.feeds["/calendar/ical/me@gmail.com/private-good/basic.ics"] = (200, """
+        BEGIN:VCALENDAR\r\nPRODID:-//Google Inc//Google Calendar 70.9054//EN\r\nX-WR-CALNAME:me@gmail.com\r
+        BEGIN:VEVENT\r\nUID:standup123@google.com\r\nSUMMARY:Standup\r\nDTSTART;TZID=\(zone):\(local.string(from: firstStandup))\r
+        DTEND;TZID=\(zone):\(local.string(from: firstStandup + 900))\r\nRRULE:FREQ=DAILY\r\nEND:VEVENT\r
+        BEGIN:VEVENT\r\nUID:lunch456@google.com\r\nSUMMARY:Lunch with Sam\r\nDTSTART;TZID=\(zone):\(local.string(from: lunch))\r
+        DTEND;TZID=\(zone):\(local.string(from: lunch + 3_600))\r\nLOCATION:Russ & Daughters\r\nEND:VEVENT\r
+        END:VCALENDAR\r\n
+        """)
+        FakePartiful.feeds["/calendar/ical/me@gmail.com/public/basic.ics"] = (404, "")
+
+        let page = await feed.connect("https://calendar.google.com/calendar/u/0/r/settings")
+        check(page?.contains("Google Calendar page") == true, "a Calendar web page isn't the address", page ?? "nil")
+        let other = await feed.connect("https://example.com/me.ics")
+        check(other?.contains("isn't a Google Calendar address") == true, "other sites refused", other ?? "nil")
+        let publicLink = await feed.connect("https://calendar.google.com/calendar/ical/me%40gmail.com/public/basic.ics")
+        check(publicLink?.contains("Secret address") == true && !feed.isConnected, "the public address of a private calendar is explained", publicLink ?? "nil")
+
+        let connected = await feed.connect("webcal://calendar.google.com/calendar/ical/me%40gmail.com/private-good/basic.ics")
+        check(connected == nil && feed.isConnected && feed.calendarName == "me@gmail.com", "the secret address connects", connected ?? "")
+        let shown = model.agenda.events(on: day) ?? []
+        check(shown.map(\.title).sorted() == ["Lunch with Sam", "Standup"], "the day shows the one-off and the repeat", "\(shown.map(\.title))")
+        check(shown.allSatisfy { !$0.canEdit && $0.provider == .google }, "Google-by-link events are read-only")
+        check(shown.first { $0.title == "Standup" }?.isRecurring == true, "repeats are marked as repeats")
+        let standups = (0..<7).compactMap { offset in
+            model.agenda.events(on: calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: .now))!)?.filter { $0.title == "Standup" }.count
+        }
+        check(standups == Array(repeating: 1, count: 7), "a daily repeat shows once every day", "\(standups)")
+
+        let date = CalendarDate(lunch, calendar: calendar)
+        let free = await model.performForTest(.findFreeTime(FreeTimeRequest(from: date, to: date, durationMinutes: 60,
+                                                                           earliest: ClockTime(hour: 12, minute: 0), latest: ClockTime(hour: 13, minute: 0))))
+        check(free.result.hasPrefix("No opening"), "Google-by-link events count as busy", free.result)
+        let add = await model.performForTest(.proposeEvent(EventProposal(title: "Dentist", date: date, start: ClockTime(hour: 15, minute: 0), durationMinutes: 30)))
+        check(add.isError && add.result.contains("connected read-only") && model.eventRequests.allSatisfy { if case .create(let draft) = $0.kind { draft.title != "Dentist" } else { true } },
+              "nothing can be added", add.result)
+        let lunchID = shown.first { $0.title == "Lunch with Sam" }?.id ?? ""
+        let delete = await model.performForTest(.proposeEventDeletion(eventID: lunchID))
+        check(delete.isError && delete.result.contains("connected read-only"), "nothing can be deleted", delete.result)
+
+        feed.disconnect()
+        check(!feed.isConnected && (model.agenda.events(on: day) ?? []).allSatisfy { $0.title != "Lunch with Sam" }, "disconnect forgets the calendar")
+    }
+
     @MainActor
     private static func settle(_ model: AppModel, _ id: AppModel.EventRequest.ID) async {
         for _ in 0..<200 {
@@ -373,7 +441,7 @@ nonisolated enum FakePartiful {
             guard let target = shortLinks[url.lastPathComponent] else { return .init(status: 404, body: Data(), headers: html) }
             return .init(status: 302, body: Data(), headers: ["Location": target])
         }
-        if host == "api.partiful.com" {
+        if host == "api.partiful.com" || host == "calendar.google.com" {
             guard let (status, text) = feeds[url.path] else { return .init(status: 404, body: Data()) }
             if (300..<400).contains(status) { return .init(status: status, body: Data(), headers: ["Location": text]) }
             return .init(status: status, body: Data(text.utf8), headers: ["Content-Type": "text/calendar"])

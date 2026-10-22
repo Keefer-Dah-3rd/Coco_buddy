@@ -1,8 +1,10 @@
 import Foundation
 
-/// A small iCalendar (RFC 5545) reader for subscription feeds such as the user's personal
-/// Partiful calendar link: events with their times, place, link and description. Repeating
-/// events aren't expanded (Partiful's feed has none); alarms and time-zone blocks are skipped.
+/// A small iCalendar (RFC 5545) reader for subscription feeds — the user's personal Partiful
+/// calendar link, or a Google Calendar "secret address": events with their times, place, link
+/// and description. Repeating events are expanded with `expand(_:from:to:calendar:)` (the
+/// common rules: daily, weekly, monthly, yearly, with exceptions and moved occurrences);
+/// alarms and time-zone blocks are skipped.
 public enum ICalendar {
     public struct Event: Codable, Equatable, Sendable {
         public enum Status: String, Codable, Equatable, Sendable { case confirmed, tentative, cancelled }
@@ -18,9 +20,23 @@ public enum ICalendar {
         public var url: URL?
         public var description: String?
         public var status: Status
+        /// RRULE, for the first event of a repeating series.
+        public var rule: String?
+        /// EXDATE: occurrences of the series that were removed.
+        public var exceptions: [Date]?
+        /// RECURRENCE-ID: this event replaces the series' occurrence originally at this time.
+        public var recurrenceID: Date?
+        /// The zone the start was written in (TZID), so repeats keep their local time across DST.
+        public var timeZoneID: String?
+        /// Set on events made by `expand`: the occurrence's original start.
+        public var occurrence: Date?
+
+        public var isRepeating: Bool { rule != nil || recurrenceID != nil || occurrence != nil }
 
         public init(uid: String, title: String, start: Date, end: Date, endListed: Bool = true, isAllDay: Bool = false,
-                    location: String? = nil, url: URL? = nil, description: String? = nil, status: Status = .confirmed) {
+                    location: String? = nil, url: URL? = nil, description: String? = nil, status: Status = .confirmed,
+                    rule: String? = nil, exceptions: [Date]? = nil, recurrenceID: Date? = nil, timeZoneID: String? = nil,
+                    occurrence: Date? = nil) {
             self.uid = uid
             self.title = title
             self.start = start
@@ -31,6 +47,11 @@ public enum ICalendar {
             self.url = url
             self.description = description
             self.status = status
+            self.rule = rule
+            self.exceptions = exceptions
+            self.recurrenceID = recurrenceID
+            self.timeZoneID = timeZoneID
+            self.occurrence = occurrence
         }
     }
 
@@ -148,8 +169,23 @@ public enum ICalendar {
         let description = first("DESCRIPTION").map { unescape($0.value) }.flatMap { $0.isEmpty ? nil : $0 }
         let url = first("URL").flatMap { URL(string: $0.value.trimmingCharacters(in: .whitespaces)) }
             .flatMap { ["http", "https"].contains($0.scheme?.lowercased() ?? "") ? $0 : nil }
+        let exceptions = properties.filter { $0.name == "EXDATE" }.flatMap { dates($0, calendar: calendar) }
+        let zone: String? = allDay ? nil
+            : startProperty.value.uppercased().hasSuffix("Z") ? "UTC"
+            : startProperty.parameters["TZID"].flatMap { TimeZone(identifier: $0)?.identifier }
         return Event(uid: uid, title: (title?.isEmpty ?? true) ? "Untitled event" : title!, start: start, end: end,
-                     endListed: endListed, isAllDay: allDay, location: location, url: url, description: description, status: status)
+                     endListed: endListed, isAllDay: allDay, location: location, url: url, description: description, status: status,
+                     rule: first("RRULE")?.value, exceptions: exceptions.isEmpty ? nil : exceptions,
+                     recurrenceID: first("RECURRENCE-ID").flatMap { date($0, calendar: calendar)?.0 }, timeZoneID: zone)
+    }
+
+    /// Every value of a property that may list several dates ("EXDATE:20261020T090000Z,20261027T090000Z").
+    static func dates(_ property: Property, calendar: Calendar) -> [Date] {
+        property.value.split(separator: ",").compactMap { value in
+            var single = property
+            single.value = String(value)
+            return date(single, calendar: calendar)?.0
+        }
     }
 
     /// "20261025T210000Z" (UTC), "20261025T140000" with TZID (or floating: the user's zone),
@@ -220,6 +256,185 @@ public enum ICalendar {
             }
         }
         return result
+    }
+}
+
+// MARK: - Repeating events
+
+extension ICalendar {
+    /// Every event touching `from..<to`: one-off events as they are, repeating series expanded
+    /// into occurrences (removed ones left out, moved or edited ones taken from their override),
+    /// cancelled occurrences dropped. Unsupported rules show only their first occurrence.
+    public static func expand(_ events: [Event], from: Date, to: Date, calendar: Calendar = .current) -> [Event] {
+        var overrides: [String: [Date: Event]] = [:]
+        for event in events where event.recurrenceID != nil {
+            overrides[event.uid, default: [:]][event.recurrenceID!] = event
+        }
+        var result: [Event] = []
+        for event in events where event.recurrenceID == nil {
+            guard let ruleText = event.rule, let rule = Rule(ruleText) else {
+                if event.end > from && event.start < to { result.append(event) }
+                continue
+            }
+            let length = event.end.timeIntervalSince(event.start)
+            let removed = Set(event.exceptions ?? [])
+            for start in rule.starts(of: event, until: to, calendar: calendar) {
+                guard start.addingTimeInterval(max(length, 1)) > from, !removed.contains(start) else { continue }
+                if let replacement = overrides[event.uid]?[start] {
+                    var moved = replacement
+                    moved.occurrence = start
+                    if moved.status != .cancelled, moved.end > from, moved.start < to { result.append(moved) }
+                    continue
+                }
+                var occurrence = event
+                occurrence.start = start
+                occurrence.end = start.addingTimeInterval(length)
+                occurrence.occurrence = start
+                occurrence.rule = nil
+                occurrence.exceptions = nil
+                result.append(occurrence)
+            }
+        }
+        // Overrides whose series isn't in the feed (or that moved into the window from outside it).
+        let masters = Set(events.filter { $0.recurrenceID == nil }.map(\.uid))
+        for (uid, moved) in overrides where !masters.contains(uid) {
+            for event in moved.values where event.status != .cancelled && event.end > from && event.start < to {
+                var standalone = event
+                standalone.occurrence = event.recurrenceID
+                result.append(standalone)
+            }
+        }
+        return result.sorted { $0.start < $1.start }
+    }
+
+    /// RRULE: FREQ, INTERVAL, COUNT, UNTIL, BYDAY (with ordinals for monthly/yearly),
+    /// BYMONTHDAY and BYMONTH.
+    struct Rule {
+        enum Frequency: String { case daily = "DAILY", weekly = "WEEKLY", monthly = "MONTHLY", yearly = "YEARLY" }
+
+        var frequency: Frequency
+        var interval = 1
+        var count: Int?
+        var until: Date?
+        /// (ordinal, weekday 1 = Sunday … 7 = Saturday); ordinal 0 means "every".
+        var byDay: [(Int, Int)] = []
+        var byMonthDay: [Int] = []
+        var byMonth: [Int] = []
+
+        init?(_ text: String) {
+            var parts: [String: String] = [:]
+            for piece in text.split(separator: ";") {
+                let pair = piece.split(separator: "=", maxSplits: 1).map(String.init)
+                if pair.count == 2 { parts[pair[0].uppercased()] = pair[1].uppercased() }
+            }
+            guard let frequency = parts["FREQ"].flatMap(Frequency.init(rawValue:)) else { return nil }
+            // Rules this reader doesn't understand: better one occurrence than wrong ones.
+            let known: Set<String> = ["FREQ", "INTERVAL", "COUNT", "UNTIL", "BYDAY", "BYMONTHDAY", "BYMONTH", "WKST"]
+            guard Set(parts.keys).isSubset(of: known) else { return nil }
+            self.frequency = frequency
+            interval = max(1, Int(parts["INTERVAL"] ?? "1") ?? 1)
+            count = parts["COUNT"].flatMap(Int.init)
+            if let value = parts["UNTIL"] {
+                let property = Property("UNTIL:" + value)!
+                until = ICalendar.date(property, calendar: Calendar(identifier: .gregorian)).map { value.contains("T") ? $0.0 : $0.0.addingTimeInterval(86_399) }
+            }
+            let days = ["SU": 1, "MO": 2, "TU": 3, "WE": 4, "TH": 5, "FR": 6, "SA": 7]
+            for token in (parts["BYDAY"] ?? "").split(separator: ",") {
+                let code = String(token.suffix(2))
+                guard let weekday = days[code] else { return nil }
+                byDay.append((Int(token.dropLast(2)) ?? 0, weekday))
+            }
+            byMonthDay = (parts["BYMONTHDAY"] ?? "").split(separator: ",").compactMap { Int($0) }
+            byMonth = (parts["BYMONTH"] ?? "").split(separator: ",").compactMap { Int($0) }
+        }
+
+        /// Occurrence starts from the series' first, in order, up to `limit` (or COUNT/UNTIL).
+        func starts(of event: Event, until limit: Date, calendar userCalendar: Calendar) -> [Date] {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = event.timeZoneID.flatMap(TimeZone.init(identifier:)) ?? userCalendar.timeZone
+            calendar.firstWeekday = 2  // WKST=MO, the default
+            let first = event.start
+            let time = calendar.dateComponents([.hour, .minute, .second], from: first)
+            let end = min(limit, until ?? limit)
+            var found: [Date] = []
+            var period = 0
+            func at(_ day: DateComponents) -> Date? {
+                var parts = day
+                parts.hour = time.hour; parts.minute = time.minute; parts.second = time.second
+                guard let date = calendar.date(from: parts),
+                      calendar.component(.day, from: date) == parts.day else { return nil }  // no Feb 30
+                return date
+            }
+            while period < 5_000 {
+                defer { period += 1 }
+                let candidates = dates(inPeriod: period, from: first, calendar: calendar).compactMap(at).sorted()
+                if let earliest = candidates.first, earliest > end { break }
+                for date in candidates where date >= first {
+                    if date > end { return found }
+                    found.append(date)
+                    if let count, found.count >= count { return found }
+                }
+                // Periods whose dates all fall before the start (or don't exist) still move us on.
+                if candidates.isEmpty, let periodStart = calendar.date(byAdding: unit, value: period * interval, to: first), periodStart > end { break }
+            }
+            return found
+        }
+
+        private var unit: Calendar.Component {
+            switch frequency {
+            case .daily: .day
+            case .weekly: .weekOfYear
+            case .monthly: .month
+            case .yearly: .year
+            }
+        }
+
+        /// The calendar days (year, month, day) in the n-th period after the first occurrence.
+        private func dates(inPeriod period: Int, from first: Date, calendar: Calendar) -> [DateComponents] {
+            guard let anchor = calendar.date(byAdding: unit, value: period * interval, to: first) else { return [] }
+            let day = calendar.dateComponents([.year, .month, .day, .weekday], from: anchor)
+            switch frequency {
+            case .daily:
+                if !byDay.isEmpty, !byDay.contains(where: { $0.1 == day.weekday }) { return [] }
+                if !byMonth.isEmpty, !byMonth.contains(day.month!) { return [] }
+                return [DateComponents(year: day.year, month: day.month, day: day.day)]
+            case .weekly:
+                guard let week = calendar.dateInterval(of: .weekOfYear, for: anchor) else { return [] }
+                let weekdays = byDay.isEmpty ? [day.weekday!] : byDay.map(\.1)
+                return weekdays.compactMap { weekday in
+                    let offset = (weekday - calendar.firstWeekday + 7) % 7
+                    return calendar.date(byAdding: .day, value: offset, to: week.start)
+                        .map { calendar.dateComponents([.year, .month, .day], from: $0) }
+                }
+            case .monthly:
+                if !byMonth.isEmpty, !byMonth.contains(day.month!) { return [] }
+                return daysInMonth(year: day.year!, month: day.month!, defaultDay: calendar.component(.day, from: first), calendar: calendar)
+            case .yearly:
+                let months = byMonth.isEmpty ? [calendar.component(.month, from: first)] : byMonth
+                return months.flatMap { daysInMonth(year: day.year!, month: $0, defaultDay: calendar.component(.day, from: first), calendar: calendar) }
+            }
+        }
+
+        private func daysInMonth(year: Int, month: Int, defaultDay: Int, calendar: Calendar) -> [DateComponents] {
+            guard let firstOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
+                  let length = calendar.range(of: .day, in: .month, for: firstOfMonth)?.count else { return [] }
+            var days: [Int] = []
+            if !byMonthDay.isEmpty {
+                days = byMonthDay.map { $0 > 0 ? $0 : length + 1 + $0 }
+            } else if !byDay.isEmpty {
+                for (ordinal, weekday) in byDay {
+                    let matching = (1...length).filter { day in
+                        calendar.component(.weekday, from: calendar.date(byAdding: .day, value: day - 1, to: firstOfMonth)!) == weekday
+                    }
+                    if ordinal == 0 { days += matching }
+                    else if ordinal > 0, ordinal <= matching.count { days.append(matching[ordinal - 1]) }
+                    else if ordinal < 0, -ordinal <= matching.count { days.append(matching[matching.count + ordinal]) }
+                }
+            } else {
+                days = [defaultDay]
+            }
+            return days.filter { (1...length).contains($0) }.map { DateComponents(year: year, month: month, day: $0) }
+        }
     }
 }
 

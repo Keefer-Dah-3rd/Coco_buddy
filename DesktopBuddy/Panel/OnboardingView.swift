@@ -102,7 +102,9 @@ struct OnboardingView: View {
                 MonoLabel("⌘L")
             }
             Extra(symbol: "calendar", title: "Calendar",
-                  detail: "Apple Calendar, Google Calendar or both — shown as one schedule, with open time and meeting reminders. Events change only when you confirm.") {
+                  detail: Features.googleSignIn
+                      ? "Apple Calendar, Google Calendar or both — shown as one schedule, with open time and meeting reminders. Events change only when you confirm."
+                      : "Apple Calendar, Google Calendar (paste its private address) and Partiful — shown as one schedule, with open time and meeting reminders. Read-only.") {
                 Button("Set up…") { model.openConnections() }.buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
             }
             Extra(symbol: "bubble.left", title: "Chat with Claude",

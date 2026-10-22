@@ -33,8 +33,20 @@ enum Support {
     }
 }
 
-/// Product switches. Notion was paused on 2026-10-11 and brought back on 2026-10-17; set
-/// this to false to hide it again (the code stays, nothing shows or runs).
+/// Product switches. Notion was paused on 2026-10-11, back on 2026-10-17, and cut from
+/// version 1 on 2026-10-19 while its setup is reworked; set this to true to bring it back
+/// (the code stays; while it's false nothing shows or runs).
 enum Features {
-    static let notion = true
+    static let notion = false
+
+    /// Google Calendar by OAuth sign-in (needs a Google Cloud client ID, and Google's
+    /// verification for the App Store). Off since 2026-10-19: people paste their calendar's
+    /// secret iCal address instead (`CalendarFeedService`), which is read-only — so nothing can
+    /// be added, moved or deleted from Coco. The sign-in code stays; switch this on to bring it
+    /// back. Debug self-tests switch it on to keep testing that code.
+    #if DEBUG
+    static var googleSignIn = false
+    #else
+    static let googleSignIn = false
+    #endif
 }

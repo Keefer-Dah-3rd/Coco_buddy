@@ -42,13 +42,13 @@ Text to paste into App Store Connect. Character limits are Apple's; counts are g
 > • When a session ends, she asks whether the task is done; she never assumes.
 >
 > YOUR CALENDARS
-> • See today and the week from Apple Calendar[, Google Calendar] and Partiful in one place, with each event shown once.
+> • See today and the week from Apple Calendar, Google Calendar and Partiful in one place, with each event shown once. Google Calendar connects by pasting its private address; no sign-in.
 > • Open time, what's next, and a reminder before meetings.
 > • Paste a Partiful invite into the chat and Coco reads the details for you.
 >
 > TALK TO COCO
 > • Chat with Coco to plan, brainstorm or break a big task into steps. She checks your real tasks and calendar when she needs to, and shows you each time she looks.
-> • Anything that would change your list or calendar appears as a card to confirm first.
+> • Anything that would change your task list appears as a card to confirm first. Calendars are read-only.
 > • Voice: press the mic and say "add call Sam and draft the brief" or "start a 25-minute focus".
 >
 > PLAY
@@ -64,8 +64,7 @@ Text to paste into App Store Connect. Character limits are Apple's; counts are g
 >
 > GOOD TO KNOW
 > • The chat uses Claude by Anthropic with your own Anthropic API key. Usage is billed by Anthropic to your account. Everything else works without a key.
-> • Works with Notion: pick tasks from a Notion database (paste a token from a Notion connection you create).
-> • Google Calendar, Partiful and Notion are trademarks of their owners; Desktop Buddy isn't made or endorsed by them.
+> • Google Calendar and Partiful are trademarks of their owners; Desktop Buddy isn't made or endorsed by them.
 >
 > Requires macOS 14 or later.
 
@@ -104,11 +103,9 @@ Live on GitHub Pages since 2026-10-19 (repository Settings › Pages › `main`,
 >
 > Chat: open Connections (from the panel) › Claude and paste this test key: [TEST KEY]. The first time you open the Chat tab, "Before you chat" lists exactly what is sent to Anthropic; nothing is sent until you choose Allow. To turn it off later, go to Settings › Privacy & data. Under each reply, "Report" opens an email to support.
 >
-> Calendars: Connections › Apple Calendar reads the calendars on this Mac (read-only). [Google: either the test account, or "Google Calendar is optional; Apple Calendar shows the same events."]
+> Calendars: Connections › Apple Calendar reads the calendars on this Mac (read-only). Google Calendar: Connections › Google Calendar › paste this secret iCal address of a test calendar: [TEST GOOGLE ICAL ADDRESS]. It is read-only, so the chat won't offer to add or change events.
 >
-> Partiful: paste this public invitation into the chat: [WORKING PARTIFUL LINK]. Ask "add this to my calendar" to see the confirmation card. [Calendar import: Connections › Partiful › paste: TEST CALENDAR LINK.]
->
-> Notion: Connections › Notion › paste this token: [TEST NOTION TOKEN]. Choose the "Review tasks" database and accept the suggested fields, then open the panel › Notion › Pick.
+> Partiful: paste this public invitation into the chat: [WORKING PARTIFUL LINK]. [Calendar import: Connections › Partiful › paste: TEST CALENDAR LINK.]
 >
 > Voice: press the microphone in the panel; macOS asks for microphone and speech recognition access.
 
@@ -137,7 +134,7 @@ Matches the privacy manifest (`DesktopBuddy/Resources/PrivacyInfo.xcprivacy`) an
 ## Other App Store Connect answers
 
 - **Category:** Productivity (primary). Secondary is optional: Lifestyle.
-- **Content rights:** "Yes, this app contains, shows or accesses third-party content", meaning the user's own calendar, Partiful and Notion data. Everything bundled is cleared: Coco's art and the icon are drawn in the app's own code, and the barks are a public-domain recording.
+- **Content rights:** "Yes, this app contains, shows or accesses third-party content", meaning the user's own calendar and Partiful data. Everything bundled is cleared: Coco's art and the icon are drawn in the app's own code, and the barks are a public-domain recording.
 - **Export compliance:** handled in the build: `ITSAppUsesNonExemptEncryption = NO` (only Apple's HTTPS).
 - **Sign-in required?** No. There's no account; App Review needs only the test key and tokens above.
 - **Release:** manual release after approval, for version 1.0.
@@ -146,5 +143,4 @@ Matches the privacy manifest (`DesktopBuddy/Resources/PrivacyInfo.xcprivacy`) an
 
 - Which name and subtitle.
 - Price, and which countries; leaving out the EU avoids publishing trader details.
-- Google Calendar in version 1 or not. This changes the description's calendar line and the review notes.
-- The test material: Claude key, Partiful links, Notion workspace and token.
+- The test material: Claude key, a Google calendar address and Partiful links.

@@ -18,7 +18,7 @@ enum AIConsent {
 
     /// Sent only when Coco looks it up to answer — the chat shows each lookup.
     static let whenNeeded = [
-        "Your tasks, with their notes, priorities and due dates, including tasks picked from Notion.",
+        "Your tasks, with their notes, priorities and due dates" + (Features.notion ? ", including tasks picked from Notion." : "."),
         "Your focus timer and how long you've focused today.",
         "Calendar events from Google Calendar, Apple Calendar and Partiful: titles, times and places. A guest's name only when you ask about meetings with them.",
         "Partiful invitations you paste into the chat.",

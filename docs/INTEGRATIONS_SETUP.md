@@ -9,7 +9,20 @@ The target signs automatically with **John Keefe (Personal Team)** (`DEVELOPMENT
 - [ ] Xcode › Settings › Accounts → select the Apple ID → sign in again if prompted (the command line couldn't reuse the saved session). The first ⌘R then creates the "Apple Development" certificate.
 - Outgoing network access is enabled (Phase 3); incoming connections are not.
 
-## Google Calendar — built, needs your client ID
+## Google Calendar by link (what ships)
+
+Since 2026-10-19 people connect Google Calendar by pasting the calendar's **secret address in iCal format**. In Google Calendar on the web, go to Settings › the calendar › Integrate calendar, then paste it in Connections › Google Calendar. No Google Cloud project, no sign-in, no Google verification.
+
+- Read-only. With `Features.googleSignIn` off, the chat isn't given the add, move or delete tools.
+- Read about every half hour, with repeats expanded for a week back and six months ahead. The address is kept in the Keychain and the events are cached for offline use.
+- Implemented by `CalendarFeedService(kind: .google)`; the iCalendar parser is `ICalendar.swift`.
+- Some Workspace admins turn secret addresses off. Those users can add the account to Calendar.app and connect Apple Calendar instead.
+
+## Google Calendar by sign-in (switched off: `Features.googleSignIn = false`)
+
+Kept for later, if a verified OAuth client is shipped.
+
+### Setting up sign-in (needs your client ID)
 
 How it works: Google's guidance for macOS apps is an **iOS-type** OAuth client. Sign-in runs in the system sheet (`ASWebAuthenticationSession`) with PKCE and the reversed client ID as the redirect — **no client secret exists**, so there's nothing secret to protect. Sign-in asks only for `calendar.events.readonly`. The first time you confirm adding, moving or deleting an event, the same sheet asks once more for `calendar.events` (events only — never the broader `calendar` scope), added to what you'd already granted (`include_granted_scopes`). Decline it and Coco stays read-only. Tokens live in the Keychain; the weeks you've looked at (last week to four weeks ahead) are cached locally so the schedule still shows, with its age, when offline. *Disconnect* revokes the token at Google and deletes the cache.
 

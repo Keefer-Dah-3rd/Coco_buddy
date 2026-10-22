@@ -21,8 +21,12 @@ struct ConnectionsView: View {
                 }
                 AssistantSection(service: model.assistant)
                 AppleCalendarSection(service: model.appleCalendar, model: model)
-                CalendarSection(service: model.calendar, model: model)
-                PartifulSection(service: model.partiful)
+                if Features.googleSignIn {
+                    CalendarSection(service: model.calendar, model: model)
+                } else {
+                    CalendarLinkSection(service: model.googleFeed)
+                }
+                CalendarLinkSection(service: model.partiful)
                 if Features.notion {
                     NotionSection(service: model.notion, model: model)
                 }
@@ -292,27 +296,54 @@ private struct CalendarSection: View {
     }
 }
 
-// MARK: - Partiful
+// MARK: - Calendars by link (Google Calendar, Partiful)
 
-/// Imports the user's Partiful events from their personal calendar link. Read-only: the events
-/// show in Coco's calendar and count for free time; nothing is written anywhere.
+/// A calendar read from a private link the user pastes: a Google calendar's secret iCal
+/// address, or their personal Partiful calendar link. Read-only: the events show in Coco's
+/// calendar and count for free time; nothing is written anywhere.
 /// (Not private: the Partiful self-test renders it on its own.)
-struct PartifulSection: View {
-    let service: PartifulFeedService
+struct CalendarLinkSection: View {
+    let service: CalendarFeedService
     @State private var link = ""
     @State private var problem: String?
     @State private var connecting = false
 
+    private var copy: (intro: String, steps: [(String, URL?)], placeholder: String, privacy: String, button: String, freshness: String) {
+        switch service.kind {
+        case .google:
+            ("Shows your Google calendar in \(Buddy.name)'s calendar, so she knows when you're busy and can talk about your day. No Google sign-in needed. Read-only: \(Buddy.name) can't add, move or delete events — do that in Google Calendar.",
+             [("Open Google Calendar on the web (on a computer) and click the gear › Settings.", URL(string: "https://calendar.google.com/calendar/r/settings")),
+              ("Under Settings for my calendars, choose your calendar, then Integrate calendar.", nil),
+              ("Copy the Secret address in iCal format (not the public address) and paste it below.", nil)],
+             "https://calendar.google.com/calendar/ical/…/basic.ics",
+             "Keep this address private — anyone with it can see this calendar. You can reset it in Google Calendar's settings at any time.",
+             "Add calendar",
+             "Changes you make in Google Calendar can take a little while to show up here.")
+        case .partiful:
+            ("Shows your Partiful events in \(Buddy.name)'s calendar, so she knows when you're busy and can talk about them. Read-only: nothing is changed on Partiful.",
+             [("On partiful.com, on a computer, open any event you're going to.", URL(string: "https://partiful.com")),
+              ("Click the calendar icon under the event details, then choose Google Calendar.", nil),
+              ("Click Copy Link — that's your personal calendar link. Paste it below.", nil)],
+             "webcal://… or https://…",
+             "Keep this link private — anyone with it can see your Partiful events.",
+             "Import events",
+             "")
+        }
+    }
+
     var body: some View {
-        Card(title: "Partiful", status: service.isConnected ? ("Connected", true) : ("Not connected", false)) {
-            Text("Shows your Partiful events in \(Buddy.name)'s calendar, so she knows when you're busy and can talk about them. Read-only: nothing is added to Google Calendar or changed on Partiful.")
-                .bodyStyle()
+        Card(title: service.kind.name, status: service.isConnected ? ("Connected", true) : ("Not connected", false)) {
+            Text(copy.intro).bodyStyle()
 
             if service.isConnected {
+                if service.kind == .google, let name = service.calendarName {
+                    Row("Calendar") { Text(name).valueStyle() }
+                }
                 Row("Events") {
                     Text(summary).valueStyle()
                 }
-                ForEach(upcoming, id: \.uid) { event in
+                // A repeat shares its series' UID, so each occurrence is keyed by its start too.
+                ForEach(upcoming, id: \.occurrenceKey) { event in
                     HStack(spacing: Space.sm) {
                         Text(event.start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
                             .font(.style(.monoValue)).foregroundStyle(Theme.inkSecondary)
@@ -320,7 +351,7 @@ struct PartifulSection: View {
                         Spacer(minLength: 0)
                     }
                 }
-                Text("Your calendar link is kept in the Keychain. \(Buddy.name) reads it about every half hour.")
+                Text("The link is kept in your Keychain. \(Buddy.name) reads it about every half hour. \(copy.freshness)")
                     .bodyStyle()
                 HStack {
                     Button("Disconnect and forget events") { service.disconnect() }
@@ -331,19 +362,15 @@ struct PartifulSection: View {
                         .disabled(service.isRefreshing)
                 }
             } else {
-                SetupSteps(steps: [
-                    ("On partiful.com, on a computer, open any event you're going to.", URL(string: "https://partiful.com")),
-                    ("Click the calendar icon under the event details, then choose Google Calendar.", nil),
-                    ("Click Copy Link — that's your personal calendar link. Paste it below.", nil),
-                ])
-                TextField("Calendar link", text: $link, prompt: Text("webcal://… or https://…"))
+                SetupSteps(steps: copy.steps)
+                TextField("Calendar link", text: $link, prompt: Text(copy.placeholder))
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(connect)
                 HStack {
-                    Text("Keep this link private — anyone with it can see your Partiful events.")
+                    Text(copy.privacy)
                         .font(.style(.caption)).foregroundStyle(Theme.inkTertiary).fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Button(connecting ? "Checking…" : "Import events") { connect() }
+                    Button(connecting ? "Checking…" : copy.button) { connect() }
                         .buttonStyle(KeyButtonStyle(kind: .primary))
                         .disabled(link.trimmingCharacters(in: .whitespaces).isEmpty || connecting)
                 }
@@ -375,6 +402,10 @@ struct PartifulSection: View {
             connecting = false
         }
     }
+}
+
+private extension ICalendar.Event {
+    var occurrenceKey: String { uid + "@\(start.timeIntervalSince1970)" }
 }
 
 // MARK: - Notion

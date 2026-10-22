@@ -157,3 +157,136 @@ import Testing
         #expect(!CalendarFeedLink.mayFetch(URL(string: "https://example.com:8443/feed.ics")!))
     }
 }
+
+@Suite struct ICalendarRecurrenceTests {
+    let newYork: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "America/New_York")!
+        return c
+    }()
+
+    func utc(_ text: String) -> Date { ISO8601DateFormatter().date(from: text)! }
+
+    func events(_ body: String) -> [ICalendar.Event] {
+        ICalendar.parse("BEGIN:VCALENDAR\n" + body + "\nEND:VCALENDAR", calendar: newYork)!.events
+    }
+
+    func starts(_ list: [ICalendar.Event]) -> [String] {
+        let formatter = ISO8601DateFormatter()
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return list.map { formatter.string(from: $0.start) }
+    }
+
+    @Test func weeklyWithRemovedMovedAndCancelledOccurrences() {
+        // Mon/Wed/Fri 9:00 New York, like Google writes it.
+        let feed = events("""
+        BEGIN:VEVENT
+        UID:standup@google.com
+        SUMMARY:Standup
+        DTSTART;TZID=America/New_York:20261005T090000
+        DTEND;TZID=America/New_York:20261005T091500
+        RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR
+        EXDATE;TZID=America/New_York:20261014T090000
+        END:VEVENT
+        BEGIN:VEVENT
+        UID:standup@google.com
+        RECURRENCE-ID;TZID=America/New_York:20261016T090000
+        SUMMARY:Standup (late)
+        DTSTART;TZID=America/New_York:20261016T103000
+        DTEND;TZID=America/New_York:20261016T104500
+        END:VEVENT
+        BEGIN:VEVENT
+        UID:standup@google.com
+        RECURRENCE-ID;TZID=America/New_York:20261019T090000
+        SUMMARY:Standup
+        DTSTART;TZID=America/New_York:20261019T090000
+        STATUS:CANCELLED
+        END:VEVENT
+        """)
+        let shown = ICalendar.expand(feed, from: utc("2026-10-12T00:00:00Z"), to: utc("2026-10-24T00:00:00Z"), calendar: newYork)
+        #expect(starts(shown) == ["2026-10-12T13:00:00Z", "2026-10-16T14:30:00Z", "2026-10-21T13:00:00Z", "2026-10-23T13:00:00Z"])
+        #expect(shown[1].title == "Standup (late)")
+        #expect(shown[1].occurrence == utc("2026-10-16T13:00:00Z"))
+        #expect(shown.allSatisfy { $0.end.timeIntervalSince($0.start) == 900 })
+    }
+
+    @Test func keepsLocalTimeAcrossDaylightSaving() {
+        // US clocks go back on 2026-11-01: 9:00 New York is 13:00 UTC before, 14:00 after.
+        let feed = events("""
+        BEGIN:VEVENT
+        UID:w
+        SUMMARY:Weekly
+        DTSTART;TZID=America/New_York:20261026T090000
+        RRULE:FREQ=WEEKLY
+        END:VEVENT
+        """)
+        let shown = ICalendar.expand(feed, from: utc("2026-10-20T00:00:00Z"), to: utc("2026-11-04T00:00:00Z"), calendar: newYork)
+        #expect(starts(shown) == ["2026-10-26T13:00:00Z", "2026-11-02T14:00:00Z"])
+    }
+
+    @Test func monthlyAndYearlyRules() {
+        let feed = events("""
+        BEGIN:VEVENT
+        UID:second-tuesday
+        SUMMARY:Book club
+        DTSTART;TZID=America/New_York:20261013T190000
+        RRULE:FREQ=MONTHLY;BYDAY=2TU
+        END:VEVENT
+        BEGIN:VEVENT
+        UID:last-friday
+        SUMMARY:Payday drinks
+        DTSTART;TZID=America/New_York:20261030T180000
+        RRULE:FREQ=MONTHLY;BYDAY=-1FR;COUNT=3
+        END:VEVENT
+        BEGIN:VEVENT
+        UID:month-end
+        SUMMARY:Invoices
+        DTSTART;TZID=America/New_York:20261031T090000
+        RRULE:FREQ=MONTHLY;BYMONTHDAY=31
+        END:VEVENT
+        BEGIN:VEVENT
+        UID:birthday
+        SUMMARY:Coco's birthday
+        DTSTART;VALUE=DATE:20200214
+        RRULE:FREQ=YEARLY
+        END:VEVENT
+        """)
+        let shown = ICalendar.expand(feed, from: utc("2026-10-01T00:00:00Z"), to: utc("2027-03-01T00:00:00Z"), calendar: newYork)
+        let byTitle = Dictionary(grouping: shown, by: \.title)
+        #expect(starts(byTitle["Book club"] ?? []) == ["2026-10-13T23:00:00Z", "2026-11-11T00:00:00Z", "2026-12-09T00:00:00Z",
+                                                        "2027-01-13T00:00:00Z", "2027-02-10T00:00:00Z"])
+        #expect(starts(byTitle["Payday drinks"] ?? []) == ["2026-10-30T22:00:00Z", "2026-11-27T23:00:00Z", "2026-12-25T23:00:00Z"])
+        #expect(starts(byTitle["Invoices"] ?? []) == ["2026-10-31T13:00:00Z", "2026-12-31T14:00:00Z", "2027-01-31T14:00:00Z"])
+        #expect(starts(byTitle["Coco's birthday"] ?? []) == ["2027-02-14T05:00:00Z"])
+        #expect(byTitle["Coco's birthday"]?.first?.isAllDay == true)
+    }
+
+    @Test func dailyUntilEveryOtherDayAndUnknownRules() {
+        let feed = events("""
+        BEGIN:VEVENT
+        UID:retreat
+        SUMMARY:Retreat
+        DTSTART:20261020T150000Z
+        RRULE:FREQ=DAILY;INTERVAL=2;UNTIL=20261026T150000Z
+        END:VEVENT
+        BEGIN:VEVENT
+        UID:weird
+        SUMMARY:Odd rule
+        DTSTART:20261021T150000Z
+        RRULE:FREQ=MONTHLY;BYDAY=MO,TU;BYSETPOS=-1
+        END:VEVENT
+        BEGIN:VEVENT
+        UID:once
+        SUMMARY:Once
+        DTSTART:20261022T150000Z
+        END:VEVENT
+        """)
+        let shown = ICalendar.expand(feed, from: utc("2026-10-01T00:00:00Z"), to: utc("2026-12-01T00:00:00Z"), calendar: newYork)
+        let byTitle = Dictionary(grouping: shown, by: \.title)
+        #expect(starts(byTitle["Retreat"] ?? []) == ["2026-10-20T15:00:00Z", "2026-10-22T15:00:00Z", "2026-10-24T15:00:00Z", "2026-10-26T15:00:00Z"])
+        #expect(byTitle["Odd rule"]?.count == 1, "an unknown rule shows its first occurrence only")
+        #expect(byTitle["Once"]?.count == 1)
+        // Outside the window: nothing.
+        #expect(ICalendar.expand(feed, from: utc("2027-01-01T00:00:00Z"), to: utc("2027-02-01T00:00:00Z"), calendar: newYork).isEmpty)
+    }
+}

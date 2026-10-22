@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Desktop Buddy Support</title>
-<meta name="description" content="Help with Desktop Buddy (Coco): getting started, the chat, calendars, Partiful, Notion, voice and your data.">
+<meta name="description" content="Help with Desktop Buddy (Coco): getting started, the chat, calendars, Partiful, voice and your data.">
 <style>
   :root {
     --paper: #F3F1EC; --well: #EAE7E0; --ink: #1A1A18; --ink-2: #6E6A61; --ink-3: #A6A196;
@@ -97,14 +97,21 @@
   <h2>Calendars and connections</h2>
   <h3>Apple Calendar</h3>
   <p>In Connections, choose Connect Apple Calendar and allow access when macOS asks. If you said no earlier, turn it on in System Settings › Privacy &amp; Security › Calendars. Accounts you've added to the Calendar app, including Google, iCloud and Exchange, show up in Coco.</p>
+  <h3>Google Calendar</h3>
+  <ol>
+    <li>On a computer, open <a href="https://calendar.google.com/calendar/r/settings">Google Calendar's settings</a>.</li>
+    <li>Under <em>Settings for my calendars</em>, choose your calendar, then <em>Integrate calendar</em>.</li>
+    <li>Copy the <strong>Secret address in iCal format</strong> and paste it in Connections › Google Calendar.</li>
+  </ol>
+  <p><strong>It's read-only.</strong> Coco shows your events and knows when you're busy, but can't add, move or delete them. Changes you make in Google can take a little while to show up.</p>
+  <p><strong>The public address doesn't work</strong> unless the calendar is public.</p>
+  <p><strong>Can't find the secret address?</strong> Some work or school accounts have it turned off by an administrator. In that case, add the account to the Mac's Calendar app and connect Apple Calendar instead. If an address stops working, you may have reset it in Google: copy the new one.</p>
   <h3>Partiful</h3>
   <ul>
     <li><strong>One invitation:</strong> paste a partiful.com link into the chat.</li>
     <li><strong>All your events:</strong> on partiful.com (on a computer), open an event, click the calendar icon under the details, choose Google Calendar, then Copy Link. Paste that link in Connections › Partiful.</li>
   </ul>
   <p>Invitations that are private or password-protected can't be read from their page. If they're in your Partiful calendar, Coco reads them from there.</p>
-  <h3>Notion</h3>
-  <p>Create an internal integration in Notion, paste its secret in Connections › Notion, then share your task database with the integration (in the database, choose ••• › Connections). If you can't create an integration in a workspace someone else owns, ask its owner.</p>
   <h3>"Needs reconnecting"</h3>
   <p>A service stopped accepting the saved sign-in or token, for example because it expired or was revoked. Open Connections and connect it again. Coco keeps showing the last data she had until you do.</p>
 

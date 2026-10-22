@@ -41,7 +41,7 @@ struct PanelRootView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Connections — Claude, calendars and Notion")
+                .help(Features.notion ? "Connections — Claude, calendars and Notion" : "Connections — Claude and calendars")
                 .accessibilityLabel("Connections")
                 // Mute: barking on or off (Coco doesn't speak aloud — her lines are text).
                 let barking = model.preferences.barksEnabled && !model.preferences.soundsMuted

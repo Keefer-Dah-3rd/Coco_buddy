@@ -93,8 +93,9 @@ final class GoogleCalendarService {
         reminderMinutes = defaults.object(forKey: Key.reminder) as? Int ?? 5
 
         status = client == nil ? .needsClientID : .disconnected
-        // The saved sign-in is read off the main thread; refresh() waits for it.
-        if persistent {
+        // The saved sign-in is read off the main thread; refresh() waits for it. With sign-in
+        // switched off (Features.googleSignIn), the Keychain isn't touched and nothing is fetched.
+        if persistent, Features.googleSignIn {
             savedSignIn = Task { [weak self] in
                 guard let data = await Keychain.dataInBackground(for: Key.tokens) else { return }
                 self?.restore(data)

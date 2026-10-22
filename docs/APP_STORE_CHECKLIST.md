@@ -7,10 +7,8 @@ Everything needed to get Desktop Buddy onto the Mac App Store, in order. Items m
 These would likely get the app rejected or make it unusable for people who download it.
 
 - [x] **✓ done (2026-10-19)** **Ask before anything goes to Claude (Guideline 5.1.2(i)).** Since November 2025 Apple requires you to "clearly disclose where personal data will be shared with third parties, including with third-party AI, and obtain explicit permission before doing so". The app explains this in Connections and Settings, but there's no explicit yes/no. The Chat tab now shows **Before you chat** before anything is sent. It lists what's sent with every message, what's sent only when Coco needs it, and what's never sent; names Anthropic and links to its privacy policy; and offers **Allow** / **Not now**. The chat service itself refuses to send until you allow it, so no screen or shortcut can skip the step. You can turn it off in Settings › Privacy & data, which stops the chat and forgets the conversation. Delete all my data resets it, and raising `AIConsent.version` asks everyone again. The wording lives in `DesktopBuddy/App/AIConsent.swift`. The privacy policy (`docs/privacy/index.html`, “The chat (Anthropic)”) now lists the same items in the same words (2026-10-19). Keep the two in step whenever `AIConsent` changes.
-- [ ] **Google Calendar can't ask users to create a Google Cloud project.** Today each user pastes their own OAuth client ID. For the store you need one of these:
-  - **Ship your own OAuth client** (iOS type, your bundle ID) and get it **verified by Google**. The Calendar scopes are *sensitive*, and verification takes weeks: you need a privacy policy, a homepage on a verified domain, a written justification for each scope and usually a demo video. Until it's verified, users see an "unverified app" screen. In *Testing* mode, sign-ins expire after 7 days and only listed test users can connect.
-  - **Or leave direct Google out of v1.** People can add their Google account to the macOS Calendar app and Coco reads it through Apple Calendar. Coco just can't add or change events then.
-- [ ] **Notion is back on** (`Features.notion = true`, re-enabled 2026-10-17). It can ship as it is, but it needs its own test material and wording; see [section 9](#9-notion).
+- [x] **✓ done (2026-10-19)** **Google Calendar without a Google Cloud project.** People paste their calendar's *secret address in iCal format* (Connections › Google Calendar), the same way the Partiful import works. There's no Google sign-in, so no OAuth client and no Google verification. It's read-only: the chat doesn't offer to add, move or delete events. The sign-in code is kept behind `Features.googleSignIn` (off) in case you ship a verified client later.
+- [x] **✓ decided (2026-10-19)** **Notion is not in version 1** (`Features.notion = false`): nothing about it shows or runs, and the listing, privacy policy, support page and consent screen no longer mention it. The code and [section 9](#9-notion) stay for when it comes back; turning it back on means restoring those mentions too.
 - [x] **✓ done (2026-10-19)** **Info.plist additions** (set in the target's build settings; the Info.plist is generated):
   - [x] `ITSAppUsesNonExemptEncryption = NO`. The app only uses Apple's HTTPS, which is exempt, so App Store Connect stops asking about export compliance on every build.
   - [x] `NSHumanReadableCopyright`: "© 2026 John Keefe".
@@ -53,14 +51,13 @@ These would likely get the app rejected or make it unusable for people who downl
   - **Google Calendar:** what's read, and what's written only after the user confirms.
   - **Apple Calendar:** read on this Mac only.
   - **Partiful:** the pages and calendar link the user provides.
-  - **Notion:** the token is in the Keychain. Coco reads the chosen task database and changes a task's status only when the user confirms. Tasks picked from Notion are ordinary tasks after that, so they're included when the chat looks up your day.
   - **Speech:** handled by Apple, on device when supported.
   - **No analytics or tracking.**
   - **How to delete everything:** Settings › Delete all my data.
   - **A contact email.**
 - [x] **✓ done** **Support page**: [docs/support/index.html](support/index.html), published with the privacy page at `https://keefer-dah-3rd.github.io/Coco_buddy/support/` (live since 2026-10-19). Listing text, review notes and suggested questionnaire answers are drafted in [APP_STORE_LISTING.md](APP_STORE_LISTING.md).
 - [ ] Marketing URL (optional).
-- [ ] If you ship your own Google OAuth client: a homepage on a domain you've verified in Google Search Console, plus the privacy policy on that same domain.
+- [ ] Only if you later switch Google sign-in back on: a homepage on a domain you've verified in Google Search Console, plus the privacy policy on that same domain.
 
 ## 5. Build, upload and test the real thing
 
@@ -72,7 +69,7 @@ These would likely get the app rejected or make it unusable for people who downl
   - [ ] ⌃⌥C opens the panel from another app.
   - [ ] The microphone and speech prompts appear with the right wording, and voice tasks work.
   - [ ] The Apple Calendar prompt works and events appear.
-  - [ ] Google sign-in opens and returns to the app (with the client you're shipping).
+  - [ ] Paste a Google calendar's secret address: events appear, repeats included, and the chat says it can't add or change events.
   - [ ] Chat works with a key; quit and reopen, and the key and sign-ins are still there (Keychain).
   - [ ] A Partiful invite link in chat, and the Partiful calendar import.
   - [ ] Open at login: on, log out and back in, Coco is there; off, she isn't.
@@ -93,7 +90,7 @@ These would likely get the app rejected or make it unusable for people who downl
 - [ ] App preview video (optional, up to 30 s). docs/DEMO_SCRIPT.md is already a shot list.
 - [ ] **Age rating questionnaire**. It's newer and covers capabilities as well as content. Answer the question about AI assistants / chatbots honestly. Coco can generate free text, which may raise the rating.
 - [ ] **App Privacy labels** (App Store Connect › App Privacy). Match them to the privacy manifest: no tracking; "Other User Content", linked to the user, for app functionality. Decide whether calendar details sent to Anthropic count as collected (Apple's definition is data that leaves the device and is kept longer than needed to serve the request). When unsure, declare it.
-- [ ] **Content rights**: "Yes, it accesses third-party content", meaning the user's own Google, Apple, Partiful and Notion data. Everything bundled is cleared: the barks are public domain, and Coco's art and the icon are drawn in the app's own code.
+- [ ] **Content rights**: "Yes, it accesses third-party content", meaning the user's own Google, Apple, and Partiful data. Everything bundled is cleared: the barks are public domain, and Coco's art and the icon are drawn in the app's own code.
 - [ ] **Export compliance**: "uses only exempt encryption (HTTPS)". Skipped automatically once `ITSAppUsesNonExemptEncryption` is set.
 - [ ] **Pricing and availability**: free or a price, which countries, and the EU decision from step 3.
 - [ ] Choose a release option: manual (recommended for v1) or automatic after approval.
@@ -106,9 +103,8 @@ App Review can't guess how a dock-less floating corgi works. Put this in **App R
 - [ ] **How to use it:** "Desktop Buddy has no Dock icon. Coco appears on the desktop after launch. Click her for the panel, or press ⌃⌥C. Right-click her for the menu, which includes Quit."
 - [ ] **Hidden features:** "Hold the right-hand Option key and click to call her over; Right Command + click throws a ball; Right Shift + click tosses a treat. No permissions are needed."
 - [ ] **A Claude API key for testing**, from an Anthropic account you control with a low spending limit. Rotate it after review. Without one, reviewers can't see the chat.
-- [ ] **Google:** either a test Google account (if you ship your own verified client) or "Google Calendar is optional; Apple Calendar shows the same events".
+- [ ] **Google:** the secret iCal address of a test Google calendar with a few events (read-only; no sign-in).
 - [ ] **Partiful:** "Paste any public partiful.com/e/… link into the chat to see an invitation read." Include a link that works. If the calendar import ships, include a calendar link from a test Partiful account.
-- [ ] **Notion:** a test token and a shared task database; see [section 9](#9-notion) for what to set up and what to write.
 - [ ] **AI consent:** "The first time you open the Chat tab, 'Before you chat' lists what's sent to Anthropic. Nothing is sent until you choose Allow. It can be turned off in Settings › Privacy & data."
 
 ## 8. After you submit
@@ -119,6 +115,8 @@ App Review can't guess how a dock-less floating corgi works. Put this in **App R
 - [ ] Keep the privacy policy and the App Privacy labels in step with features. The Apple Calendar and Partiful import are recent, so re-read both before each submission.
 
 ## 9. Notion
+
+> **Not in version 1** (2026-10-19). Everything below is for when Notion comes back in an update.
 
 Notion's own guidance is a public OAuth integration for an app many people install. But Notion's OAuth needs a **client secret** for every token exchange and refresh, and a Mac app can't keep that secret. So Desktop Buddy asks for a token instead: an **internal integration** secret, or a **personal access token**. That's fine for the App Store; it just needs clear steps and its own test material.
 

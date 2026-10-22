@@ -135,7 +135,7 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Removes your tasks, focus history, timer, calendar sign-in and cache, Claude key, chat and settings. Google access is revoked. This can't be undone.")
+            Text("Removes your tasks, focus history, timer, calendar links, sign-ins and cache, Claude key, chat and settings. This can't be undone.")
         }
     }
 

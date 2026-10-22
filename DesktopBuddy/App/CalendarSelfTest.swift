@@ -10,6 +10,8 @@ import BuddyIntegrations
 ///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --calendar-selftest
 enum CalendarSelfTest {
     static func run() {
+        // These drive the Google sign-in code, which ships switched off.
+        Features.googleSignIn = true
         HTTP.standIn = FakeGoogle.self
         var finished = false
         Task { @MainActor in

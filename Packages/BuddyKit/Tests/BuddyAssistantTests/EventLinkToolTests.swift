@@ -118,4 +118,18 @@ import BuddyIntegrations
         #expect(prompt.contains("never fill in a missing date, start, end, time zone or place"))
         #expect(prompt.contains("pass the source_link"))
     }
+
+    @Test func readOnlyCalendarsLeaveOutTheChangingTools() {
+        let all = AssistantTools.definitions.compactMap { $0["name"]?.string }
+        let readOnly = AssistantTools.definitions(canChangeCalendar: false).compactMap { $0["name"]?.string }
+        #expect(Set(all).subtracting(readOnly) == AssistantTools.calendarChangeTools)
+        #expect(readOnly.contains("get_schedule") && readOnly.contains("read_event_link") && readOnly.contains("propose_tasks"))
+        #expect(AssistantTools.definitions(canChangeCalendar: true).count == all.count)
+
+        let prompt = AssistantPrompt.system(name: "Coco", canChangeCalendar: false)
+        #expect(prompt.contains("connected read-only: you can't add, move or delete events"))
+        #expect(!prompt.contains("propose_event"))
+        #expect(prompt.contains("never fill in a missing date"))
+        #expect(prompt.contains("can't browse, message anyone, run commands"))
+    }
 }

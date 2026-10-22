@@ -222,8 +222,10 @@ final class AssistantService {
 
     private func stream(into accumulator: inout StreamAccumulator) async throws {
         guard let apiKey else { throw ChatError.message("Add your Anthropic API key in Connections.") }
-        let request = try ClaudeAPI.messagesRequest(apiKey: apiKey, system: AssistantPrompt.system(name: Buddy.name),
-                                                    tools: AssistantTools.definitions, messages: history)
+        let request = try ClaudeAPI.messagesRequest(apiKey: apiKey,
+                                                    system: AssistantPrompt.system(name: Buddy.name, canChangeCalendar: Features.googleSignIn),
+                                                    tools: AssistantTools.definitions(canChangeCalendar: Features.googleSignIn),
+                                                    messages: history)
         let (bytes, response) = try await session.bytes(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {

@@ -127,7 +127,7 @@ final class Agenda {
 extension GoogleCalendarService: AgendaSource {
     var sourceName: String { CalendarProvider.google.displayName }
     /// Connected, or needing a new sign-in — the last events stay on show meanwhile.
-    var isActive: Bool { isConnected }
+    var isActive: Bool { Features.googleSignIn && isConnected }
     func load(from: Date, to: Date) async throws { try await ensureLoaded(from: from, to: to) }
 }
 

@@ -283,6 +283,15 @@ public enum AssistantTools {
              required: ["url"]),
     ]
 
+    /// The tools that change calendar events.
+    public static let calendarChangeTools: Set<String> = ["propose_event", "propose_event_change", "propose_event_deletion"]
+
+    /// The tools for this app: without a calendar Coco can change (calendars connected
+    /// read-only), the event-changing tools are left out so they're never offered.
+    public static func definitions(canChangeCalendar: Bool) -> [JSONValue] {
+        canChangeCalendar ? definitions : definitions.filter { !calendarChangeTools.contains($0["name"]?.string ?? "") }
+    }
+
     private static func tool(_ name: String, _ description: String, properties: [String: JSONValue], required: [String]) -> JSONValue {
         [
             "name": .string(name),
@@ -494,8 +503,25 @@ public enum AssistantTools {
 /// The system prompt and the text the assistant reads about the user's day.
 public enum AssistantPrompt {
     /// Fixed for the life of every chat (it's the start of the cached prefix).
-    public static func system(name: String) -> String {
-        """
+    public static func system(name: String, canChangeCalendar: Bool = true) -> String {
+        let changes = canChangeCalendar
+            ? """
+            - Only the tools you have. propose_tasks, request_task_completion and the propose_event tools \
+            just show the user something to confirm — say that; never claim tasks were added, marked done, \
+            or that an event was created, moved or deleted unless a later note from the app confirms it.
+            """
+            : """
+            - Only the tools you have. propose_tasks and request_task_completion just show the user \
+            something to confirm — say that; never claim tasks were added or marked done unless a later note \
+            from the app confirms it.
+            - The user's calendars are connected read-only: you can't add, move or delete events. If they \
+            ask, say so plainly and offer to help with the details so they can do it quickly in Google \
+            Calendar, the Calendar app or Partiful.
+            """
+        let invitationAdding = canChangeCalendar
+            ? "When adding it, pass the source_link it gives you to propose_event."
+            : "You can't add it to their calendar yourself; Partiful's own \"Add to calendar\" button does that."
+        return """
         You are \(name), a black-and-white corgi who lives on the user's Mac desktop. You're a real dog \
         at heart — playful, affectionate, easily excited — and also genuinely good at helping: \
         brainstorming, breaking big tasks into steps, planning the day, choosing what's next, preparing \
@@ -544,15 +570,12 @@ public enum AssistantPrompt {
         user did since — e.g. confirming a task). Treat it as context, not as something the user typed.
 
         What you can do:
-        - Only the tools you have. propose_tasks, request_task_completion and the propose_event tools \
-        just show the user something to confirm — say that; never claim tasks were added, marked done, \
-        or that an event was created, moved or deleted unless a later note from the app confirms it.
+        \(changes)
         - Only say something happened when the tool result confirms it. If a tool fails, say so plainly.
         - Partiful invitations: when the user shares a partiful.com or go.partiful.com link, call \
         read_event_link before saying anything about the event. Use only the details it returns — never \
-        fill in a missing date, start, end, time zone or place; ask. When adding it, pass the source_link \
-        it gives you to propose_event. If the page can't be read, say why (it tells you) and offer to work \
-        from the invitation text if they paste it in.
+        fill in a missing date, start, end, time zone or place; ask. \(invitationAdding) If the page can't be \
+        read, say why (it tells you) and offer to work from the invitation text if they paste it in.
         - You can't browse, message anyone, run commands, or change anything outside these tools — the \
         only web pages you can read are Partiful invitations, through read_event_link. If asked, say so \
         and suggest what the user could do.

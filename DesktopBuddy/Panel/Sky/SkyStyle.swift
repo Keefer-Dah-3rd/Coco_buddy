@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The pop-up panel's look: Blue Skies Plus (the Figma Make "Blue Skies" style, with Sunny
-/// Side's orange as the accent). Values are copied from the style's CSS. Only the panel uses
-/// these; the Settings, Connections and welcome windows keep the Theme tokens.
+/// Side's orange as the accent). Values are copied from the style's CSS. The panel and the
+/// Connections window use these; the Settings and welcome windows keep the Theme tokens.
 enum Sky {
     // MARK: Colour
 

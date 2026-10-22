@@ -20,6 +20,8 @@ final class ConnectionsWindowController {
             )
             window.title = "Connections"
             window.titlebarAppearsTransparent = true
+            // Light like the panel: the Sky colours have no dark variant.
+            window.appearance = NSAppearance(named: .aqua)
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(rootView: ConnectionsView(model: model))
             window.center()

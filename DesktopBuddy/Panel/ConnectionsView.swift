@@ -11,14 +11,19 @@ struct ConnectionsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: Space.xs) {
-                    MonoLabel("Connections", color: Theme.ink)
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Connections")
+                        .font(Sky.display(22))
+                        .tracking(-0.4)
+                        .foregroundStyle(Sky.ink)
+                        .accessibilityAddTraits(.isHeader)
                     Text("\(Buddy.name) works fully on her own. Connect a service only if you want its data in your day.")
-                        .font(.style(.body))
-                        .foregroundStyle(Theme.inkSecondary)
+                        .font(Sky.text(13))
+                        .foregroundStyle(Sky.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.bottom, 4)
                 AssistantSection(service: model.assistant)
                 AppleCalendarSection(service: model.appleCalendar, model: model)
                 CalendarSection(service: model.calendar, model: model)
@@ -27,16 +32,19 @@ struct ConnectionsView: View {
                     NotionSection(service: model.notion, model: model)
                 }
                 Text("Keys and sign-ins are kept in your Keychain. Calendar and task details reach Anthropic only when you ask the chat something that needs them — the chat shows each time. Nothing goes to analytics.")
-                    .font(.style(.caption))
-                    .foregroundStyle(Theme.inkTertiary)
+                    .font(Sky.text(11.5))
+                    .foregroundStyle(Sky.faint)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
             }
-            .padding(.horizontal, Space.xxl)
-            .padding(.top, 34)
-            .padding(.bottom, Space.xxl)
+            .padding(.horizontal, 24)
+            .padding(.top, 40)
+            .padding(.bottom, 24)
         }
         .frame(width: 540, height: height)
-        .background(Theme.paper)
+        .background(Sky.paper)
+        // The Sky colours are light-only, like the panel's.
+        .environment(\.colorScheme, .light)
     }
 }
 
@@ -59,7 +67,9 @@ private struct AssistantSection: View {
                     ("Paste it below — it's checked with a free request, then saved to your Keychain.", nil),
                 ])
                 SecureField("API key", text: $key, prompt: Text("sk-ant-…"))
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
+                    .font(Sky.text(13))
+                    .skyField()
                 HStack {
                     Spacer()
                     if service.keyStatus == .verifying { ProgressView().controlSize(.small) }
@@ -68,7 +78,7 @@ private struct AssistantSection: View {
                         key = ""
                         Task { await service.connect(key: value) }
                     }
-                    .buttonStyle(KeyButtonStyle(kind: .primary))
+                    .buttonStyle(SkyButtonStyle(kind: .accent))
                     .disabled(key.trimmingCharacters(in: .whitespaces).isEmpty || service.keyStatus == .verifying)
                 }
             case .ready:
@@ -76,12 +86,12 @@ private struct AssistantSection: View {
                     .bodyStyle()
                 HStack {
                     Button("Disconnect and forget key") { service.disconnect() }
-                        .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
                     Spacer()
                 }
             }
             if let problem = service.keyProblem {
-                Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+                Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -122,7 +132,7 @@ private struct AppleCalendarSection: View {
                         Spacer()
                         if service.isRequesting { ProgressView().controlSize(.small) }
                         Button("Connect Apple Calendar") { Task { await service.connect() } }
-                            .buttonStyle(KeyButtonStyle(kind: .primary))
+                            .buttonStyle(SkyButtonStyle(kind: .accent))
                             .disabled(service.isRequesting)
                     }
                 case .denied, .writeOnly:
@@ -133,9 +143,9 @@ private struct AppleCalendarSection: View {
                     HStack {
                         Spacer()
                         Button("Check again") { Task { await service.connect() } }
-                            .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                            .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                         Button("Open Privacy Settings") { AppleCalendarService.openPrivacySettings() }
-                            .buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
+                            .buttonStyle(SkyButtonStyle(kind: .accent, compact: true))
                     }
                 case .restricted:
                     Text("Calendar access is blocked on this Mac by its administrator (a profile or Screen Time), so \(Buddy.name) can't read Apple Calendar.")
@@ -153,32 +163,33 @@ private struct AppleCalendarSection: View {
                 .valueStyle()
         }
         VStack(alignment: .leading, spacing: Space.xs) {
-            MonoLabel("Calendars \(Buddy.name) reads")
+            SkyKicker("Calendars \(Buddy.name) reads")
             ForEach(service.calendars) { info in
                 HStack(spacing: Space.sm) {
                     Circle().fill(color(info.color)).frame(width: 8, height: 8)
-                    Text(info.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
-                    MonoLabel(info.account)
+                    Text(info.title).font(Sky.text(12.5)).foregroundStyle(Sky.ink).lineLimit(1)
+                    SkyKicker(info.account)
                     Spacer()
                     Toggle("Read \(info.title)", isOn: Binding(get: { service.isIncluded(info) }, set: { service.setIncluded($0, info) }))
                         .toggleStyle(.switch).controlSize(.mini).labelsHidden()
+                        .tint(Sky.accent)
                 }
             }
             if service.calendars.isEmpty {
                 Text("No calendars found in the Calendar app.").bodyStyle()
             }
             Text("Birthdays, subscribed calendars (holidays) and calendars you can't edit — usually other people's — start switched off.")
-                .font(.style(.caption)).foregroundStyle(Theme.inkTertiary).fixedSize(horizontal: false, vertical: true)
+                .font(Sky.text(11.5)).foregroundStyle(Sky.faint).fixedSize(horizontal: false, vertical: true)
         }
         if let problem = service.problem(for: .now) {
-            Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+            Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
         }
         HStack {
             Button("Stop using Apple Calendar") { service.disconnect() }
-                .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
             Spacer()
             Button("Privacy Settings…") { AppleCalendarService.openPrivacySettings() }
-                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                 .help("Turn calendar access off completely in System Settings › Privacy & Security › Calendars")
         }
     }
@@ -194,7 +205,7 @@ private struct AppleCalendarSection: View {
     }
 
     private func color(_ hex: String?) -> Color {
-        guard let hex, hex.hasPrefix("#"), let value = UInt32(hex.dropFirst(), radix: 16) else { return Theme.inkTertiary }
+        guard let hex, hex.hasPrefix("#"), let value = UInt32(hex.dropFirst(), radix: 16) else { return Sky.faint }
         return Color(hex: value)
     }
 }
@@ -220,14 +231,16 @@ private struct CalendarSection: View {
                     ("Paste the client ID below and sign in.", nil),
                 ])
                 TextField("Client ID", text: $service.clientID, prompt: Text("1234…apps.googleusercontent.com"))
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
+                    .font(Sky.text(13))
+                    .skyField()
                 HStack {
                     if !service.clientID.isEmpty && service.client == nil {
-                        Text("That doesn't look like a Google client ID.").font(.style(.caption)).foregroundStyle(Theme.accent)
+                        Text("That doesn't look like a Google client ID.").font(Sky.text(11.5)).foregroundStyle(Sky.accentText)
                     }
                     Spacer()
                     Button("Sign in with Google") { connect() }
-                        .buttonStyle(KeyButtonStyle(kind: .primary))
+                        .buttonStyle(SkyButtonStyle(kind: .accent))
                         .disabled(service.client == nil)
                 }
 
@@ -243,9 +256,9 @@ private struct CalendarSection: View {
                 HStack {
                     Spacer()
                     Button("Disconnect") { Task { await service.disconnect() } }
-                        .buttonStyle(KeyButtonStyle(kind: .quiet))
+                        .buttonStyle(SkyButtonStyle(kind: .quiet))
                     Button("Sign in again") { connect() }
-                        .buttonStyle(KeyButtonStyle(kind: .primary))
+                        .buttonStyle(SkyButtonStyle(kind: .accent))
                 }
 
             case .connected:
@@ -257,23 +270,23 @@ private struct CalendarSection: View {
                         .valueStyle()
                 }
                 Row("Remind me") {
-                    KeySegment(selection: $service.reminderMinutes, items: [
+                    SkySegment(selection: $service.reminderMinutes, items: [
                         .init(0, "Off"), .init(5, "5m"), .init(10, "10m"), .init(15, "15m"),
                     ], height: 22)
                     .frame(width: 200)
                 }
                 HStack {
                     Button("Disconnect and delete calendar data") { Task { await service.disconnect() } }
-                        .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
                     Spacer()
                     Button(service.isRefreshing ? "Refreshing…" : "Refresh") { Task { await service.refresh() } }
-                        .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                         .disabled(service.isRefreshing)
                 }
             }
 
             if let problem = service.problem {
-                Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+                Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -315,8 +328,8 @@ struct PartifulSection: View {
                 ForEach(upcoming, id: \.uid) { event in
                     HStack(spacing: Space.sm) {
                         Text(event.start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
-                            .font(.style(.monoValue)).foregroundStyle(Theme.inkSecondary)
-                        Text(event.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
+                            .font(Sky.text(11.5, .medium)).monospacedDigit().foregroundStyle(Sky.muted)
+                        Text(event.title).font(Sky.text(12.5)).foregroundStyle(Sky.ink).lineLimit(1)
                         Spacer(minLength: 0)
                     }
                 }
@@ -324,10 +337,10 @@ struct PartifulSection: View {
                     .bodyStyle()
                 HStack {
                     Button("Disconnect and forget events") { service.disconnect() }
-                        .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
                     Spacer()
                     Button(service.isRefreshing ? "Refreshing…" : "Refresh") { Task { await service.refresh() } }
-                        .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                         .disabled(service.isRefreshing)
                 }
             } else {
@@ -337,20 +350,22 @@ struct PartifulSection: View {
                     ("Click Copy Link — that's your personal calendar link. Paste it below.", nil),
                 ])
                 TextField("Calendar link", text: $link, prompt: Text("webcal://… or https://…"))
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
+                    .font(Sky.text(13))
+                    .skyField()
                     .onSubmit(connect)
                 HStack {
                     Text("Keep this link private — anyone with it can see your Partiful events.")
-                        .font(.style(.caption)).foregroundStyle(Theme.inkTertiary).fixedSize(horizontal: false, vertical: true)
+                        .font(Sky.text(11.5)).foregroundStyle(Sky.faint).fixedSize(horizontal: false, vertical: true)
                     Spacer()
                     Button(connecting ? "Checking…" : "Import events") { connect() }
-                        .buttonStyle(KeyButtonStyle(kind: .primary))
+                        .buttonStyle(SkyButtonStyle(kind: .accent))
                         .disabled(link.trimmingCharacters(in: .whitespaces).isEmpty || connecting)
                 }
             }
 
             if let message = problem ?? service.problem {
-                Text(message).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+                Text(message).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -406,7 +421,9 @@ private struct NotionSection: View {
                 Text("A connection sees only the databases you give it — the least access, and what we recommend. A personal access token sees everything you can see, and expires (Notion lets you pick 7 days to a year); \(Buddy.name) asks you to reconnect when it does. Only a workspace's owner can create connections, and some plans limit tokens too: if Notion won't let you create either, ask the owner, or use a workspace of your own.")
                     .bodyStyle()
                 SecureField("Token", text: $token, prompt: Text("ntn_…"))
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
+                    .font(Sky.text(13))
+                    .skyField()
                 HStack {
                     Spacer()
                     if service.status == .verifying { ProgressView().controlSize(.small) }
@@ -415,7 +432,7 @@ private struct NotionSection: View {
                         token = ""
                         Task { await service.connect(token: value) }
                     }
-                    .buttonStyle(KeyButtonStyle(kind: .primary))
+                    .buttonStyle(SkyButtonStyle(kind: .accent))
                     .disabled(token.trimmingCharacters(in: .whitespaces).isEmpty || service.status == .verifying)
                 }
 
@@ -441,15 +458,15 @@ private struct NotionSection: View {
                     }
                     HStack {
                         Button("Disconnect and forget token") { service.disconnect() }
-                            .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                            .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
                         Spacer()
                         Button("Change database") {
                             choosing = true
                             Task { await service.loadDataSources() }
                         }
-                        .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                         Button("Refresh") { Task { await service.refreshTasks() } }
-                            .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                            .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                     }
                 } else {
                     DataSourcePicker(service: service) { source in
@@ -457,11 +474,11 @@ private struct NotionSection: View {
                     }
                     HStack {
                         Button("Disconnect and forget token") { service.disconnect() }
-                            .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                            .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
                         Spacer()
                         if choosing, service.mapping != nil {
                             Button("Cancel") { choosing = false }
-                                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                                .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
                         }
                     }
                 }
@@ -471,7 +488,7 @@ private struct NotionSection: View {
                 ProgressView().controlSize(.small)
             }
             if let problem = service.problem {
-                Text(problem).font(.style(.caption)).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+                Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -493,21 +510,21 @@ private struct DataSourcePicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             HStack {
-                MonoLabel("Choose your task database")
+                SkyKicker("Choose your task database")
                 Spacer()
                 Button("Reload") { Task { await service.loadDataSources() } }
-                    .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
             }
             ForEach(service.dataSources) { source in
                 Button { choose(source) } label: {
                     HStack {
-                        Text(source.title).font(.style(.body)).foregroundStyle(Theme.ink)
+                        Text(source.title).font(Sky.text(13)).foregroundStyle(Sky.ink)
                         Spacer()
-                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.inkTertiary)
+                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Sky.faint)
                     }
-                    .padding(.horizontal, Space.md)
-                    .frame(height: 30)
-                    .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.key, style: .continuous))
+                    .padding(.horizontal, 14)
+                    .frame(height: 34)
+                    .background(Sky.well, in: RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -527,7 +544,7 @@ private struct MappingEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            MonoLabel("Map “\(draft.dataSourceTitle)”", color: Theme.accent)
+            SkyKicker("Map “\(draft.dataSourceTitle)”", color: Sky.accentText)
             Row("Task name") {
                 propertyPicker(selection: Binding(get: { draft.titleProperty }, set: { draft.titleProperty = $0 }),
                                types: ["title"], allowNone: false)
@@ -556,18 +573,19 @@ private struct MappingEditor: View {
             }
             Toggle(isOn: $draft.writeBackEnabled) {
                 Text("Let \(Buddy.name) mark tasks done in Notion (she asks first, every time)")
-                    .font(.style(.bodySmall))
-                    .foregroundStyle(Theme.ink)
+                    .font(Sky.text(12.5))
+                    .foregroundStyle(Sky.ink)
             }
+            .tint(Sky.accent)
             .disabled(!draft.canWriteCompletion)
             HStack {
                 Spacer()
-                Button("Cancel", action: cancel).buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
-                Button("Use this database", action: save).buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
+                Button("Cancel", action: cancel).buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
+                Button("Use this database", action: save).buttonStyle(SkyButtonStyle(kind: .accent, compact: true))
             }
         }
-        .padding(Space.md)
-        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        .padding(14)
+        .background(Sky.well, in: RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous))
     }
 
     private func propertyPicker(selection: Binding<String?>, types: [String], allowNone: Bool) -> some View {
@@ -595,19 +613,32 @@ private struct Card<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.lg) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(title).font(.style(.titleSection)).foregroundStyle(Theme.ink)
+                Text(title).font(Sky.text(16, .semibold)).foregroundStyle(Sky.ink)
                 Spacer()
-                HStack(spacing: 5) {
-                    Circle().fill(status.1 ? Theme.accent : Theme.inkTertiary).frame(width: 6, height: 6)
-                    MonoLabel(status.0, color: status.1 ? Theme.ink : Theme.inkSecondary)
-                }
+                StatusPill(text: status.0, on: status.1)
             }
             content
         }
-        .padding(Space.xl)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.section, style: .continuous))
+        .padding(20)
+        .skyCard()
+    }
+}
+
+/// "Connected" on pale orange with an orange dot; anything else on the well, greyed.
+private struct StatusPill: View {
+    let text: String
+    let on: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle().fill(on ? Sky.accent : Sky.faint).frame(width: 6, height: 6)
+            SkyKicker(text, color: on ? Sky.accentText : Sky.muted)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 24)
+        .background(Capsule().fill(on ? Sky.accentPale : Sky.well))
     }
 }
 
@@ -615,23 +646,28 @@ private struct SetupSteps: View {
     let steps: [(String, URL?)]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
+        VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
-                    Text("\(index + 1)").font(.style(.monoMark)).foregroundStyle(Theme.accent).frame(width: 12)
-                    Text(step.0).font(.style(.bodySmall)).foregroundStyle(Theme.ink).fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("\(index + 1)")
+                        .font(Sky.text(10.5, .semibold))
+                        .foregroundStyle(Sky.accentText)
+                        .frame(width: 18, height: 18)
+                        .background(Circle().fill(Sky.accentPale))
+                    Text(step.0).font(Sky.text(12.5)).foregroundStyle(Sky.ink).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     if let url = step.1 {
                         Link(destination: url) {
-                            Image(systemName: "arrow.up.right.square").font(.system(size: 11))
+                            Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold))
                         }
+                        .buttonStyle(SkyRoundStyle(size: 22, fill: Sky.paper, tint: Sky.accentText))
                         .help(url.absoluteString)
                     }
                 }
             }
         }
-        .padding(Space.md)
-        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        .padding(14)
+        .background(Sky.well, in: RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous))
     }
 }
 
@@ -646,20 +682,20 @@ private struct Row<Content: View>: View {
 
     var body: some View {
         HStack {
-            MonoLabel(label)
+            SkyKicker(label, size: 10)
             Spacer()
             content
         }
-        .frame(minHeight: 24)
+        .frame(minHeight: 26)
     }
 }
 
 private extension Text {
     func bodyStyle() -> some View {
-        font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
+        font(Sky.text(12.5)).foregroundStyle(Sky.muted).fixedSize(horizontal: false, vertical: true)
     }
 
     func valueStyle() -> some View {
-        font(.style(.bodySmallEmphasis)).foregroundStyle(Theme.ink).lineLimit(1)
+        font(Sky.text(12.5, .medium)).foregroundStyle(Sky.ink).lineLimit(1)
     }
 }

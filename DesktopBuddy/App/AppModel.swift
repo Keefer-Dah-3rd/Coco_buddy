@@ -73,6 +73,13 @@ final class AppModel {
     private(set) var pendingNotionCompletion: BuddyTask?
     /// The task whose editor is open in the Today list.
     var editingTaskID: BuddyTask.ID?
+    /// The new-task form, when open. Holds the parent for a subtask and anything typed beforehand.
+    var taskForm: NewTaskDraft?
+    /// Parents whose subtasks are folded away in the Today list (for this session).
+    var collapsedTaskIDs: Set<BuddyTask.ID> = []
+    /// The task just created from the form, highlighted briefly in the list.
+    private(set) var justAddedTaskID: BuddyTask.ID?
+    @ObservationIgnored private var justAddedExpiry: Task<Void, Never>?
     /// Tasks heard by voice, waiting for review. Nothing is added until the user confirms.
     var taskDrafts: [TaskDraft] = []
     /// Where the current drafts came from, for the review card's label.
@@ -246,6 +253,8 @@ final class AppModel {
         scheduleExpanded = false
         recentlyRemoved = nil
         editingTaskID = nil
+        taskForm = nil
+        collapsedTaskIDs = []
         completionPrompt = nil
         remindedEventIDs = []
         reminderTimer?.invalidate()
@@ -512,6 +521,9 @@ final class AppModel {
             // Pick up changes made in Google Calendar since the last look (stale weeks only).
             agenda.prefetch(around: .now)
             if scheduleExpanded { agenda.prefetch(around: scheduleDay) }
+        } else {
+            // A half-filled form doesn't wait in a closed panel.
+            taskForm = nil
         }
     }
 
@@ -522,6 +534,61 @@ final class AppModel {
 
     func toggleTask(_ id: BuddyTask.ID) {
         tasks.toggle(id)
+    }
+
+    /// The plus button, ⌘N and "Add subtask": opens the new-task form. Text already typed in the
+    /// add field comes along (its ~30m and !! shorthand filled in).
+    func openTaskForm(parent: BuddyTask.ID? = nil, typed: String = "") {
+        editingTaskID = nil
+        panelTab = .today
+        var draft = NewTaskDraft(parentID: parent)
+        if let parsed = QuickAddParser.parse(typed) {
+            draft.title = parsed.title
+            draft.priority = parsed.priority
+            draft.estimateMinutes = parsed.estimateMinutes
+        }
+        taskForm = draft
+    }
+
+    enum CreateTaskResult: Equatable {
+        case created(BuddyTask)
+        /// An open task with that title is already in that place; nothing was added.
+        case duplicate(BuddyTask)
+        case invalid(String)
+    }
+
+    /// Saves the form. With "Focus on this now", starts (or switches) the focus session the
+    /// same way the row's ▶ does, proposing the estimate as the session length.
+    @discardableResult
+    func createTask(from draft: NewTaskDraft) -> CreateTaskResult {
+        let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return .invalid("Give the task a name first.") }
+        if let parent = draft.parentID, tasks.task(parent) == nil {
+            return .invalid("The task it was going under has been removed.")
+        }
+        let task = BuddyTask(title: title, notes: draft.notes.trimmingCharacters(in: .whitespacesAndNewlines),
+                             priority: draft.priority, estimateMinutes: draft.estimateMinutes,
+                             deadline: draft.deadline, parentID: draft.parentID)
+        switch tasks.add(task) {
+        case .duplicate(let existing):
+            return .duplicate(existing)
+        case .added(let added):
+            taskForm = nil
+            if let parent = added.parentID { collapsedTaskIDs.remove(parent) }
+            justAddedTaskID = added.id
+            justAddedExpiry?.cancel()
+            justAddedExpiry = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(1.6))
+                guard !Task.isCancelled else { return }
+                self?.justAddedTaskID = nil
+            }
+            if draft.focusNow { focus(on: added.id, proposing: added.estimateMinutes) }
+            return .created(added)
+        }
+    }
+
+    func toggleCollapsed(_ id: BuddyTask.ID) {
+        if collapsedTaskIDs.contains(id) { collapsedTaskIDs.remove(id) } else { collapsedTaskIDs.insert(id) }
     }
 
     func removeTask(_ id: BuddyTask.ID) {
@@ -558,13 +625,15 @@ final class AppModel {
         recentlyRemoved = nil
     }
 
-    /// From a task row: focus on this task (or switch the running session to it).
-    func focus(on taskID: BuddyTask.ID) {
+    /// From a task row: focus on this task (or switch the running session to it — a running
+    /// session is never restarted). `proposing` sets the length of a new session, if it fits.
+    func focus(on taskID: BuddyTask.ID, proposing minutes: Int? = nil) {
         if focus.timer.isActive, focus.timer.phase == .focus {
             focus.selectTask(taskID)
             speak("Switched focus to “\(BuddyVoice.short(tasks.task(taskID)?.title ?? ""))”.", .acknowledge)
         } else {
-            focus.start(.focus, taskID: taskID)
+            let length = minutes.flatMap { FocusSettings.minuteRange.contains($0) ? $0 : nil }
+            focus.start(.focus, taskID: taskID, minutes: length)
         }
     }
 
@@ -1263,7 +1332,8 @@ final class AppModel {
         case .started(let phase, let taskID):
             sounds.play(.sessionStart)
             completionPrompt = nil
-            let minutes = preferences.focusSettings.minutes(for: phase)
+            // The session's own length: a task's estimate can set it instead of the default.
+            let minutes = Int((focus.timer.duration / 60).rounded())
             if phase == .focus, focusStartedFromChat {
                 // Started from the chat: the reply acknowledges it, and the panel stays open.
                 focusStartedFromChat = false

@@ -35,10 +35,10 @@ struct TaskEditor: View {
 
             row("Priority") {
                 SkySegment(selection: $draft.priority, items: [
-                    .init(.none, "–"), .init(.low, "!"), .init(.medium, "!!"), .init(.high, "!!!"),
+                    .init(.none, "–"), .init(.low, "!"), .init(.medium, "!!"), .init(.high, "!!!"), .init(.urgent, "!!!!"),
                 ], height: 28)
-                .frame(width: 180)
-                .help("Priority: none, low, medium, high — the same marks as quick-add")
+                .frame(width: 210)
+                .help("Priority: none, low, medium, high, urgent — the same marks as quick-add")
                 .accessibilityLabel("Priority \(draft.priority.label)")
             }
 
@@ -57,6 +57,8 @@ struct TaskEditor: View {
                 .frame(width: 180)
                 .help("“My list” keeps a task until it's done. “Today only” is a temporary item for today.")
             }
+
+            row("Under") { parentMenu }
 
             if task.focusMinutes > 0 {
                 receipt
@@ -99,6 +101,43 @@ struct TaskEditor: View {
                 quickDue("+1 wk", days: 7)
             }
         }
+    }
+
+    /// Moves this task under another one. The task itself and anything already below it aren't
+    /// offered, so the list can never loop.
+    private var parentMenu: some View {
+        let blocked = model.tasks.list.descendantIDs(of: task.id).union([task.id])
+        let candidates = model.tasks.outline(collapsed: []).filter { !$0.task.isCompleted && !blocked.contains($0.id) }
+        let current = model.tasks.task(model.tasks.task(task.id)?.parentID)
+        return Menu {
+            Button("Top level") { model.tasks.setParent(nil, for: task.id) }
+            if !candidates.isEmpty { Divider() }
+            ForEach(candidates.prefix(40)) { row in
+                Button(String(repeating: "    ", count: min(row.depth, 3)) + BuddyVoice.short(row.task.title, limit: 40)) {
+                    model.tasks.setParent(row.id, for: task.id)
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(current.map { BuddyVoice.short($0.title, limit: 22) } ?? "Top level")
+                    .font(Sky.text(12, .medium))
+                    .foregroundStyle(Sky.ink)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Sky.faint)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .background(Capsule().fill(Sky.paper))
+            .overlay(Capsule().strokeBorder(Sky.line))
+            .contentShape(Capsule())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Put this task under another one, or back at the top level")
     }
 
     private func quickDue(_ title: String, days: Int) -> some View {

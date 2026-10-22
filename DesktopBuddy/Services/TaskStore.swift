@@ -22,6 +22,8 @@ final class TaskStore {
     private(set) var storageProblem: String?
 
     @ObservationIgnored var onEvent: ((Event) -> Void)?
+    /// Subtasks that moved up when their parent was removed, so undo can put them back.
+    @ObservationIgnored private var removedChildren: [BuddyTask.ID: [BuddyTask.ID]] = [:]
     @ObservationIgnored private let file: JSONFileStore<TaskList>?
     @ObservationIgnored private let log = Logger(subsystem: "com.keefer.DesktopBuddy", category: "tasks")
 
@@ -30,6 +32,13 @@ final class TaskStore {
         file = persistent ? try? JSONFileStore(name: "tasks") : nil
         list = TaskList()
         if persistent { load() }
+    }
+
+    /// A store saved at a given file — the tasks self-test uses this to check a restart.
+    init(fileURL: URL) {
+        file = JSONFileStore(url: fileURL)
+        list = TaskList()
+        load()
     }
 
     func today(now: Date = .now) -> [BuddyTask] {
@@ -42,6 +51,44 @@ final class TaskStore {
 
     func task(_ id: BuddyTask.ID?) -> BuddyTask? {
         list.task(id)
+    }
+
+    /// Today's list with subtasks under their parents.
+    func outline(collapsed: Set<BuddyTask.ID>, now: Date = .now) -> [TaskOutlineRow] {
+        list.outline(now: now, collapsed: collapsed)
+    }
+
+    /// Adds a task built by the new-task form. Duplicates (same title, same parent) aren't added.
+    @discardableResult
+    func add(_ task: BuddyTask) -> TaskList.AddResult {
+        var task = task
+        task.title = task.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        task.updatedAt = task.createdAt
+        let result = list.add(task)
+        switch result {
+        case .added(let added):
+            save()
+            onEvent?(.added(added))
+        case .duplicate(let existing):
+            onEvent?(.duplicate(existing))
+        }
+        return result
+    }
+
+    /// Moves a task under another (nil = top level). Returns why not, if it would loop.
+    @discardableResult
+    func setParent(_ parent: BuddyTask.ID?, for id: BuddyTask.ID) -> TaskList.ParentProblem? {
+        if let problem = list.setParent(parent, for: id) { return problem }
+        list.update(id) { $0.updatedAt = .now }
+        save()
+        return nil
+    }
+
+    /// Ticks a task and every subtask under it. Only when the user asks for exactly that.
+    func completeWithSubtasks(_ id: BuddyTask.ID) {
+        for child in list.descendantIDs(of: id) { _ = list.setCompleted(child, true, at: .now) }
+        setCompleted(id, true)
+        save()
     }
 
     /// Adds a task from quick-add text. Returns false if the text had no title.
@@ -88,7 +135,9 @@ final class TaskStore {
     }
 
     func remove(_ id: BuddyTask.ID) {
+        let children = list.children(of: id).map(\.id)
         guard let removed = list.remove(id) else { return }
+        removedChildren = children.isEmpty ? [:] : [id: children]
         save()
         onEvent?(.removed(removed))
     }
@@ -102,7 +151,8 @@ final class TaskStore {
 
     /// Puts back a task that was just removed (undo).
     func restore(_ task: BuddyTask) {
-        if case .added = list.add(task) { save() }
+        if case .added = list.restore(task, children: removedChildren[task.id] ?? []) { save() }
+        removedChildren[task.id] = nil
     }
 
     /// Applies an edit from the task editor. Empty titles are ignored rather than saved.
@@ -112,7 +162,10 @@ final class TaskStore {
         if list.task(id)?.title.isEmpty == true {
             list.update(id) { $0.title = before.title }
         }
-        if list.task(id) != before { save() }
+        if list.task(id) != before {
+            list.update(id) { $0.updatedAt = .now }
+            save()
+        }
     }
 
     /// Adds tasks picked from an external service, linking rather than duplicating.
@@ -163,7 +216,7 @@ final class TaskStore {
     }
 
     func setPriority(_ priority: TaskPriority, for id: BuddyTask.ID) {
-        list.update(id) { $0.priority = priority }
+        list.update(id) { $0.priority = priority; $0.updatedAt = .now }
         save()
     }
 

@@ -5,20 +5,38 @@ import BuddyCore
 /// up top, the tabs along the bottom, where the mouse already is after the click on Coco.
 struct PanelRootView: View {
     @Bindable var model: AppModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            Group {
-                switch model.panelTab {
-                case .today: TodayView(model: model)
-                case .focus: FocusView(model: model)
-                case .chat: ChatView(model: model)
+            ZStack(alignment: .bottom) {
+                VStack(spacing: 0) {
+                    Group {
+                        switch model.panelTab {
+                        case .today: TodayView(model: model)
+                        case .focus: FocusView(model: model)
+                        case .chat: ChatView(model: model)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .clipped()
+                    nav
+                }
+                // The new-task form rises over the list and tabs; Coco's line stays in view above it.
+                if let draft = model.taskForm {
+                    TaskFormView(model: model, draft: draft)
+                        .id(draft.id)
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: Sky.Radius.card, topTrailingRadius: Sky.Radius.card,
+                                                          style: .continuous))
+                        .overlay(UnevenRoundedRectangle(topLeadingRadius: Sky.Radius.card, topTrailingRadius: Sky.Radius.card,
+                                                        style: .continuous).strokeBorder(Sky.line))
+                        .shadow(color: Sky.ink.opacity(0.10), radius: 14, y: -3)
+                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(1)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .clipped()
-            nav
+            .animation(reduceMotion ? .easeOut(duration: 0.15) : .snappy(duration: 0.3), value: model.taskForm?.id)
         }
         .frame(width: Metrics.panelWidth, height: Metrics.panelHeight)
         .background(Sky.paper)
@@ -26,7 +44,9 @@ struct PanelRootView: View {
         .overlay(RoundedRectangle(cornerRadius: Sky.Radius.panel, style: .continuous).strokeBorder(Sky.line))
         // The Blue Skies look is light by design, so the panel stays light in dark mode too.
         .environment(\.colorScheme, .light)
-        .onExitCommand { model.setPanelOpen(false) }
+        .onExitCommand {
+            if model.taskForm != nil { model.taskForm = nil } else { model.setPanelOpen(false) }
+        }
     }
 
     private var header: some View {

@@ -4,8 +4,8 @@ import Foundation
 ///
 ///     "Draft homepage copy ~45m !!"  → title, 45 min estimate, medium priority
 ///
-/// `~25m`, `~25`, `~1h`, `~1.5h`, `~1h30m` set an estimate. `!` / `!!` / `!!!` set
-/// low / medium / high priority. `@today` makes it a temporary item for today only. Tokens are only recognised as whole words, so a
+/// `~25m`, `~25`, `~1h`, `~1.5h`, `~1h30m` set an estimate. `!` / `!!` / `!!!` / `!!!!` set
+/// low / medium / high / urgent priority. `@today` makes it a temporary item for today only. Tokens are only recognised as whole words, so a
 /// title like "Fix ~/.zshrc" or "Wow!" is left alone.
 public enum QuickAddParser {
     public struct Result: Equatable, Sendable {
@@ -50,6 +50,7 @@ public enum QuickAddParser {
         case "!": .low
         case "!!": .medium
         case "!!!": .high
+        case "!!!!": .urgent
         default: nil
         }
     }

@@ -175,7 +175,7 @@ public enum AssistantTools {
                         "properties": [
                             "title": ["type": "string", "description": "Short, starts with a verb."],
                             "estimate_minutes": ["type": "integer", "description": "Optional estimate in minutes, 1–720."],
-                            "priority": ["type": "string", "enum": ["none", "low", "medium", "high"]],
+                            "priority": ["type": "string", "enum": ["none", "low", "medium", "high", "urgent"]],
                         ],
                     ],
                 ],
@@ -338,7 +338,8 @@ public enum AssistantTools {
                     case "low": priority = .low
                     case "medium": priority = .medium
                     case "high": priority = .high
-                    default: return .failure(.invalid("priority must be none, low, medium or high"))
+                    case "urgent": priority = .urgent
+                    default: return .failure(.invalid("priority must be none, low, medium, high or urgent"))
                     }
                 }
                 results.append(QuickAddParser.Result(title: String(title.prefix(200)), priority: priority, estimateMinutes: minutes))

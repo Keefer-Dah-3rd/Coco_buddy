@@ -1,7 +1,7 @@
 import Foundation
 
 public enum TaskPriority: Int, Codable, CaseIterable, Comparable, Sendable {
-    case none, low, medium, high
+    case none, low, medium, high, urgent
 
     public static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
 
@@ -11,6 +11,7 @@ public enum TaskPriority: Int, Codable, CaseIterable, Comparable, Sendable {
         case .low: "Low"
         case .medium: "Medium"
         case .high: "High"
+        case .urgent: "Urgent"
         }
     }
 }
@@ -54,6 +55,10 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
     public var plannedDay: Date?
     /// Set for tasks imported from (and linked to) an external service.
     public var external: ExternalTaskRef?
+    /// The task this one sits under, for subtasks. Nil for a top-level task.
+    public var parentID: UUID?
+    /// When the task was last changed. Nil for tasks saved before this was tracked.
+    public var updatedAt: Date?
 
     public var isCompleted: Bool { completedAt != nil }
 
@@ -69,7 +74,9 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
         completedAt: Date? = nil,
         focusMinutes: Int = 0,
         plannedDay: Date? = nil,
-        external: ExternalTaskRef? = nil
+        external: ExternalTaskRef? = nil,
+        parentID: UUID? = nil,
+        updatedAt: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -83,5 +90,7 @@ public struct BuddyTask: Identifiable, Codable, Hashable, Sendable {
         self.focusMinutes = focusMinutes
         self.plannedDay = plannedDay
         self.external = external
+        self.parentID = parentID
+        self.updatedAt = updatedAt
     }
 }

@@ -62,6 +62,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppleCalendarSelfTest.run()
             exit(0)
         }
+        if CommandLine.arguments.contains("--tasks-selftest") {
+            TasksSelfTest.run()
+            exit(0)
+        }
         if CommandLine.arguments.contains("--dash-selftest") {
             DashSelfTest.run()
             exit(0)

@@ -1,14 +1,20 @@
 import SwiftUI
 import BuddyCore
 
+/// One line of the Today outline. Subtasks sit indented under their parent with a guide line;
+/// a parent shows how many of its subtasks are done and folds them away.
 struct TaskRow: View {
-    let task: BuddyTask
+    let row: TaskOutlineRow
     let isInFocus: Bool
     var isSelected = false
     let model: AppModel
     @State private var hovering = false
 
+    private var task: BuddyTask { row.task }
     private var isEditing: Bool { model.editingTaskID == task.id }
+    private var isNew: Bool { model.justAddedTaskID == task.id }
+    /// 20 pt per level; past the third level rows stop moving right, so titles keep their room.
+    private var indent: CGFloat { CGFloat(min(row.depth, 3)) * 20 }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -42,6 +48,7 @@ struct TaskRow: View {
             if hovering && !isEditing {
                 HStack(spacing: 2) {
                     if !task.isCompleted {
+                        RowIconButton(symbol: "plus", help: "Add subtask") { model.openTaskForm(parent: task.id) }
                         RowIconButton(symbol: "play.fill", help: "Focus on this") { model.focus(on: task.id) }
                     }
                     RowIconButton(symbol: "xmark", help: "Remove") { model.removeTask(task.id) }
@@ -49,12 +56,14 @@ struct TaskRow: View {
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.leading, 20 + indent)
+        .padding(.trailing, 20)
         .padding(.vertical, isEditing ? 10 : 9)
-        .background(isEditing ? Sky.well : hovering ? Sky.well.opacity(0.7) : .clear)
+        .background(background)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Sky.line).frame(height: 1).padding(.horizontal, 20)
+            Rectangle().fill(Sky.line).frame(height: 1).padding(.leading, 20 + indent).padding(.trailing, 20)
         }
+        .overlay(alignment: .leading) { guides }
         .overlay(alignment: .leading) {
             // Keyboard selection: a short orange tick at the row's edge.
             if isSelected {
@@ -65,27 +74,45 @@ struct TaskRow: View {
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
         .animation(.snappy(duration: 0.22), value: isEditing)
+        .animation(.easeOut(duration: 0.6), value: isNew)
         .contextMenu { contextMenu }
+    }
+
+    private var background: Color {
+        if isEditing { return Sky.well }
+        if isNew { return Sky.accentPale }
+        return hovering ? Sky.well.opacity(0.7) : .clear
+    }
+
+    /// A thin line down the check column of each parent level, tying subtasks to their parent.
+    private var guides: some View {
+        ZStack(alignment: .leading) {
+            ForEach(0..<min(row.depth, 3), id: \.self) { level in
+                Rectangle()
+                    .fill(Sky.ring.opacity(0.55))
+                    .frame(width: 1.5)
+                    .padding(.leading, 20 + CGFloat(level) * 20 + 8.25)
+            }
+        }
+        .frame(maxHeight: .infinity)
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder
     private var meta: some View {
         let parts = metaParts
         let due = TaskLabels.due(task)
-        if !parts.isEmpty || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty || task.external != nil {
+        if !parts.isEmpty || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty
+            || task.external != nil || row.hasSubtasks || (task.priority != .none && !task.isCompleted) {
             HStack(spacing: 8) {
+                if row.hasSubtasks { subtaskToggle }
                 if isInFocus {
                     HStack(spacing: 4) {
                         Circle().fill(Sky.accent).frame(width: 5, height: 5)
                         SkyKicker("In focus", color: Sky.accentText)
                     }
                 }
-                if task.priority != .none, !task.isCompleted {
-                    Text(String(repeating: "!", count: task.priority.rawValue))
-                        .font(Sky.text(11, .bold))
-                        .foregroundStyle(Sky.accentText)
-                        .accessibilityLabel("\(task.priority.label) priority")
-                }
+                if task.priority != .none, !task.isCompleted { priorityMark }
                 if let due, !task.isCompleted {
                     SkyKicker(due.text, color: due.urgent ? Sky.accentText : Sky.muted)
                 }
@@ -107,6 +134,51 @@ struct TaskRow: View {
         }
     }
 
+    /// "2/4" with a chevron: shows or hides the subtasks. Turns orange once they're all done.
+    private var subtaskToggle: some View {
+        let allDone = row.completedSubtaskCount == row.subtaskCount
+        return Button { withAnimation(.snappy(duration: 0.25)) { model.toggleCollapsed(task.id) } } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 7.5, weight: .bold))
+                    .rotationEffect(.degrees(row.isExpanded ? 90 : 0))
+                Text("\(row.completedSubtaskCount)/\(row.subtaskCount)")
+                    .font(Sky.text(10, .semibold))
+                    .monospacedDigit()
+            }
+            .foregroundStyle(allDone ? Sky.accentText : Sky.muted)
+            .padding(.horizontal, 6)
+            .frame(height: 16)
+            .background(Capsule().fill(allDone ? Sky.accentPale : Sky.well))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help(row.isExpanded ? "Hide subtasks" : "Show subtasks")
+        .accessibilityLabel("\(row.completedSubtaskCount) of \(row.subtaskCount) subtasks done")
+        .accessibilityValue(row.isExpanded ? "Expanded" : "Collapsed")
+        .accessibilityHint("Shows or hides the subtasks")
+    }
+
+    @ViewBuilder
+    private var priorityMark: some View {
+        if task.priority == .urgent {
+            Text("Urgent")
+                .font(Sky.text(9.5, .semibold))
+                .tracking(9.5 * 0.12)
+                .textCase(.uppercase)
+                .foregroundStyle(Sky.accentText)
+                .padding(.horizontal, 6)
+                .frame(height: 16)
+                .background(Capsule().fill(Sky.accentPale))
+                .accessibilityLabel("Urgent priority")
+        } else {
+            Text(String(repeating: "!", count: task.priority.rawValue))
+                .font(Sky.text(11, .bold))
+                .foregroundStyle(Sky.accentText)
+                .accessibilityLabel("\(task.priority.label) priority")
+        }
+    }
+
     private var metaParts: [String] {
         var parts: [String] = []
         if let estimate = task.estimateMinutes { parts.append("Est \(TodayView.duration(estimate))") }
@@ -117,10 +189,16 @@ struct TaskRow: View {
     @ViewBuilder
     private var contextMenu: some View {
         Button("Edit…") { model.editingTaskID = task.id }
+        if !task.isCompleted {
+            Button("Add Subtask…") { model.openTaskForm(parent: task.id) }
+        }
         if let url = task.external?.url {
             Button("Open in Notion") { NSWorkspace.shared.open(url) }
         }
         Button(task.isCompleted ? "Mark Not Done" : "Mark Done") { model.toggleTask(task.id) }
+        if !task.isCompleted, row.hasSubtasks, row.completedSubtaskCount < row.subtaskCount {
+            Button("Mark Done With All Subtasks") { model.tasks.completeWithSubtasks(task.id) }
+        }
         if !task.isCompleted {
             Button("Focus on This") { model.focus(on: task.id) }
         }
@@ -132,6 +210,9 @@ struct TaskRow: View {
                     if priority == task.priority { Label(priority.label, systemImage: "checkmark") } else { Text(priority.label) }
                 }
             }
+        }
+        if task.parentID != nil {
+            Button("Move to Top Level") { model.tasks.setParent(nil, for: task.id) }
         }
         Divider()
         Button("Remove", role: .destructive) { model.removeTask(task.id) }

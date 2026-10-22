@@ -10,10 +10,12 @@ struct TodayView: View {
     /// Keyboard selection in the list (↑/↓ to move, Space to tick, Return to edit).
     @State private var selectedID: BuddyTask.ID?
     @FocusState private var listFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let _ = model.dayToken  // recompute "today" when the date changes
         let tasks = model.tasks.today()
+        let rows = model.tasks.outline(collapsed: model.collapsedTaskIDs)
         let done = tasks.filter(\.isCompleted).count
         let leftovers = model.tasks.leftovers
         let hasConnections = model.agenda.isConnected || (Features.notion && model.notion.isReady)
@@ -67,16 +69,17 @@ struct TodayView: View {
                                 .padding(.bottom, 6)
                         }
                         if nothingYet {
-                            EmptyTodayView()
+                            EmptyTodayView { model.openTaskForm() }
                         } else {
-                            ForEach(tasks) { task in
+                            ForEach(rows) { row in
                                 TaskRow(
-                                    task: task,
-                                    isInFocus: model.focus.timer.isActive && model.focus.timer.taskID == task.id,
-                                    isSelected: listFocused && selectedID == task.id,
+                                    row: row,
+                                    isInFocus: model.focus.timer.isActive && model.focus.timer.taskID == row.id,
+                                    isSelected: listFocused && selectedID == row.id,
                                     model: model
                                 )
-                                .id(task.id)
+                                .id(row.id)
+                                .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                             }
                         }
                         SkyHelpRows(model: model, makePlan: { fieldFocused = true }, openChat: { model.panelTab = .chat })
@@ -84,15 +87,16 @@ struct TodayView: View {
                             .padding(.bottom, 10)
                     }
                     .padding(.bottom, 8)
+                    .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: rows.map(\.id))
                 }
                 .scrollIndicators(.never)
                 .focusable()
                 .focused($listFocused)
                 .focusEffectDisabled()
-                .onKeyPress(keys: [.upArrow, .downArrow, .space, .return, .delete, "f"]) { press in
-                    handleListKey(press.key, tasks: tasks, proxy: proxy)
+                .onKeyPress(keys: [.upArrow, .downArrow, .leftArrow, .rightArrow, .space, .return, .delete, "f", "n"]) { press in
+                    handleListKey(press.key, rows: rows, proxy: proxy)
                 }
-                .accessibilityHint("Use the arrow keys to move between tasks, Space to tick, Return to edit")
+                .accessibilityHint("Use the arrow keys to move between tasks, Space to tick, Return to edit, N to add a subtask, left and right to fold subtasks")
                 .onAppear { reveal(model.editingTaskID, with: proxy, animated: false) }
                 .onChange(of: model.editingTaskID) { _, id in reveal(id, with: proxy, animated: true) }
                 .onChange(of: model.taskDrafts.count) { old, new in
@@ -152,9 +156,18 @@ struct TodayView: View {
                         .lineLimit(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Text("+")
-                        .font(Sky.text(16, .semibold))
-                        .foregroundStyle(Sky.accent)
+                    // Opens the full form: name, description, estimate, priority, date, parent, focus.
+                    // Anything already typed here comes along.
+                    Button {
+                        model.openTaskForm(typed: draft)
+                        draft = ""
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(SkyRoundStyle(size: 26, fill: Sky.accentPale, tint: Sky.accentText))
+                    .keyboardShortcut("n", modifiers: .command)
+                    .help("New task with details (⌘N)")
+                    .accessibilityLabel("New task")
                     TextField("Add task", text: $draft, prompt: Text("Add a task… try “Draft intro ~30m !!”")
                         .foregroundStyle(Sky.faint))
                         .textFieldStyle(.plain)
@@ -232,10 +245,13 @@ struct TodayView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
-    /// Keyboard control of the list. ↑ from the top goes back to the add field.
-    private func handleListKey(_ key: KeyEquivalent, tasks: [BuddyTask], proxy: ScrollViewProxy) -> KeyPress.Result {
-        guard model.editingTaskID == nil, !tasks.isEmpty else { return .ignored }
+    /// Keyboard control of the list. ↑ from the top goes back to the add field; → and ← unfold and
+    /// fold a parent's subtasks (← on a subtask goes to its parent); N adds a subtask.
+    private func handleListKey(_ key: KeyEquivalent, rows: [TaskOutlineRow], proxy: ScrollViewProxy) -> KeyPress.Result {
+        guard model.editingTaskID == nil, model.taskForm == nil, !rows.isEmpty else { return .ignored }
+        let tasks = rows.map(\.task)
         let index = tasks.firstIndex { $0.id == selectedID } ?? 0
+        let row = rows[index]
         func select(_ i: Int) {
             selectedID = tasks[i].id
             withAnimation(.snappy(duration: 0.15)) { proxy.scrollTo(tasks[i].id) }
@@ -255,6 +271,19 @@ struct TodayView: View {
             selectedID = remaining.isEmpty ? nil : remaining[min(index, remaining.count - 1)].id
         case "f":
             if !tasks[index].isCompleted { model.focus(on: tasks[index].id) }
+        case "n":
+            if !row.task.isCompleted { model.openTaskForm(parent: row.id) }
+        case .rightArrow:
+            guard row.hasSubtasks, !row.isExpanded else { return .ignored }
+            withAnimation(.snappy(duration: 0.25)) { model.toggleCollapsed(row.id) }
+        case .leftArrow:
+            if row.hasSubtasks, row.isExpanded {
+                withAnimation(.snappy(duration: 0.25)) { model.toggleCollapsed(row.id) }
+            } else if let parent = row.task.parentID, let i = tasks.firstIndex(where: { $0.id == parent }) {
+                select(i)
+            } else {
+                return .ignored
+            }
         default:
             return .ignored
         }
@@ -281,17 +310,25 @@ struct TodayView: View {
 }
 
 private struct EmptyTodayView: View {
+    let newTask: () -> Void
+
     var body: some View {
         VStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous)
-                .strokeBorder(Sky.ring, style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-                .frame(width: 46, height: 32)
-                .overlay(Text("+").font(Sky.text(15, .medium)).foregroundStyle(Sky.muted))
+            Button(action: newTask) {
+                RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous)
+                    .strokeBorder(Sky.ring, style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                    .frame(width: 46, height: 32)
+                    .overlay(Image(systemName: "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(Sky.muted))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("New task with details (⌘N)")
+            .accessibilityLabel("New task")
             VStack(spacing: 4) {
                 Text("Nothing on the list yet.")
                     .font(Sky.text(14, .semibold))
                     .foregroundStyle(Sky.ink)
-                Text("Type above and press Return.\nAdd ~25m for an estimate, ! to !!! for priority,\n@today for a one-day item.")
+                Text("Type above and press Return, or click + for\nthe full form. Add ~25m for an estimate,\n! to !!!! for priority, @today for a one-day item.")
                     .font(Sky.text(12))
                     .foregroundStyle(Sky.muted)
                     .multilineTextAlignment(.center)
@@ -423,7 +460,8 @@ private struct UpNextCard: View {
     var body: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
-                SkyKicker("Up next · " + TaskLabels.reason(reason), color: Sky.accentText)
+                SkyKicker("Up next · " + (reason == .highPriority && task.priority == .urgent ? "Urgent" : TaskLabels.reason(reason)),
+                          color: Sky.accentText)
                 Text(task.title)
                     .font(Sky.text(13.5, .semibold))
                     .foregroundStyle(Sky.ink)

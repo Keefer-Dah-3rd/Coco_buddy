@@ -127,7 +127,7 @@ import BuddyIntegrations
         #expect((try? AssistantTools.action(name: "get_today", input: ["x": 1]).get()) == nil)
         #expect((try? AssistantTools.action(name: "propose_tasks", input: ["tasks": []]).get()) == nil)
         #expect((try? AssistantTools.action(name: "propose_tasks", input: ["tasks": [["title": "  "]]]).get()) == nil)
-        #expect((try? AssistantTools.action(name: "propose_tasks", input: ["tasks": [["title": "a", "priority": "urgent"]]]).get()) == nil)
+        #expect((try? AssistantTools.action(name: "propose_tasks", input: ["tasks": [["title": "a", "priority": "critical"]]]).get()) == nil)
         #expect((try? AssistantTools.action(name: "start_focus", input: ["minutes": 999]).get()) == nil)
         #expect((try? AssistantTools.action(name: "request_task_completion", input: [:]).get()) == nil)
     }

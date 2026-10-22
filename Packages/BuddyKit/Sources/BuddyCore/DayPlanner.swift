@@ -54,7 +54,7 @@ public enum DayPlanner {
         case 1? where task.priority < .high: return .dueTomorrow
         default: break
         }
-        if task.priority == .high { return .highPriority }
+        if task.priority >= .high { return .highPriority }
         if let estimate = task.estimateMinutes, estimate <= 20 { return .quickWin }
         return .nextInLine
     }

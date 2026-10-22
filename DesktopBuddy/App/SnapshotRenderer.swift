@@ -168,6 +168,49 @@ enum SnapshotRenderer {
 
         let empty = AppModel(preview: true)
         write(view(PanelRootView(model: empty), appearance: .aqua), to: folder.appendingPathComponent("panel-empty.png"))
+
+        // The new-task form and subtasks.
+        let creating = portfolioModel()
+        creating.openTaskForm()
+        write(view(PanelRootView(model: creating), appearance: .aqua), to: folder.appendingPathComponent("task-form-empty.png"))
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: .now))!
+        let parentID = creating.tasks.today().first { $0.title == "Redesign portfolio" }?.id
+        let filled = NewTaskDraft(title: "Build new animations", notes: "Hover states for the case-study cards",
+                                  estimateMinutes: 45, priority: .high, deadline: tomorrow, parentID: parentID)
+        creating.taskForm = filled
+        write(view(PanelRootView(model: creating), appearance: .aqua), to: folder.appendingPathComponent("task-form-filled.png"))
+        for (name, draft, problem, picking) in [
+            ("task-form-full", filled, nil, false),
+            ("task-form-custom", { var d = filled; d.estimateMinutes = 150; return d }(), nil, false),
+            ("task-form-urgent", { var d = filled; d.priority = .urgent; return d }(), nil, false),
+            ("task-form-date", filled, nil, true),
+            ("task-form-focus", { var d = filled; d.focusNow = true; return d }(), nil, false),
+            ("task-form-error", { var d = filled; d.title = "Publish the changes"; return d }(),
+             "“Publish the changes” is already on your list under that task.", false),
+        ] as [(String, NewTaskDraft, String?, Bool)] {
+            write(view(TaskFormView(model: creating, draft: draft, problem: problem, pickingDate: picking)
+                .frame(width: Metrics.panelWidth, height: picking ? 1000 : 880).environment(\.colorScheme, .light), appearance: .aqua),
+                  to: folder.appendingPathComponent("\(name).png"))
+        }
+
+        let nested = portfolioModel()
+        func list(_ model: AppModel) -> some View {
+            TodayView(model: model).frame(width: Metrics.panelWidth, height: 900).background(Sky.paper).environment(\.colorScheme, .light)
+        }
+        write(view(PanelRootView(model: nested), appearance: .aqua), to: folder.appendingPathComponent("subtasks-expanded.png"))
+        write(view(list(nested), appearance: .aqua), to: folder.appendingPathComponent("subtasks-expanded-list.png"))
+        if let parent = nested.tasks.today().first(where: { $0.title == "Redesign portfolio" }) {
+            nested.toggleCollapsed(parent.id)
+            write(view(list(nested), appearance: .aqua), to: folder.appendingPathComponent("subtasks-collapsed-list.png"))
+            nested.toggleCollapsed(parent.id)
+            for child in nested.tasks.list.children(of: parent.id) where !child.isCompleted { nested.toggleTask(child.id) }
+            write(view(list(nested), appearance: .aqua), to: folder.appendingPathComponent("subtasks-all-done-list.png"))
+        }
+        let added = portfolioModel()
+        if let parent = added.tasks.today().first(where: { $0.title == "Redesign portfolio" }) {
+            added.createTask(from: NewTaskDraft(title: "Write the launch post", estimateMinutes: 30, priority: .medium, parentID: parent.id))
+            write(view(list(added), appearance: .aqua), to: folder.appendingPathComponent("subtasks-just-added-list.png"))
+        }
         print("Snapshots written to \(folder.path)")
     }
 
@@ -461,6 +504,26 @@ enum SnapshotRenderer {
         model.tasks.restore(BuddyTask(title: "Water the plants", scope: .today, createdAt: .now.addingTimeInterval(-86_400)))
         model.focusLog.record(taskID: nil, seconds: 25 * 60, finished: true)
         model.focusLog.record(taskID: nil, seconds: 20 * 60, finished: false)
+        model.speak("Good morning. Tail's wagging — what are we working on?", .ambient)
+        return model
+    }
+
+    /// Redesign portfolio with four subtasks, two done, at the top of an otherwise empty day.
+    @MainActor
+    private static func portfolioModel() -> AppModel {
+        let model = AppModel(preview: true)
+        let now = Date.now
+        let parent = BuddyTask(title: "Redesign portfolio", priority: .urgent, estimateMinutes: 240,
+                               deadline: Calendar.current.date(byAdding: .day, value: 2, to: Calendar.current.startOfDay(for: now)),
+                               createdAt: now.addingTimeInterval(-600))
+        model.tasks.add(parent)
+        for (i, (title, minutes, done)) in [("Audit existing case studies", 30, true), ("Update the Buz case study", 60, true),
+                                            ("Build new animations", 45, false), ("Publish the changes", 15, false)].enumerated() {
+            let child = BuddyTask(title: title, estimateMinutes: minutes, createdAt: now.addingTimeInterval(Double(-500 + i)), parentID: parent.id)
+            model.tasks.add(child)
+            if done { model.toggleTask(child.id) }
+        }
+        model.tasks.add(BuddyTask(title: "Reply to Sam about the deck", priority: .medium, estimateMinutes: 15, createdAt: now.addingTimeInterval(-400)))
         model.speak("Good morning. Tail's wagging — what are we working on?", .ambient)
         return model
     }

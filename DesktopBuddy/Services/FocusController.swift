@@ -46,6 +46,8 @@ final class FocusController {
     /// Call once at launch, after `onEvent` is connected.
     func restoreAfterLaunch() {
         reconcile(atLaunch: true)
+        // The Focus tab has no phase picker, so an idle timer always shows a focus session.
+        if !timer.isActive, !timer.isFinished, timer.phase.isBreak { prepare(.focus) }
     }
 
     var remaining: TimeInterval { timer.remaining(at: now) }
@@ -81,6 +83,10 @@ final class FocusController {
         now = Date()
         let phase = timer.phase
         let elapsed = timer.stop(now: now)
+        // A stopped break goes back to a focus session (the Focus tab has no phase picker).
+        if phase.isBreak {
+            timer.prepare(.focus, duration: TimeInterval(preferences.focusSettings.minutes(for: .focus) * 60))
+        }
         commit()
         onEvent?(.stopped(phase, elapsed: elapsed, taskID: timer.taskID))
     }
@@ -103,6 +109,16 @@ final class FocusController {
     func selectTask(_ id: UUID?) {
         timer.setTask(id)
         commit()
+    }
+
+    /// Sets the focus length (a quick pick, a typed length or the slider), saves it as the
+    /// default and shows it on the idle timer. Clamped to `FocusSettings.minuteRange`.
+    func setFocusLength(_ minutes: Int) {
+        guard !timer.isActive else { return }
+        var settings = preferences.focusSettings
+        settings.setMinutes(minutes, for: .focus)
+        preferences.focusSettings = settings
+        prepare(.focus)
     }
 
     func adjustLength(by minutes: Int) {

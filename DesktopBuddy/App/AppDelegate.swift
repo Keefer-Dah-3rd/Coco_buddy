@@ -67,6 +67,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             TasksSelfTest.run()
             exit(0)
         }
+        if let index = CommandLine.arguments.firstIndex(of: "--focus-length-selftest") {
+            let folder = index + 1 < CommandLine.arguments.count ? URL(fileURLWithPath: CommandLine.arguments[index + 1]) : nil
+            FocusLengthSelfTest.run(pngFolder: folder)
+        }
         if CommandLine.arguments.contains("--dash-selftest") {
             DashSelfTest.run()
             exit(0)

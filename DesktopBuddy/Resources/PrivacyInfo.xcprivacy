@@ -6,6 +6,9 @@
   - Collected: only what the user sends to the Claude chat (their messages, and the tasks and
     calendar days Coco looks up to answer), sent to Anthropic under the user's own account,
     for the chat to work. Calendars, tasks and focus history otherwise stay on the Mac.
+  - Collected: coarse location, only once the user turns weather on: coordinates rounded to ~1 km are
+    sent to MET Norway's forecast API (api.met.no) to get the local weather. Not linked to the user,
+    not used for tracking.
   - Required-reason APIs: UserDefaults, for the app's own settings (CA92.1).
 -->
 <plist version="1.0">
@@ -21,6 +24,18 @@
 			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCoarseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
 			<false/>
 			<key>NSPrivacyCollectedDataTypePurposes</key>

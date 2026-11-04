@@ -209,6 +209,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -216,6 +217,8 @@
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 John Keefe";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Coco uses your approximate location only to look up the local weather, so Today's banner matches the sky outside and she can mention rain or a chilly morning. It's sent, rounded to about a kilometre, to MET Norway's forecast service and nowhere else.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Coco uses your approximate location only to look up the local weather, so Today's banner matches the sky outside and she can mention rain or a chilly morning. It's sent, rounded to about a kilometre, to MET Norway's forecast service and nowhere else.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Coco listens only while you're talking to her (after you click the microphone), to turn what you say into tasks and timer commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "What you say to Coco is transcribed — on this Mac whenever supported — so she can add tasks and run the focus timer by voice.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -246,6 +249,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Desktop Buddy";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -253,6 +257,8 @@
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Coco reads your calendars to show today's schedule, open time and meeting reminders, and to answer questions about your day when you ask her. She never changes your Apple Calendar events.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 John Keefe";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Coco uses your approximate location only to look up the local weather, so Today's banner matches the sky outside and she can mention rain or a chilly morning. It's sent, rounded to about a kilometre, to MET Norway's forecast service and nowhere else.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Coco uses your approximate location only to look up the local weather, so Today's banner matches the sky outside and she can mention rain or a chilly morning. It's sent, rounded to about a kilometre, to MET Norway's forecast service and nowhere else.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Coco listens only while you're talking to her (after you click the microphone), to turn what you say into tasks and timer commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "What you say to Coco is transcribed — on this Mac whenever supported — so she can add tasks and run the focus timer by voice.";
 				LD_RUNPATH_SEARCH_PATHS = (

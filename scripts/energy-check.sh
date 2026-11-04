@@ -8,6 +8,9 @@
 #     ENABLE_APP_SANDBOX=NO PRODUCT_BUNDLE_IDENTIFIER=com.keefer.DesktopBuddy.energy
 #   scripts/energy-check.sh build/energy/Build/Products/Release/DesktopBuddy.app hidden idle panel focus
 #
+# To see what the Today banner's ambient motion costs, build a second copy with
+# 'OTHER_SWIFT_FLAGS=$(inherited) -DBANNER_STATIC' (no ambient loops) and compare the two.
+#
 # Each scenario settles for 15 s, then CPU time is measured over 30 s (`ps` time, not the
 # smoothed %CPU). Don't use the Mac while it runs: moving the mouse near Coco makes her look
 # at it, and the last column says how long the Mac had no input when the window ended.

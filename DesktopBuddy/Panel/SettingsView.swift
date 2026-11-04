@@ -93,6 +93,10 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Weather") {
+                    WeatherSettings(model: model)
+                }
+
                 Section("Privacy & data") {
                     Caption("Everything \(Buddy.name) keeps stays on this Mac: tasks, focus history and timer in the app's container; sign-ins and keys in your Keychain. Chats live in memory only. Calendar and task details go to Anthropic only when you ask the chat something that needs them.")
                     ToggleRow("Chat may send what it needs to Anthropic", isOn: Binding(
@@ -158,6 +162,104 @@ struct SettingsView: View {
             loginNote = "Couldn't change the login item: \(error.localizedDescription)"
         }
         launchAtLogin = SMAppService.mainApp.status == .enabled
+    }
+}
+
+// MARK: - Weather
+
+/// Settings › Weather: on or off, where from (the Mac's approximate location or a typed city),
+/// what's showing now, and the data's credit.
+private struct WeatherSettings: View {
+    let model: AppModel
+    @State private var city = ""
+    @State private var cityNote: String?
+    @State private var working = false
+
+    private var store: WeatherStore { model.weather }
+    private var preferences: Preferences { model.preferences }
+
+    var body: some View {
+        ToggleRow("Show the local weather in Today's banner", isOn: Binding(
+            get: { store.isOn },
+            set: { on in
+                if on {
+                    working = true
+                    Task {
+                        if let place = preferences.weatherPlace { _ = await store.turnOn(city: place.name) }
+                        else { await store.turnOnWithMacLocation() }
+                        working = false
+                    }
+                } else {
+                    store.turnOff()
+                }
+            }))
+        Caption("\(Buddy.name)'s little place changes with the weather outside, and now and then she'll mention it — rain coming, a chilly morning. It uses your approximate location (a few kilometres), only to look up the forecast, which comes from MET Norway. Nothing else is shared.")
+        if store.isOn {
+            Row("Where") {
+                Text(preferences.weatherPlace.map { $0.name } ?? "This Mac's location")
+                    .font(.style(.bodySmall))
+                    .foregroundStyle(Theme.ink)
+            }
+            HStack(spacing: Space.sm) {
+                TextField("Use a town or city instead", text: $city)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.style(.bodySmall))
+                    .onSubmit(useCity)
+                Button("Use") { useCity() }
+                    .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                    .disabled(city.trimmingCharacters(in: .whitespaces).isEmpty || working)
+                if preferences.weatherPlace != nil {
+                    Button("Use this Mac") {
+                        working = true
+                        Task { await store.turnOnWithMacLocation(); working = false }
+                    }
+                    .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                }
+            }
+            if let cityNote { Caption(cityNote) }
+            Caption(statusText)
+            if store.status == .locationDenied {
+                Button("Open Location Services settings") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+            }
+            Link(store.attribution, destination: URL(string: "https://api.met.no/")!)
+                .font(.style(.caption))
+        }
+    }
+
+    private var statusText: String {
+        switch store.status {
+        case .off: return "Off."
+        case .askingForLocation: return "Waiting for you to allow location access…"
+        case .locationDenied:
+            return "Location access is off for \(Buddy.name). Allow it in System Settings › Privacy & Security › Location Services, or type a city above."
+        case .loading: return "Looking outside…"
+        case .ready, .unavailable:
+            var text = ""
+            if let reading = store.snapshot {
+                let place = store.placeName.map { " in \($0)" } ?? ""
+                text = "Now\(place): \(reading.condition.label), \(TemperatureText.short(reading.temperatureC)). Checked at \(reading.fetchedAt.formatted(date: .omitted, time: .shortened))."
+                if reading.isStale(at: .now) { text += " That's a while ago; checking again soon." }
+            }
+            if case .unavailable(let reason) = store.status {
+                text += (text.isEmpty ? "" : " ") + "Couldn't update: \(reason)"
+            }
+            return text.isEmpty ? "No weather yet." : text
+        }
+    }
+
+    private func useCity() {
+        let name = city
+        working = true
+        Task {
+            cityNote = await store.turnOn(city: name)
+            if cityNote == nil { city = "" }
+            working = false
+        }
     }
 }
 

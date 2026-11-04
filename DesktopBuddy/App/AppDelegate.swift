@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tactileOrange: TactileOrangeWindowController?
     private static let isExperimentSnapshotRun = CommandLine.arguments.contains("--editorial-orange-snapshots")
         || CommandLine.arguments.contains("--tactile-orange-snapshots")
+        || CommandLine.arguments.contains("--banner-snapshots")
     #else
     private static let isExperimentSnapshotRun = false
     #endif
@@ -68,6 +69,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if CommandLine.arguments.contains("--dash-selftest") {
             DashSelfTest.run()
+            exit(0)
+        }
+        if CommandLine.arguments.contains("--banner-selftest") {
+            BannerSelfTest.run()
+        }
+        if let index = CommandLine.arguments.firstIndex(of: "--banner-snapshots"), index + 1 < CommandLine.arguments.count {
+            BannerSnapshots.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
             exit(0)
         }
         if let index = CommandLine.arguments.firstIndex(of: "--snapshots"), index + 1 < CommandLine.arguments.count {

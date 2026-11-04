@@ -64,7 +64,7 @@
 <main>
   <div class="label">Desktop Buddy · Coco</div>
   <h1>Privacy Policy</h1>
-  <p class="lead">Effective October 19, 2026</p>
+  <p class="lead">Effective October 19, 2026 · updated November 4, 2026 (local weather)</p>
 
   <p>Desktop Buddy is a Mac app with a desktop companion named Coco. It helps you plan your day, run a focus timer and, if you choose, chat with an AI assistant and see your calendars. This policy explains what the app does with your information. It's written to match what the app actually does; if the two ever differ, the app is wrong and we'll fix it.</p>
 
@@ -86,6 +86,7 @@
   <ul>
     <li><strong>Your tasks</strong>, focus history and timer, saved as files in the app's container.</li>
     <li><strong>Your settings</strong>, such as where Coco sits and your workday hours.</li>
+    <li><strong>The latest weather forecast</strong> for your area, if you've turned weather on.</li>
     <li><strong>A short-lived copy of calendar events</strong> (about a week back to a few weeks ahead), so your schedule shows quickly and offline.</li>
     <li><strong>Keys and sign-ins</strong> (your Claude API key, Google sign-in, Notion token and Partiful calendar link), kept in the macOS Keychain.</li>
     <li><strong>Chats</strong> are kept in memory only and are gone when you quit the app.</li>
@@ -137,6 +138,9 @@
   <h3>Notion (optional)</h3>
   <p>If you connect Notion with a token you create, the app reads the task database you choose. It changes a task's status in Notion only when you confirm it each time, and only if you turned that on. The token is kept in your Keychain.</p>
 
+  <h3>Weather (MET Norway)</h3>
+  <p>Weather is off until you turn it on (the offer under Today's banner, or Settings › Weather). Then the app asks macOS for your <strong>approximate</strong> location, or uses a town you type instead, and sends <strong>only the latitude and longitude, rounded to about a kilometre</strong>, to the forecast service of the Norwegian Meteorological Institute (<a href="https://api.met.no/doc/TermsOfService">api.met.no</a>) to get the local forecast. Nothing else is sent, there's no account, and the request identifies the app, not you. The forecast and the place name are kept on your Mac. If you type a town, Apple's geocoding service turns it into coordinates under <a href="https://www.apple.com/legal/privacy/">Apple's privacy policy</a>. Turning weather off stops it; Delete all my data removes the saved forecast. Weather data: MET Norway, CC BY 4.0.</p>
+
   <h3>Voice</h3>
   <p>When you press the microphone, macOS speech recognition turns what you say into text. This happens on your Mac whenever your language supports it; otherwise Apple processes it under <a href="https://www.apple.com/legal/privacy/">Apple's privacy policy</a>. The app never records or stores audio, and uses the transcript once.</p>
 
@@ -151,6 +155,7 @@
       <tr><td>Microphone</td><td>To hear what you say to Coco</td><td>The first time you press the mic</td></tr>
       <tr><td>Speech recognition</td><td>To turn speech into tasks and timer commands</td><td>The first time you press the mic</td></tr>
       <tr><td>Calendars</td><td>To show Apple Calendar events</td><td>When you connect Apple Calendar</td></tr>
+      <tr><td>Location (approximate)</td><td>To look up the local weather for Today's banner and Coco's remarks</td><td>When you turn weather on</td></tr>
       <tr><td>Notifications</td><td>Timer and meeting reminders</td><td>The first time a timer or meeting reminder is scheduled</td></tr>
       <tr><td>Sharing with Anthropic</td><td>For the chat to work</td><td>The first time you open the chat</td></tr>
     </tbody>
@@ -166,7 +171,7 @@
   </ul>
 
   <h2>Deleting your data</h2>
-  <p><strong>Settings › Delete all my data</strong> removes your tasks, focus history and timer, calendar sign-ins and cached events (Google access is revoked), your Partiful link and events, your Notion token, your Claude key and chat, your settings and your chat permission. Disconnecting any single service removes just that service's data. Deleting the app also removes its stored files.</p>
+  <p><strong>Settings › Delete all my data</strong> removes your tasks, focus history and timer, the saved weather forecast, calendar sign-ins and cached events (Google access is revoked), your Partiful link and events, your Notion token, your Claude key and chat, your settings and your chat permission. Disconnecting any single service removes just that service's data. Deleting the app also removes its stored files.</p>
   <p>Data already sent to Anthropic, Google or Notion is held under their own policies; contact them to delete it there.</p>
 
   <h2>Children</h2>

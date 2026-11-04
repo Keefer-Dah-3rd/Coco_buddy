@@ -245,18 +245,6 @@
     },
     {
       "figma": {
-        "name": "Today/WinsCard",
-        "nodeId": "2012:1491",
-        "key": "fc813e3ebb7b5f26a3104727689a292446032abd"
-      },
-      "swift": {
-        "symbol": "SkyWinsCard",
-        "file": "DesktopBuddy/Panel/Sky/SkyTodayCards.swift",
-        "anchor": "struct SkyWinsCard"
-      }
-    },
-    {
-      "figma": {
         "name": "Today/FocusBanner",
         "nodeId": "2012:1579",
         "key": "9724c51baa798c4b495eb7416eacd2de1d160ffe"
@@ -1738,6 +1726,154 @@
         "anchor": "private struct AppleCalendarSection: View"
       },
       "notes": "State ↔ AppleCalendarService.Access + isEnabled + isRequesting; Read Failed ↔ problem(for: .now)."
+    },
+    {
+      "figma": {
+        "name": "Banner/Card",
+        "nodeId": "2261:3277",
+        "key": "132acaf85da23f8040d46209f0f4fa7908122c5f"
+      },
+      "swift": {
+        "symbol": "IllustratedBannerView(state:caption:animated:)",
+        "file": "DesktopBuddy/Banner/IllustratedBannerView.swift",
+        "anchor": "struct IllustratedBannerView"
+      },
+      "props": {
+        "Scene": "BannerState.banner",
+        "Scene › Time of day": "BannerState.time",
+        "Scene › Weather": "BannerState.weather",
+        "State": "BannerCaption (Ready · isLoading · isStale · weather nil) / BannerProgress.isEmpty",
+        "Done · Total · Note · Remaining": "BannerProgress.done/total/note/remainingLabel",
+        "Light & weather": "BannerCaption.weather",
+        "Banner mode Day/Night (variables)": "BannerTextLayer.ink"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Art/03 A Little Tidal Pool",
+        "nodeId": "2258:9969",
+        "key": "1896e36f03b818df642e2223d1a081ac3861c8db"
+      },
+      "swift": {
+        "symbol": "BannerArt.document(BannerState(banner: .tidalPool, …))",
+        "file": "Packages/BuddyKit/Sources/BuddyCore/Banners/BannerArt.swift",
+        "anchor": "var tidalPool: [SceneNode]"
+      },
+      "props": {
+        "Time of day": "BannerTimeOfDay",
+        "Weather": "BannerWeather"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Art/04 Coco’s Window Nook",
+        "nodeId": "2258:9990",
+        "key": "b52dd90e298a8ffc0814b88aee772b1790f5b27e"
+      },
+      "swift": {
+        "symbol": "BannerArt.document(BannerState(banner: .windowNook, …))",
+        "file": "Packages/BuddyKit/Sources/BuddyCore/Banners/BannerArt.swift",
+        "anchor": "var windowNook: [SceneNode]"
+      },
+      "props": {
+        "Time of day": "BannerTimeOfDay",
+        "Weather": "BannerWeather"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Art/06 The Slow Ferry",
+        "nodeId": "2258:10011",
+        "key": "1f9a883ecefce2bcdc67f4c4c5a75f86f4b93431"
+      },
+      "swift": {
+        "symbol": "BannerArt.document(BannerState(banner: .slowFerry, …))",
+        "file": "Packages/BuddyKit/Sources/BuddyCore/Banners/BannerArt.swift",
+        "anchor": "var slowFerry: [SceneNode]"
+      },
+      "props": {
+        "Time of day": "BannerTimeOfDay",
+        "Weather": "BannerWeather"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Art/07 The Corner Bookshop",
+        "nodeId": "2258:10032",
+        "key": "305da275a8444e232ee0860c0996bda9c4f9915f"
+      },
+      "swift": {
+        "symbol": "BannerArt.document(BannerState(banner: .cornerBookshop, …))",
+        "file": "Packages/BuddyKit/Sources/BuddyCore/Banners/BannerArt.swift",
+        "anchor": "var cornerBookshop: [SceneNode]"
+      },
+      "props": {
+        "Time of day": "BannerTimeOfDay",
+        "Weather": "BannerWeather"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Art/08 Laundry in the Sky",
+        "nodeId": "2258:10053",
+        "key": "97162400019087b3eb78182a13c92935f110c2cd"
+      },
+      "swift": {
+        "symbol": "BannerArt.document(BannerState(banner: .laundryInTheSky, …))",
+        "file": "Packages/BuddyKit/Sources/BuddyCore/Banners/BannerArt.swift",
+        "anchor": "var laundryInTheSky: [SceneNode]"
+      },
+      "props": {
+        "Time of day": "BannerTimeOfDay",
+        "Weather": "BannerWeather"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Art/09 The Quiet Carriage",
+        "nodeId": "2258:10074",
+        "key": "ce818a15ecc4bf65329cde9eaf24af3cb886a87d"
+      },
+      "swift": {
+        "symbol": "BannerArt.document(BannerState(banner: .quietCarriage, …))",
+        "file": "Packages/BuddyKit/Sources/BuddyCore/Banners/BannerArt.swift",
+        "anchor": "var quietCarriage: [SceneNode]"
+      },
+      "props": {
+        "Time of day": "BannerTimeOfDay",
+        "Weather": "BannerWeather"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Weather Offer",
+        "nodeId": "2263:2703",
+        "key": "9eca3cd2cb5456f96661f59fb03e38179df1b3c5"
+      },
+      "swift": {
+        "symbol": "BannerWeatherOffer(model:)",
+        "file": "DesktopBuddy/Banner/BannerWeatherOffer.swift",
+        "anchor": "struct BannerWeatherOffer"
+      },
+      "props": {
+        "Kind": "BannerWeatherOffer.Kind (.offer / .locationOff)"
+      }
+    },
+    {
+      "figma": {
+        "name": "Banner/Remark Bubble",
+        "nodeId": "2263:2704",
+        "key": "effdb21c064476d72b237e4de7a02ccce51164b3"
+      },
+      "swift": {
+        "symbol": "BannerCommentEngine → AppModel.remarkOnTheDay → SpeechBubbleView",
+        "file": "Packages/BuddyKit/Sources/BuddyCore/Banners/BannerComments.swift",
+        "anchor": "public struct BannerCommentEngine"
+      },
+      "props": {
+        "Shown": "BannerCommentPacing.isDue + AppModel chatter manners",
+        "Remark": "BannerCommentEngine.Comment.text"
+      }
     }
   ],
   "icons": [
@@ -1979,6 +2115,26 @@
       },
       "swift": {
         "symbol": "Image(systemName: \"speaker.slash\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/cloud.sun",
+        "nodeId": "2260:2404",
+        "key": "159bb6d92b2ef2a768a69845edc2ab3e57976f05"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"cloud.sun\")"
+      }
+    },
+    {
+      "figma": {
+        "name": "Icon/location.slash",
+        "nodeId": "2260:2407",
+        "key": "ff7714a1529a7984aa095bcdcc09a8a97d3e1448"
+      },
+      "swift": {
+        "symbol": "Image(systemName: \"location.slash\")"
       }
     }
   ],

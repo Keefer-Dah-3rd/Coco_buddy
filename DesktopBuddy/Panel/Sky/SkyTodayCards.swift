@@ -2,56 +2,6 @@ import SwiftUI
 import BuddyCore
 import BuddyIntegrations
 
-// MARK: - Little wins (Coco Nook)
-
-/// Nook's "1/3 little wins" card in Blue Skies' look: the done count beside "little wins" over an
-/// orange meter, on the confirm green. It leads Today's count line.
-struct SkyWinsCard: View {
-    let done: Int
-    let total: Int
-
-    var body: some View {
-        let share: CGFloat = total == 0 ? 0 : CGFloat(done) / CGFloat(total)
-        HStack(alignment: .center, spacing: 10) {
-            HStack(alignment: .lastTextBaseline, spacing: 1) {
-                Text("\(done)")
-                    .skyType(.displayWins)
-                    .contentTransition(.numericText())
-                Text("/\(total)")
-                    .font(Sky.text(14))
-                    .contentTransition(.numericText())
-            }
-            .foregroundStyle(Sky.ink)
-            .monospacedDigit()
-            .fixedSize()
-            VStack(alignment: .leading, spacing: 4) {
-                Text("little wins")
-                    .skyType(.bodyTiny)
-                    .foregroundStyle(Sky.ink)
-                    .lineLimit(1)
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Sky.line
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(Sky.accent)
-                            .frame(width: max(share > 0 ? 6 : 0, proxy.size.width * share))
-                    }
-                }
-                .frame(height: 9)
-                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 3, style: .continuous).strokeBorder(.black, lineWidth: 1))
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.confirm))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
-        .animation(Sky.Motion.enter, value: done)
-        .animation(Sky.Motion.enter, value: total)
-    }
-}
-
 // MARK: - Focus banner (Sunny Side)
 
 /// Sunny Side's focus banner at the top of Today: the countdown in big figures and the one

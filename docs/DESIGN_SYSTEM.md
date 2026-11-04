@@ -72,6 +72,14 @@ To show it to someone without file access, use **Share prototype** in Figma's pr
 - Clicks are transparent `hotspot · …` frames over the real controls. If a screen's layout changes, run [design/figma/prototype-wiring.js](../design/figma/prototype-wiring.js) through the Figma MCP (`use_figma`). It removes its own hotspots and rebuilds every interaction from the table at its bottom; a re-run was verified to reproduce the same 74 interactions.
 - The desktop wallpaper, menu bar and menu (`Prototype / Desktop`) are prototype props, not app UI.
 
+### Today's banners
+
+Section **Sky — Banners (Today)** on *05 - Component Library* holds the six illustrated banner art
+sets (`Banner/Art/<NN> <Title>`, Time of day × Weather), `Banner/Card`, `Banner/Weather Offer`,
+`Banner/Remark Bubble`, two icons and a rules board; the `Banner` variable collection (Day/Night)
+colours the card's text. The art is imported from the app's own export, not drawn here — to
+change it, see [BANNERS.md](BANNERS.md) (“The art”). `Today/WinsCard` is retired.
+
 ## 2. Naming
 
 | Thing | Convention | Examples |

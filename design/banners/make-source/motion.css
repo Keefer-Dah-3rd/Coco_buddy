@@ -1,0 +1,104 @@
+/* The banner motion from the Figma Make file "Illustrated Task Card Concepts" (src/index.css), kept
+   for reference. The app plays these with Core Animation in DesktopBuddy/Banner/BannerMotion.swift. */
+.ferry-journey {
+  transition: transform 600ms cubic-bezier(.2,.8,.2,1);
+}
+
+.ferry-bob {
+  animation: ferry-bob 4s ease-in-out infinite;
+}
+
+.hanging-linen {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: linen-sway 3s ease-in-out infinite alternate;
+}
+
+.carriage-scenery {
+  animation: scenery-drift 9s ease-in-out infinite alternate;
+}
+
+.tea-steam {
+  animation: steam-rise 3s ease-in-out infinite;
+}
+
+@keyframes ferry-bob {
+  50% { translate: 0 1.5px; }
+}
+
+@keyframes linen-sway {
+  to { rotate: 6deg; }
+}
+
+@keyframes scenery-drift {
+  to { translate: -7px 0; }
+}
+
+@keyframes steam-rise {
+  0%, 100% { opacity: .15; translate: 0 0; }
+  50% { opacity: .7; translate: 0 -2px; }
+.vector-thumb {
+  transition: transform 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.vector-cloud {
+  animation: vector-drift 9s ease-in-out infinite alternate;
+}
+
+.vector-star {
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+
+.vector-rainfall {
+  animation: vector-rain 1.2s linear infinite;
+}
+
+.vector-snowfall {
+  animation: vector-snow 4s ease-in-out infinite;
+}
+
+.vector-gust {
+  animation: vector-drift 3s ease-in-out infinite alternate;
+}
+
+.vector-sway {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: vector-sway 2.5s ease-in-out infinite alternate;
+}
+@keyframes vector-drift {
+  to { translate: 7px 0; }
+}
+
+@keyframes vector-rain {
+  from { translate: 3px -10px; opacity: 0; }
+  25% { opacity: .7; }
+  to { translate: -3px 25px; opacity: 0; }
+}
+
+@keyframes vector-snow {
+  from { translate: -2px -4px; opacity: .1; }
+  30% { opacity: .9; }
+  to { translate: 8px 42px; opacity: 0; }
+}
+
+@keyframes vector-sway {
+  to { rotate: 4deg; }
+}
+
+/* =============================================================================
+   Keyframe Animations for Delightful Secondary Motion
+@keyframes twinkle {
+  from { opacity: 0.2; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

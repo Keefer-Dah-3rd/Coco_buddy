@@ -51,6 +51,10 @@ final class AppModel {
     let agenda: Agenda
     let character = CharacterModel()
     let voiceIn = VoiceInput()
+    /// The local weather, when the user has turned it on (Today's banner and Coco's comments).
+    let weather: WeatherStore
+    /// Today's illustrated banner and its light.
+    let banner = DailyBannerManager()
 
     var panelTab: PanelTab = .today
     private(set) var isPanelOpen = false
@@ -164,6 +168,8 @@ final class AppModel {
     @ObservationIgnored private var nextChatterAt = Date.now.addingTimeInterval(AppModel.chatterGap.lowerBound)
     @ObservationIgnored private var chatterTimer: Timer?
     @ObservationIgnored private let eventLinks = EventLinkReader()
+    /// Coco's remarks about the weather and the time of day (paced by `preferences.environmentPacing`).
+    @ObservationIgnored private var environmentRemarks = BannerCommentEngine()
     /// How long she stays quiet between unprompted comments.
     static let chatterGap: ClosedRange<TimeInterval> = 25 * 60...45 * 60
 
@@ -182,6 +188,7 @@ final class AppModel {
         notion = NotionService(persistent: !preview)
         assistant = AssistantService(persistent: !preview)
         sounds = SoundPlayer(preferences: preferences)
+        weather = WeatherStore(preferences: preferences, persistent: !preview, locationAccess: !preview)
         buddyLine = BuddyVoice.greeting()
     }
 
@@ -213,6 +220,8 @@ final class AppModel {
             self.apply(sync)
         }
         presence.start()
+        banner.start()
+        weather.start()
         focus.restoreAfterLaunch()
         greetOncePerDay()
         startChatter()
@@ -247,6 +256,7 @@ final class AppModel {
         focus.eraseAll()
         focusLog.eraseAll()
         tasks.eraseAll()
+        weather.eraseAll()
         taskDrafts = []
         pendingCompletions = []
         eventRequests = []
@@ -480,10 +490,19 @@ final class AppModel {
 
     private func chatterTick() {
         let now = Date.now
-        guard now >= nextChatterAt else { return }
+        // The same manners for every unprompted line: not during focus, a meeting or a
+        // conversation, not while you're away, and never over something she's already saying.
         guard preferences.chatterEnabled, preferences.presence == .interactive, preferences.isBuddyVisible,
               !isUserAway, !isPanelOpen, !focus.timer.isActive, !voiceIn.isListening, character.speech == nil,
-              !inMeeting(at: now),
+              !inMeeting(at: now)
+        else { return }
+        // A remark about the weather or the time of day, at its own, rarer pace.
+        if now.timeIntervalSince(lastSpokeAt) >= 10 * 60, now.timeIntervalSince(lastTogetherAt) >= 3 * 60,
+           remarkOnTheDay(now) {
+            nextChatterAt = max(nextChatterAt, now.addingTimeInterval(Self.chatterGap.lowerBound))
+            return
+        }
+        guard now >= nextChatterAt,
               now.timeIntervalSince(lastSpokeAt) >= Self.chatterGap.lowerBound,
               now.timeIntervalSince(lastTogetherAt) >= 10 * 60
         else { return }
@@ -496,6 +515,43 @@ final class AppModel {
             recentlyFed: recentTreats.last.map { now.timeIntervalSince($0) < 30 * 60 } ?? false,
             working: (preferences.workdayStartHour..<preferences.workdayEndHour).contains(hour))
         speak(BuddyVoice.idleLine(moment), .ambient)
+    }
+
+    /// Says something about the weather, the light or today's banner if one is due
+    /// (`BannerCommentPacing`: once per part of the day at most). Returns whether she spoke.
+    private func remarkOnTheDay(_ now: Date) -> Bool {
+        banner.refresh(now: now)
+        let reading = weatherForRemarks(now)
+        let shown = reading?.bannerWeather
+        guard preferences.environmentPacing.isDue(now: now, time: banner.time, weather: shown) else { return false }
+        let context = BannerCommentEngine.Context(banner: banner.banner, time: banner.time, weather: reading, now: now,
+                                                  hour: Calendar.current.component(.hour, from: now))
+        guard let remark = environmentRemarks.comment(for: context) else { return false }
+        preferences.environmentPacing.record(now: now, time: banner.time, weather: shown)
+        speak(remark.text, .ambient)
+        return true
+    }
+
+    #if DEBUG
+    /// Self-test: try for a remark at `now` (manners aside). Returns whether she spoke.
+    func remarkForSelfTest(_ now: Date) -> Bool { remarkOnTheDay(now) }
+    #endif
+
+    /// The reading Coco may talk about: fresh enough to be true (stale readings stay on the
+    /// banner, marked as such, but she doesn't comment on them), and the same weather the banner shows.
+    private func weatherForRemarks(_ now: Date) -> WeatherSnapshot? {
+        #if DEBUG
+        if let pinned = banner.override.weather { return MockWeatherProvider.reading(pinned) }
+        #endif
+        guard let reading = weather.snapshot, !reading.isStale(at: now) else { return nil }
+        return reading
+    }
+
+    /// Today's banner frame: the day's place, the light, the weather and the task progress.
+    var bannerState: BannerState {
+        let today = tasks.today()
+        return banner.state(progress: BannerProgress(done: today.filter(\.isCompleted).count, total: today.count),
+                            weather: weather.snapshot)
     }
 
     private func inMeeting(at now: Date) -> Bool {
@@ -512,6 +568,8 @@ final class AppModel {
         isPanelOpen = open
         if open {
             panelOpenCount += 1
+            banner.refresh()
+            weather.refreshIfStale()
             character.dismissSpeech()
             character.react(.perk)
             // A hello when you come to see her, unless she's said something recently.
@@ -812,6 +870,7 @@ final class AppModel {
                 events: schedule.events + schedule.allDayEvents, now: .now,
                 workdayEndHour: preferences.workdayEndHour,
                 sources: agenda.isConnected ? agenda.connectedNames : nil, problems: problems, upcoming: upcoming)
+                + "\n" + weatherForChat(.now)
             return .init(result: text, activity: agenda.isConnected ? "Looked at your tasks and calendar" : "Looked at your tasks")
 
         case .proposeTasks(let proposals):
@@ -1239,6 +1298,22 @@ final class AppModel {
     func declineCompletion(_ id: BuddyTask.ID) {
         pendingCompletions.removeAll { $0 == id }
         if let task = tasks.task(id) { assistant.note("The user said “\(task.title)” isn't done yet.") }
+    }
+
+    /// The weather line in get_today, in the user's own temperature unit.
+    private func weatherForChat(_ now: Date) -> String {
+        guard weather.isOn else { return "Weather: not turned on — you don't know the weather (they can turn it on in Settings)." }
+        guard let reading = weather.snapshot else { return "Weather: couldn't be read just now." }
+        let unit = TemperatureText.unitSymbol()
+        let t = { (c: Double) in TemperatureText.short(c) }
+        var line = "Weather" + (weather.placeName.map { " in \($0)" } ?? "")
+            + " (checked \(reading.fetchedAt.formatted(date: .omitted, time: .shortened))\(reading.isStale(at: now) ? ", may be out of date" : "")): "
+            + "\(reading.condition.label), \(t(reading.temperatureC)) (their unit is \(unit)), wind \(Int(reading.windSpeed.rounded())) m/s."
+        if let upcoming = reading.upcoming {
+            line += " Next 6 hours: \(upcoming.label)" + (reading.upcomingPrecipitation.map { $0 > 0 ? String(format: ", %.1f mm", $0) : "" } ?? "") + "."
+        }
+        if let low = reading.laterLowC, let high = reading.laterHighC { line += " Rest of today \(t(low))–\(t(high))." }
+        return line + " Only what's here is known; don't guess beyond it."
     }
 
     // MARK: - Speaking

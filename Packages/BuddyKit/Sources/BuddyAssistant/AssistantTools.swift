@@ -154,9 +154,9 @@ public enum AssistantTools {
              """
              Read the user's tasks for today (with ids, priority, estimates, due dates), their focus timer, \
              today's calendar if one is connected (every connected calendar, merged so an event in more than \
-             one appears once), free time left today and the next few events after today. Call this before \
-             saying anything about their plan, tasks, schedule, meetings or free time — you don't know any of \
-             it otherwise.
+             one appears once), free time left today, the next few events after today, and the local weather \
+             and temperature if they've turned weather on. Call this before saying anything about their plan, \
+             tasks, schedule, meetings, free time or the weather — you don't know any of it otherwise.
              """,
              properties: [:], required: []),
         tool("propose_tasks",

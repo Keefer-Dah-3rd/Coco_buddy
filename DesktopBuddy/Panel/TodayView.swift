@@ -1,8 +1,8 @@
 import SwiftUI
 import BuddyCore
 
-/// Today. The day's wins and the one-line add field stay at the top; below them scroll Coco's
-/// focus banner, the quick actions, the calendar and the tasks.
+/// Today. The day's illustrated banner and the one-line add field stay at the top; below them
+/// scroll Coco's focus banner, the quick actions, the calendar and the tasks.
 struct TodayView: View {
     let model: AppModel
     @State private var draft = ""
@@ -118,7 +118,10 @@ struct TodayView: View {
         let remainingMinutes = tasks.filter { !$0.isCompleted }.compactMap(\.estimateMinutes).reduce(0, +)
         let focused = model.focusLog.today
         return VStack(alignment: .leading, spacing: 8) {
-            SkyWinsCard(done: done, total: tasks.count)
+            // Today's illustrated banner (it replaced the “little wins” meter): one of six little
+            // places, in today's light and weather, with the day's progress along its rail.
+            IllustratedBannerView(state: model.bannerState, caption: model.banner.caption(model.weather))
+            BannerWeatherOffer(model: model)
             if focused.minutes > 0 || remainingMinutes > 0 {
                 HStack {
                     if focused.minutes > 0 {
@@ -131,8 +134,7 @@ struct TodayView: View {
                 }
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(done) of \(tasks.count) tasks done. \(focused.minutes) minutes focused today.")
+        .animation(Sky.Motion.enter, value: BannerWeatherOffer.kind(for: model) == nil)
     }
 
     private var quickAdd: some View {

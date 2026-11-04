@@ -82,6 +82,24 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 - [ ] Settings: switch off "Coco chats now and then"; she stays quiet unless something happens.
 - [ ] Chat: run a few of the example conversations in docs/PERSONALITY.md. Serious messages get calm replies with no jokes; planning questions get the answer first.
 
+## Today's banner and weather
+
+Details and the rules behind these: [BANNERS.md](BANNERS.md). Debug builds can pin a state:
+`--banner slowFerry --banner-time night --banner-weather snowy`.
+
+- [ ] Today opens with an illustrated banner where the wins meter was; the count, Coco's note, the light and what's left read correctly, and nothing overlaps with 0, 1, 3, 8 and 15+ tasks.
+- [ ] Tick, untick, add and delete tasks quickly: the thumb (and the ferry) slide, windows / laundry / punches light by fifths, and the banner never changes size.
+- [ ] Quit and reopen: the same banner. Tomorrow (or after setting the date forward): a different one, without restarting.
+- [ ] Across 5:00, 11:00, 17:00 and 21:00 the light changes on its own, with a slow crossfade.
+- [ ] *Allow* on the weather offer shows the macOS location prompt. Allow: the corner shows the weather and temperature in your unit, and the scene matches the sky. Don't allow: “Location is off for Coco” with a Settings button; typing a town in Settings › Weather works.
+- [ ] × on the offer hides it for good; Settings › Weather still turns weather on.
+- [ ] Offline with weather on: the last reading stays, faded once it's over 90 minutes old; Settings says why it couldn't update.
+- [ ] Sleep for an hour: on wake the banner, light and weather are current.
+- [ ] Reduce Motion on: no drifting clouds, rain or bobbing ferry, no sliding thumb; changes still dissolve.
+- [ ] Within a couple of hours with Coco on the desktop (panel closed, not focusing), she makes one remark that fits the weather or time of day, and not again in the same part of the day.
+- [ ] VoiceOver reads the banner as one image: “2 of 5 tasks done. Growing nicely. Daytime, rain · 54°. The Slow Ferry: …”.
+- [ ] Ask the chat “do I need an umbrella?” — it uses the weather (or says weather is off).
+
 ## Calendar: week, availability and changes
 
 - [ ] Today › calendar › **Week**: the strip shows this week with today marked. Click another day, drag across the strip (past the edge keeps going into the next week), and use ←/→, ⇧←/⇧→ and T. The day list updates at once for loaded weeks and shows *Loading…* for new ones.

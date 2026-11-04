@@ -72,6 +72,21 @@ final class Preferences {
     var aiConsentVersion: Int { didSet { defaults.set(aiConsentVersion, forKey: Key.aiConsent) } }
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
 
+    // MARK: Weather (for Today's banner and Coco's comments)
+
+    /// The user turned local weather on. Off until they do — it needs a location.
+    var weatherEnabled: Bool { didSet { defaults.set(weatherEnabled, forKey: Key.weather) } }
+    /// Weather comes from this place instead of the Mac's location (when set).
+    var weatherPlace: WeatherPlace? {
+        didSet { defaults.set(weatherPlace.flatMap { try? JSONEncoder().encode($0) }, forKey: Key.weatherPlace) }
+    }
+    /// The user said “Not now” to the banner's weather offer; Settings still has it.
+    var weatherOfferDismissed: Bool { didSet { defaults.set(weatherOfferDismissed, forKey: Key.weatherOffer) } }
+    /// When Coco last remarked on the weather or the time of day, kept across launches.
+    var environmentPacing: BannerCommentPacing {
+        didSet { defaults.set(try? JSONEncoder().encode(environmentPacing), forKey: Key.environmentPacing) }
+    }
+
     @ObservationIgnored private let defaults: UserDefaults
 
     /// Back to first-launch defaults (part of "Delete all my data").
@@ -98,6 +113,10 @@ final class Preferences {
         chatterEnabled = true
         aiConsentVersion = 0
         onboardingCompleted = false
+        weatherEnabled = false
+        weatherPlace = nil
+        weatherOfferDismissed = false
+        environmentPacing = BannerCommentPacing()
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -132,6 +151,11 @@ final class Preferences {
         chatterEnabled = defaults.bool(forKey: Key.chatter)
         aiConsentVersion = defaults.integer(forKey: Key.aiConsent)
         onboardingCompleted = defaults.bool(forKey: Key.onboarding)
+        weatherEnabled = defaults.bool(forKey: Key.weather)
+        weatherPlace = defaults.data(forKey: Key.weatherPlace).flatMap { try? JSONDecoder().decode(WeatherPlace.self, from: $0) }
+        weatherOfferDismissed = defaults.bool(forKey: Key.weatherOffer)
+        environmentPacing = defaults.data(forKey: Key.environmentPacing)
+            .flatMap { try? JSONDecoder().decode(BannerCommentPacing.self, from: $0) } ?? BannerCommentPacing()
     }
 
     private enum Key {
@@ -154,6 +178,10 @@ final class Preferences {
         static let chatter = "buddy.chatter"
         static let aiConsent = "buddy.aiConsentVersion"
         static let onboarding = "buddy.onboardingCompleted"
+        static let weather = "buddy.weather.enabled"
+        static let weatherPlace = "buddy.weather.place"
+        static let weatherOffer = "buddy.weather.offerDismissed"
+        static let environmentPacing = "buddy.environmentPacing"
     }
 }
 

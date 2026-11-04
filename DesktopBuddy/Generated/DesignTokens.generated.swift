@@ -315,4 +315,18 @@ extension SkyType {
     static let kickerStrong = SkyType(family: "Owners Wide", face: "OwnersWide-Bold", weight: .bold, size: 9.5, tracking: 1.14, uppercase: true)
     /// `Sky/Label/Count`
     static let labelCount = SkyType(family: "Owners", face: "Owners-Medium", weight: .medium, size: 10)
+    /// `Sky/Banner/Count`
+    static let bannerCount = SkyType(family: "Inter", face: nil, weight: .medium, size: 32.8)
+    /// `Sky/Banner/Total`
+    static let bannerTotal = SkyType(family: "Inter", face: nil, weight: .regular, size: 15.3)
+    /// `Sky/Banner/Note`
+    static let bannerNote = SkyType(family: "Inter", face: nil, weight: .regular, size: 10.9)
+    /// `Sky/Banner/Corner`
+    static let bannerCorner = SkyType(family: "Inter", face: nil, weight: .regular, size: 7.1, tracking: 0.44, uppercase: true)
+    /// `Sky/Banner/Remaining`
+    static let bannerRemaining = SkyType(family: "Inter", face: nil, weight: .regular, size: 7.66)
+    /// `Sky/Banner/Offer Title`
+    static let bannerOfferTitle = SkyType(family: "Inter", face: nil, weight: .medium, size: 11.5)
+    /// `Sky/Banner/Offer Detail`
+    static let bannerOfferDetail = SkyType(family: "Inter", face: nil, weight: .regular, size: 10)
 }

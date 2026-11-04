@@ -62,7 +62,7 @@ The screens keep their structure; the system underneath them moved:
 | UI/Button | `SkyButtonStyle` | [x] Owners labels; accent = white on orange + black rim; new `.confirm` (green) |
 | UI/IconButton | `SkyRoundStyle` | [x] no fill by default |
 | UI/Kicker | `SkyKicker` | [x] Sky/Kicker; Accent tone = navy pill |
-| UI/Segment, Segment/Item | `SkySegment` | [x] black rim; selected = orange + black rim, white text |
+| UI/Segment, Segment/Item | `SkySegment` | [x] black rim; selected = orange + black rim, white text; Items=5 = Focus quick lengths (15m · 25m · 45m · 1h · 1h 30m) |
 | UI/Checkbox | `SkyCheck` | [x] confirm green + ink rim; `fill:` for orange rows |
 | UI/Input | `.skyField(rim:focused:)` | [x] orange rim, 1.5 pt focused |
 | UI/TimeSlider | `SkyTimeSlider` | [x] value in Sky/Display/Slider |
@@ -78,7 +78,9 @@ The screens keep their structure; the system underneath them moved:
 | Today/QuickAdd, UpNextCard, LeftoversBanner, EmptyState | `TodayView` | [x] |
 | Task/TaskRow (+ subtask parts) | `TaskRow` | [x] done = orange (top level) / green (subtask) |
 | Task/Editor, FocusReceipt, DraftReviewCard | `TaskEditor`, `TodayView` | [x] receipt colours from tokens |
-| Focus/CountdownCard, TaskPicker, StreakDots, CompletionCard, SessionPrompt | `FocusView` | [x] |
+| Focus/CountdownCard (Idle, Running, Paused, Hover, Typing, Not a length), TaskPicker, CompletionCard, SessionPrompt | `FocusView` | [x] click the clock to type a length (2026-11-04) |
+| Focus/StreakDots | — | retired 2026-11-04: the “Until long break” row is gone from the Focus tab |
+| UI/ActionRow (Active), Companion/QuickActions (Voice = Off, Listening, Heard), Today/VoiceProblem (Message, Show Settings) | `SkyActionRow`, `SkyHelpRows`, `VoiceProblem` | [x] listening row and lid-closed note (2026-11-04) |
 | Chat/* | `ChatView`, `EventRequestCard` | [x] |
 | Calendar/* | `WeekScheduleView`, `ConnectionCards` | [x] Join uses `SkyButtonStyle(kind: .confirm)` |
 | Task/* form parts | `TaskFormView` | [x] month calendar drawn to match Figma |
@@ -91,7 +93,9 @@ The screens keep their structure; the system underneath them moved:
 |---|---|---|
 | Panel/Today — Idle, Focus running, Editing a task, Voice review, Empty | `TodayView` · `panel-today-*`, `panel-editor`, `panel-voice-review`, `panel-empty` | [x] |
 | Panel/Today — Week open, With calendar | `WeekScheduleView`, `ConnectionCards` · `panel-week*`, `panel-connected`, `panel-calendar-loading` | [x] |
-| Panel/Focus — Idle, Running, Session complete | `FocusView` · `panel-focus-*` (running, paused, complete added) | [x] |
+| Panel/Focus — Idle, Running, Session complete | `FocusView` · `panel-focus-*` (running, paused, complete added) | [x] quick picks, no long-break row |
+| Panel/Focus — Typing a length | `FocusView.lengthField` · `--focus-length-selftest` | [x] |
+| Panel/Today — Mic off (lid closed) | `TodayView.VoiceProblem` · `panel-today-lid-closed` | [x] |
 | Panel/Chat — Starters, Conversation, Consent, No API key, Event added | `ChatView` · `panel-chat-*` | [x] |
 | Task/01–14 (list, form, subtasks) | `TaskFormView`, `TaskRow` · `task-form-*`, `subtasks-*` | [x] |
 | Screen / Sky Welcome 1–4 | `OnboardingView` · `welcome-*` | [x] |
@@ -119,7 +123,7 @@ welcome flow, keyboard shortcuts (⌘1–3, ⌘N, ⌘L, ⌘↩, Esc, arrows), pe
 
 - Code Connect is refused for this file: “Code connections can only be made in libraries that are
   in Organization or Enterprise plans” (tried 2026-10-27 on UI/Button).
-- [x] `design/figma-map.json` now maps 88 Coco-2 components to their Swift code (plus the legacy
+- [x] `design/figma-map.json` now maps 95 Coco-2 components to their Swift code (plus the legacy
       Coco file's entries that still exist); `scripts/tokens/check_figma_map.py` verifies them all.
       Each Figma component's description also names its code (“Code: …”).
 - Still manual: a Figma change reaches the app by syncing tokens (`scripts/sync-design-tokens.sh`)
@@ -137,7 +141,7 @@ Platform and data:
 
 Kept on purpose (real features Figma doesn't draw):
 - Focus: the “During focus” Full/Small/Quiet row, the notifications note, the meeting heads-up;
-  the phase segment dims during a session; paused digits dim to 60%.
+  paused digits dim to 60%.
 - Today: help rows under the empty state; the editor's “Under” row and five priority steps;
   overdue due dates stay red (Figma shows due dates in ink and has no overdue state).
 - Week view: previous/next week arrows and load-based day bars.

@@ -114,8 +114,8 @@
     {
       "figma": {
         "name": "UI/ActionRow",
-        "nodeId": "2009:1350",
-        "key": "ab8dbd5e009a78f9045150f17ed306d4b750aa45"
+        "nodeId": "2277:2693",
+        "key": "34be8126631430004d9db50b43172b799fe22bf1"
       },
       "swift": {
         "symbol": "SkyActionRow",
@@ -234,8 +234,8 @@
     {
       "figma": {
         "name": "Companion/QuickActions",
-        "nodeId": "2012:1580",
-        "key": "ce4bc8e20c31c374e7db8128d3b8e639c5b81626"
+        "nodeId": "2277:2868",
+        "key": "46cea343bc11cf537a0ad2c857211ffdd1abd1a2"
       },
       "swift": {
         "symbol": "SkyHelpRows",
@@ -553,18 +553,6 @@
         "symbol": "FocusView.taskPicker",
         "file": "DesktopBuddy/Panel/FocusView.swift",
         "anchor": "private var taskPicker"
-      }
-    },
-    {
-      "figma": {
-        "name": "Focus/StreakDots",
-        "nodeId": "2014:1765",
-        "key": "cd203f616c164ed660735b2626cca3a1a89c089b"
-      },
-      "swift": {
-        "symbol": "FocusView.footer",
-        "file": "DesktopBuddy/Panel/FocusView.swift",
-        "anchor": "private var footer"
       }
     },
     {

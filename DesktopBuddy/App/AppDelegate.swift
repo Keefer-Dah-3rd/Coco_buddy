@@ -71,6 +71,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DashSelfTest.run()
             exit(0)
         }
+        if CommandLine.arguments.contains("--voice-selftest") {
+            VoiceSelfTest.run()
+            exit(0)
+        }
         if CommandLine.arguments.contains("--banner-selftest") {
             BannerSelfTest.run()
         }

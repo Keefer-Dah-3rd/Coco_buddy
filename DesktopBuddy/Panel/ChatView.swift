@@ -251,7 +251,7 @@ private struct Starters: View {
     let send: (String) -> Void
     private let prompts = [
         "What should I work on next?",
-        "Plan the rest of my day",
+        AppModel.planPrompt,
         "Break my top task into steps",
         "Help me brainstorm",
     ]

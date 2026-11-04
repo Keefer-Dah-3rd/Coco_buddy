@@ -42,6 +42,22 @@ enum SnapshotRenderer {
             write(view(SpeechBubbleView(text: "Focusing on “Homepage hero”. I'll be quiet.", tail: .bottom, tailAnchor: 0.5)
                 .padding(8), appearance: appearance), to: folder.appendingPathComponent("bubble-\(name).png"))
         }
+        // "How can I help?" as it is, and while "Let a thought out" is listening; then the
+        // Today panel when the Mac's lid is closed and the built-in mic is the input.
+        let helping = demoModel()
+        write(view(SkyHelpRows(model: helping, openChat: {}).frame(width: 385).padding(20), appearance: .aqua),
+              to: folder.appendingPathComponent("help-rows-idle.png"))
+        helping.voiceIn.preview(.listening)
+        write(view(SkyHelpRows(model: helping, openChat: {}).frame(width: 385).padding(20), appearance: .aqua),
+              to: folder.appendingPathComponent("help-rows-listening.png"))
+        helping.voiceIn.preview(.listening, transcript: "I need to email Sam about the invoice and book the vet for Coco")
+        write(view(SkyHelpRows(model: helping, openChat: {}).frame(width: 385).padding(20), appearance: .aqua),
+              to: folder.appendingPathComponent("help-rows-heard.png"))
+        let lidClosed = demoModel()
+        lidClosed.panelTab = .today
+        lidClosed.voiceIn.preview(.unavailable("Your Mac's lid is closed, which switches off its built-in microphone. Open the lid, or choose another microphone in System Settings › Sound › Input."), problem: .lidClosed)
+        write(view(PanelRootView(model: lidClosed), appearance: .aqua), to: folder.appendingPathComponent("panel-today-lid-closed.png"))
+
         // The Focus tab mid-session, paused, and finished with and without the "Did it get done?" prompt.
         let running = demoModel()
         running.panelTab = .focus

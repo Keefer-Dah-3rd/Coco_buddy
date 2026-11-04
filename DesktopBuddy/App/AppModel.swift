@@ -214,6 +214,7 @@ final class AppModel {
             }
         }
         voiceIn.onFinish = { [weak self] transcript in self?.handleTranscript(transcript) }
+        voiceIn.onProblem = { [weak self] problem in self?.speak(BuddyVoice.cantHear(problem), .acknowledge) }
 
         track({ [weak self] in self?.characterSync }) { [weak self] sync in
             guard let self, let sync else { return }
@@ -746,17 +747,31 @@ final class AppModel {
         taskDrafts = []
         Task {
             await voiceIn.start()
-            switch voiceIn.status {
-            case .listening: buddyLine = BuddyVoice.listening
-            case .denied, .unavailable: speak(BuddyVoice.micUnavailable, .acknowledge)
-            default: break
-            }
+            // Problems are spoken through `voiceIn.onProblem`.
+            if voiceIn.status == .listening { buddyLine = BuddyVoice.listening }
         }
     }
 
     func talkToBuddy() {
         openPanel(.today)
         if !voiceIn.isListening { toggleListening() }
+    }
+
+    /// What "Make a little plan" asks Coco; also one of the chat's starters.
+    static let planPrompt = "Plan the rest of my day"
+
+    /// "Make a little plan" in Today: Coco plans the rest of the day in Chat from the tasks and
+    /// calendar, proposing tasks to review before anything is added. If sharing hasn't been
+    /// allowed yet, Chat shows that question first (the same prompt waits among its starters).
+    /// Without a chat set up at all, the new-task form opens instead.
+    func makeLittlePlan() {
+        guard assistant.isReady else {
+            openTaskForm()
+            return
+        }
+        panelTab = .chat
+        guard hasAIConsent, !assistant.isResponding else { return }
+        assistant.send(Self.planPrompt)
     }
 
     func addTaskDrafts() {

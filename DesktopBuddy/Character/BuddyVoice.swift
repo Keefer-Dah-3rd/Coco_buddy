@@ -134,6 +134,17 @@ enum BuddyVoice {
     static let heardNothing = "I didn't catch that. Ears were up, though. Try again?"
     static let micUnavailable = "I can't hear you — microphone access is off."
 
+    /// Why Coco can't listen, in her words. The panel shows the fix underneath.
+    static func cantHear(_ problem: VoiceInput.Problem) -> String {
+        switch problem {
+        case .speechPermission, .microphonePermission: micUnavailable
+        case .lidClosed: "I can't hear you — your Mac's mic switches off when the lid is closed."
+        case .silentMicrophone: "Ears were up, but not a sound came through. Is the mic muted?"
+        case .noMicrophone: "I can't find a microphone to listen with."
+        case .speechUnavailable: "My listening ears aren't working right now. Try again in a bit?"
+        }
+    }
+
     static func heardTasks(_ count: Int) -> String {
         count == 1 ? "I heard one thing. Look right?" : "I heard \(count) things. Check them before I add them?"
     }

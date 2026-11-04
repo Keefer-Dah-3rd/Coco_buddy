@@ -73,7 +73,7 @@ struct TodayView: View {
                                 .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                             }
                         }
-                        SkyHelpRows(model: model, makePlan: { fieldFocused = true }, openChat: { model.panelTab = .chat })
+                        SkyHelpRows(model: model, openChat: { model.panelTab = .chat })
                             .padding(.horizontal, 20)
                             .padding(.top, 10)
                             .padding(.bottom, 10)
@@ -196,8 +196,7 @@ struct TodayView: View {
             }
             switch voice.status {
             case .denied(let message), .unavailable(let message):
-                VoiceProblem(message: message, settingsURL: message.contains("Microphone")
-                             ? VoiceInput.microphoneSettingsURL : VoiceInput.speechSettingsURL) {
+                VoiceProblem(message: message, settingsURL: voice.settingsURL) {
                     voice.clearProblem()
                 }
             default:
@@ -372,7 +371,7 @@ private struct ListeningDot: View {
 
 private struct VoiceProblem: View {
     let message: String
-    let settingsURL: URL
+    let settingsURL: URL?
     let dismiss: () -> Void
 
     var body: some View {
@@ -382,8 +381,10 @@ private struct VoiceProblem: View {
                 .foregroundStyle(Sky.muted)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
-            Button("Settings") { NSWorkspace.shared.open(settingsURL) }
-                .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
+            if let settingsURL {
+                Button("Settings") { NSWorkspace.shared.open(settingsURL) }
+                    .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
+            }
             Button { dismiss() } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)) }
                 .buttonStyle(SkyRoundStyle(size: 22, fill: .clear, tint: Sky.faint))
                 .help("Dismiss")

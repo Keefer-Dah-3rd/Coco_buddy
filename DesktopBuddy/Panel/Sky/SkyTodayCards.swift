@@ -150,17 +150,29 @@ struct SkyFocusBanner: View {
 /// Kindred's "How can I help?" in Blue Skies' look: a soft panel of quick actions.
 struct SkyHelpRows: View {
     let model: AppModel
-    var makePlan: () -> Void
     var openChat: () -> Void
 
     var body: some View {
+        let voice = model.voiceIn
         VStack(alignment: .leading, spacing: 6) {
             Text("How can I help?")
                 .font(Sky.text(16, .medium))
                 .tracking(-0.4)
                 .foregroundStyle(Sky.ink)
-            SkyActionRow(title: "Make a little plan", help: "Jump to the add field", action: makePlan)
-            SkyActionRow(title: "Let a thought out", help: "Say what's on your mind — Coco lists it for you") {
+            SkyActionRow(title: "Make a little plan",
+                         help: model.assistant.isReady
+                            ? "\(Buddy.name) plans the rest of your day with you in Chat"
+                            : "Add a task with the full form (set up Chat for \(Buddy.name) to plan with you)") {
+                model.makeLittlePlan()
+            }
+            // While the mic is open this row says so, and shows what's been heard, right where
+            // it was clicked; clicking again stops and hands the words to the review card.
+            SkyActionRow(title: voice.isListening
+                            ? (voice.transcript.isEmpty ? "Listening… click when you're done" : voice.transcript)
+                            : "Let a thought out",
+                         symbol: voice.isListening ? "stop.fill" : "arrow.right",
+                         help: voice.isListening ? "Stop listening" : "Say what's on your mind — \(Buddy.name) lists it for you",
+                         isActive: voice.isListening) {
                 model.toggleListening()
             }
             SkyActionRow(title: "Talk it through", help: "Open the chat", action: openChat)
@@ -176,6 +188,9 @@ struct SkyActionRow: View {
     let title: String
     var symbol = "arrow.right"
     var help: String?
+    /// Something this row started is under way (the mic is open): the disc turns the accent
+    /// colour, like the add field's mic button, and the title keeps to two lines.
+    var isActive = false
     let action: () -> Void
 
     var body: some View {
@@ -185,12 +200,14 @@ struct SkyActionRow: View {
                     .font(Sky.text(12.5))
                     .foregroundStyle(Sky.ink)
                     .multilineTextAlignment(.leading)
+                    .lineLimit(isActive ? 2 : nil)
+                    .truncationMode(.head)
                 Spacer(minLength: 6)
                 Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Sky.line)
+                    .font(.system(size: isActive ? 10 : 12, weight: .medium))
+                    .foregroundStyle(isActive ? Sky.ink : Sky.line)
                     .frame(width: 26, height: 26)
-                    .background(Circle().fill(Sky.indigo))
+                    .background(Circle().fill(isActive ? Sky.accent : Sky.indigo))
             }
             .padding(.leading, 16)
             .padding(.trailing, 4)

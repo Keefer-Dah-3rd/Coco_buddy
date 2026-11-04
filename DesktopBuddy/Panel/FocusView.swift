@@ -57,8 +57,7 @@ struct FocusView: View {
     private var timeDisplay: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(AppModel.clock(focus.remaining))
-                .font(Sky.display(46))
-                .tracking(-1.2)
+                .skyType(.displayCountdown)
                 .monospacedDigit()
                 .foregroundStyle(timer.isPaused ? Color.white.opacity(0.6) : Color.white)
                 .contentTransition(.numericText(countsDown: true))
@@ -76,7 +75,8 @@ struct FocusView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.dusk))
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.navy))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
     }
 
     /// The chosen phase's length in minutes, moved in 5-minute steps. Moving it saves the length.
@@ -107,24 +107,32 @@ struct FocusView: View {
                     Button(task.title) { focus.selectTask(task.id) }
                 }
             } label: {
-                Text(model.tasks.task(timer.taskID)?.title ?? "No task — just focus")
-                    .font(Sky.text(13, .medium))
-                    .foregroundStyle(Sky.ink)
-                    .lineLimit(1)
+                HStack(spacing: 10) {
+                    Text(model.tasks.task(timer.taskID)?.title ?? "No task — just focus")
+                        .font(Sky.text(13, .medium))
+                        .foregroundStyle(Sky.ink)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 7, weight: .semibold))
+                        .foregroundStyle(Sky.ink)
+                        .frame(width: 10, height: 10)
+                        .accessibilityHidden(true)
+                }
+                .contentShape(Rectangle())
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.visible)
-            .tint(Sky.ink)
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
             Spacer(minLength: 0)
         }
-        .skyField()
+        .skyField(rim: nil)
     }
 
     @ViewBuilder
     private var controls: some View {
         if timer.isRunning {
             HStack(spacing: 8) {
-                Button { focus.pause() } label: { Label("Pause", systemImage: "pause.fill") }
+                Button("Pause") { focus.pause() }
                     .buttonStyle(SkyButtonStyle(kind: .accent, fillWidth: true))
                     .keyboardShortcut(.space, modifiers: [])
                 Button("Stop") { focus.stop() }
@@ -132,18 +140,16 @@ struct FocusView: View {
             }
         } else if timer.isPaused {
             HStack(spacing: 8) {
-                Button { focus.resume() } label: { Label("Resume", systemImage: "play.fill") }
+                Button("Resume") { focus.resume() }
                     .buttonStyle(SkyButtonStyle(kind: .accent, fillWidth: true))
                     .keyboardShortcut(.space, modifiers: [])
                 Button("Stop") { focus.stop() }
                     .buttonStyle(SkyButtonStyle(kind: .outline))
             }
         } else {
-            Button { model.startSelectedPhase() } label: {
-                Label(timer.phase == .focus ? "Start focus" : "Start break", systemImage: "play.fill")
-            }
-            .buttonStyle(SkyButtonStyle(kind: .accent, fillWidth: true))
-            .keyboardShortcut(.space, modifiers: [])
+            Button(timer.phase == .focus ? "Start focus" : "Start break") { model.startSelectedPhase() }
+                .buttonStyle(SkyButtonStyle(kind: .accent, fillWidth: true))
+                .keyboardShortcut(.space, modifiers: [])
         }
     }
 
@@ -176,7 +182,7 @@ struct FocusView: View {
                 HStack(spacing: 4) {
                     ForEach(0..<model.preferences.focusSettings.sessionsBeforeLongBreak, id: \.self) { index in
                         Capsule()
-                            .fill(index < timer.focusStreak ? Sky.accent : Sky.line)
+                            .fill(index < timer.focusStreak ? Sky.confirm : Sky.line)
                             .frame(width: 12, height: 6)
                     }
                 }
@@ -213,11 +219,11 @@ private struct CompletionCard: View {
         let nextMinutes = model.preferences.focusSettings.minutes(for: next)
 
         VStack(alignment: .leading, spacing: 12) {
-            SkyKicker(focus.timer.phase == .focus ? "Session complete" : "Break over", color: Sky.accentText)
+            SkyKicker(focus.timer.phase == .focus ? "Session complete" : "Break over", tone: .ink)
 
             if let id = model.completionPrompt, let task = model.tasks.task(id), !task.isCompleted {
                 Text("Did “\(task.title)” get done?")
-                    .font(Sky.text(14, .semibold))
+                    .skyType(.titleEmphasis)
                     .foregroundStyle(Sky.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
@@ -238,6 +244,7 @@ private struct CompletionCard: View {
             }
         }
         .padding(16)
-        .skyCard(radius: Sky.Radius.card)
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.accentSoft, lineWidth: 1))
     }
 }

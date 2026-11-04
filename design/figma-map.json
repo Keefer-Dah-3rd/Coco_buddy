@@ -1,12 +1,1070 @@
 {
-  "$description": "Figma component ↔ Swift code mapping for the Coco design system. Code Connect needs a Figma Organization/Enterprise seat, so this file is the mapping; scripts/tokens/check_figma_map.py verifies every entry still points at real code. Node ids and keys come from the Figma file.",
-  "figmaFile": "https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco",
+  "$description": "Figma component ↔ Swift code mapping for the Coco design system. Code Connect needs a Figma Organization/Enterprise seat (the Coco-2 file is on a plan without it — checked 2026-10-27), so this file is the mapping; scripts/tokens/check_figma_map.py verifies every entry still points at real code. Entries are in the Coco-2 file (figmaFile) unless their figma.file is \"legacy\", which means the original Coco file (legacyFigmaFile) — the Theme look that Settings still uses. Node ids and keys come from the Figma files.",
+  "figmaFile": "https://www.figma.com/design/3y1ZhdqAPVIYPJf2bTuOsY/Coco-2",
+  "legacyFigmaFile": "https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco",
   "components": [
+    {
+      "figma": {
+        "name": "UI/Kicker",
+        "nodeId": "2006:1316",
+        "key": "f6a047a368a47082ccd9016489d12047e03738d8"
+      },
+      "swift": {
+        "symbol": "SkyKicker(_:tone:)",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "struct SkyKicker"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Button",
+        "nodeId": "2006:1445",
+        "key": "4907353117cc1f119781bdff6fc4607a32227e4f"
+      },
+      "swift": {
+        "symbol": "SkyButtonStyle(kind:compact:fillWidth:)",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "struct SkyButtonStyle"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/IconButton",
+        "nodeId": "2006:1489",
+        "key": "15c83b900e976ca329365831215cef78525eaefc"
+      },
+      "swift": {
+        "symbol": "SkyRoundStyle(size:fill:tint:) · RowIconButton",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "struct SkyRoundStyle"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Checkbox",
+        "nodeId": "2006:1494",
+        "key": "025467749143cc97372435501598203224745a80"
+      },
+      "swift": {
+        "symbol": "SkyCheck(checked:size:fill:)",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "struct SkyCheck"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Segment",
+        "nodeId": "2009:1337",
+        "key": "eb396020a24eaece6100b33d68aa2aaf2fc5b9f0"
+      },
+      "swift": {
+        "symbol": "SkySegment(selection:items:height:)",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "struct SkySegment"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Segment/Item",
+        "nodeId": "2009:1305",
+        "key": "84c47a348550c0ce89f24e2bf06a8b96a6e42d99"
+      },
+      "swift": {
+        "symbol": "SkySegment.Item",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "private func segmentKey"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Input",
+        "nodeId": "2009:1346",
+        "key": "2f67f601a85b077a57052fe3e7346909021423ef"
+      },
+      "swift": {
+        "symbol": ".skyField(rim:focused:)",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "func skyField"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/TimeSlider",
+        "nodeId": "2009:1446",
+        "key": "aeed23a347c2521c9a9eb314828a77b343ed397c"
+      },
+      "swift": {
+        "symbol": "SkyTimeSlider",
+        "file": "DesktopBuddy/Panel/Sky/SkyTimeSlider.swift",
+        "anchor": "struct SkyTimeSlider"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Toast",
+        "nodeId": "2009:1347",
+        "key": "11fe1f2461f72e74285d6accfcb9fabd3c0c29c9"
+      },
+      "swift": {
+        "symbol": "TodayView.undoBar",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "func undoBar"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/ActionRow",
+        "nodeId": "2009:1350",
+        "key": "ab8dbd5e009a78f9045150f17ed306d4b750aa45"
+      },
+      "swift": {
+        "symbol": "SkyActionRow",
+        "file": "DesktopBuddy/Panel/Sky/SkyTodayCards.swift",
+        "anchor": "struct SkyActionRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Chip",
+        "nodeId": "2064:1480",
+        "key": "872f026ae49e8976e16d77601b1e3e8af59aa3c8"
+      },
+      "swift": {
+        "symbol": "SkyChipStyle(selected:strong:)",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "struct SkyChipStyle"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Switch",
+        "nodeId": "2049:1283",
+        "key": "917c088c06e9202ddd806a2ed526e95a62ac3a62"
+      },
+      "swift": {
+        "symbol": "Toggle(...).toggleStyle(.switch).tint(Sky.confirm)",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": ".tint(Sky.confirm)"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/TextButton",
+        "nodeId": "2028:1736",
+        "key": "0da29522e04e5abdaf7cbd166191ed5f752de5d0"
+      },
+      "swift": {
+        "symbol": ".buttonStyle(.plain) text button (New chat, Report)",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "New chat"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/Divider",
+        "nodeId": "2006:1497",
+        "key": "4c6ddbe11338e33c47337fb03ccbb510ffef51e9"
+      },
+      "swift": {
+        "symbol": "Rectangle().fill(Sky.line).frame(height: 1)",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "Rectangle().fill(Sky.line).frame(height: 1)"
+      }
+    },
+    {
+      "figma": {
+        "name": "UI/LoadingIndicator",
+        "nodeId": "2006:1504",
+        "key": "79b38c97cffa171bd060a98207ae11132bebac70"
+      },
+      "swift": {
+        "symbol": "ProgressView().controlSize(.small)",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "ProgressView().controlSize(.small)"
+      }
+    },
+    {
+      "figma": {
+        "name": "Companion/Panel",
+        "nodeId": "2029:2270",
+        "key": "9f9915e5bd532c33956b497ff61dfa7c76f1265f"
+      },
+      "swift": {
+        "symbol": "PanelRootView + PanelWindowController",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "struct PanelRootView"
+      }
+    },
+    {
+      "figma": {
+        "name": "Companion/Header",
+        "nodeId": "2012:1393",
+        "key": "4fbcba5005657527a792dd30bf86cfad42a6f6ca"
+      },
+      "swift": {
+        "symbol": "PanelRootView.header",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "private var header"
+      }
+    },
+    {
+      "figma": {
+        "name": "Companion/BottomNav",
+        "nodeId": "2012:1490",
+        "key": "12d97867d95610afc2356a2cf8302a6e221fd632"
+      },
+      "swift": {
+        "symbol": "PanelRootView.nav",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "private var nav"
+      }
+    },
+    {
+      "figma": {
+        "name": "Companion/NavItem",
+        "nodeId": "2012:1408",
+        "key": "7f88b1e808f58120c7be0ae36e9be94cbdfbeaca"
+      },
+      "swift": {
+        "symbol": "PanelRootView.navItem",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "private func navItem"
+      }
+    },
+    {
+      "figma": {
+        "name": "Companion/QuickActions",
+        "nodeId": "2012:1580",
+        "key": "ce4bc8e20c31c374e7db8128d3b8e639c5b81626"
+      },
+      "swift": {
+        "symbol": "SkyHelpRows",
+        "file": "DesktopBuddy/Panel/Sky/SkyTodayCards.swift",
+        "anchor": "struct SkyHelpRows"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/WinsCard",
+        "nodeId": "2012:1491",
+        "key": "fc813e3ebb7b5f26a3104727689a292446032abd"
+      },
+      "swift": {
+        "symbol": "SkyWinsCard",
+        "file": "DesktopBuddy/Panel/Sky/SkyTodayCards.swift",
+        "anchor": "struct SkyWinsCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/FocusBanner",
+        "nodeId": "2012:1579",
+        "key": "9724c51baa798c4b495eb7416eacd2de1d160ffe"
+      },
+      "swift": {
+        "symbol": "SkyFocusBanner",
+        "file": "DesktopBuddy/Panel/Sky/SkyTodayCards.swift",
+        "anchor": "struct SkyFocusBanner"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/QuickAdd",
+        "nodeId": "2012:1518",
+        "key": "d71fc3d6fec224720072b27d34a1172256104e99"
+      },
+      "swift": {
+        "symbol": "TodayView.quickAdd · MicButton · ListeningDot",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private var quickAdd"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/UpNextCard",
+        "nodeId": "2012:1677",
+        "key": "74dee39551eecda0b3bc197138cc94b56a51fc3e"
+      },
+      "swift": {
+        "symbol": "UpNextCard",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private struct UpNextCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/LeftoversBanner",
+        "nodeId": "2012:1686",
+        "key": "7bcd1c3a24503632f321cf6958d86551cb4762fd"
+      },
+      "swift": {
+        "symbol": "LeftoversBanner",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private struct LeftoversBanner"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/EmptyState",
+        "nodeId": "2012:1694",
+        "key": "c4adaa74e6e73878d08ca8b16ec6c81a21e8f141"
+      },
+      "swift": {
+        "symbol": "EmptyTodayView",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private struct EmptyTodayView"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/SummaryLine",
+        "nodeId": "2028:1737",
+        "key": "a4c5fe2870edeb2430c908e7ce069827c708764e"
+      },
+      "swift": {
+        "symbol": "TodayView.summary",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private func summary"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/VoiceProblem",
+        "nodeId": "2028:1743",
+        "key": "22f6331ef16e3419a2a7f7e839c7b4b657c44bf6"
+      },
+      "swift": {
+        "symbol": "VoiceProblem",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "private struct VoiceProblem"
+      }
+    },
+    {
+      "figma": {
+        "name": "Today/DraftReviewCard",
+        "nodeId": "2014:1725",
+        "key": "ba6931c527a88a89e812ee865fe46f4c8159fe1d"
+      },
+      "swift": {
+        "symbol": "TaskDraftReviewCard",
+        "file": "DesktopBuddy/Panel/TodayView.swift",
+        "anchor": "struct TaskDraftReviewCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/TaskRow",
+        "nodeId": "2012:1674",
+        "key": "d21939a5f6577f28634f6e4eb63e530e1073c965"
+      },
+      "swift": {
+        "symbol": "TaskRow",
+        "file": "DesktopBuddy/Panel/TaskRow.swift",
+        "anchor": "struct TaskRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/SubtaskToggle",
+        "nodeId": "2064:1540",
+        "key": "3b6c88a9e5167c9900da2650295b61e7a4d0b2ae"
+      },
+      "swift": {
+        "symbol": "TaskRow.subtaskToggle",
+        "file": "DesktopBuddy/Panel/TaskRow.swift",
+        "anchor": "private var subtaskToggle"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/AddSubtaskAction",
+        "nodeId": "2064:1547",
+        "key": "7a8a1fed78bcba8b49b1b31a5d0fc19aec1db66d"
+      },
+      "swift": {
+        "symbol": "RowIconButton(symbol: \"plus\") in TaskRow",
+        "file": "DesktopBuddy/Panel/TaskRow.swift",
+        "anchor": "help: \"Add subtask\""
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/Editor",
+        "nodeId": "2014:1668",
+        "key": "c033f7fc00ce9b4d9ec249a573b4f129d556ca70"
+      },
+      "swift": {
+        "symbol": "TaskEditor",
+        "file": "DesktopBuddy/Panel/TaskEditor.swift",
+        "anchor": "struct TaskEditor"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/FocusReceipt",
+        "nodeId": "2014:1458",
+        "key": "d8ea2024c1cc9ae3ed1e599744815f1f44d4264a"
+      },
+      "swift": {
+        "symbol": "TaskEditor.receipt",
+        "file": "DesktopBuddy/Panel/TaskEditor.swift",
+        "anchor": "private var receipt"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/CreateTaskPanel",
+        "nodeId": "2065:2089",
+        "key": "93f5fd24d45530a0323255e6e116ea7cdf8115e0"
+      },
+      "swift": {
+        "symbol": "TaskFormView over the list (PanelRootView)",
+        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "anchor": "TaskFormView(model: model, draft: draft)"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/TaskForm",
+        "nodeId": "2065:1870",
+        "key": "a89f6d8d181fe4a1afe87f4abf21fcbcc65bd465"
+      },
+      "swift": {
+        "symbol": "TaskFormView",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "struct TaskFormView"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/TaskNameInput",
+        "nodeId": "2064:1487",
+        "key": "0d602f412faec9c80be332640380cc8c16cfd181"
+      },
+      "swift": {
+        "symbol": "TaskFormView.header (name field)",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "private var header"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/DescriptionInput",
+        "nodeId": "2064:1492",
+        "key": "cb4865292ad32bf3aa8e83d5bf3e121215321e9f"
+      },
+      "swift": {
+        "symbol": "TaskFormView.notesField",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "private var notesField"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/CreationError",
+        "nodeId": "2064:1493",
+        "key": "7481603962666de7279ade32c01af1113c978861"
+      },
+      "swift": {
+        "symbol": "TaskFormView problem line",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "if let problem {"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/DurationPicker",
+        "nodeId": "2065:1554",
+        "key": "d361176f65a77456fd155ecf85f1120e8d83ca3f"
+      },
+      "swift": {
+        "symbol": "TaskFormView.estimate",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "private var estimate"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/PriorityPicker",
+        "nodeId": "2065:1610",
+        "key": "539e97e329c13706621460229bfba5d02bc4385d"
+      },
+      "swift": {
+        "symbol": "PriorityPicker",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "struct PriorityPicker"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/DatePicker",
+        "nodeId": "2065:1852",
+        "key": "6046c2e0361a69915b270419923651eef7e1fd39"
+      },
+      "swift": {
+        "symbol": "TaskFormView.dueDate · MonthCalendar",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "private var dueDate"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/ParentPicker",
+        "nodeId": "2065:1869",
+        "key": "384fa87a88b1596b6aed5a517bcfd125444dbc56"
+      },
+      "swift": {
+        "symbol": "TaskFormView.parentPicker",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "private var parentPicker"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/FocusOnCreate",
+        "nodeId": "2064:1560",
+        "key": "fe4ecb11e84ddf50b84871b00f4058dcfcb81c1d"
+      },
+      "swift": {
+        "symbol": "TaskFormView.focusToggle",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "private var focusToggle"
+      }
+    },
+    {
+      "figma": {
+        "name": "Task/CreateActions",
+        "nodeId": "2064:1584",
+        "key": "d412557b43698a7ba9875a165e961422a7a77132"
+      },
+      "swift": {
+        "symbol": "TaskFormView.actions",
+        "file": "DesktopBuddy/Panel/TaskForm.swift",
+        "anchor": "private var actions"
+      }
+    },
+    {
+      "figma": {
+        "name": "Focus/CountdownCard",
+        "nodeId": "2014:1737",
+        "key": "ea6ae94b41010d2263adb3e2147351753745209e"
+      },
+      "swift": {
+        "symbol": "FocusView.timeDisplay",
+        "file": "DesktopBuddy/Panel/FocusView.swift",
+        "anchor": "private var timeDisplay"
+      }
+    },
+    {
+      "figma": {
+        "name": "Focus/TaskPicker",
+        "nodeId": "2014:1738",
+        "key": "beeb8f7555c71efb8b7397841a2bcdc0f43c5a6f"
+      },
+      "swift": {
+        "symbol": "FocusView.taskPicker",
+        "file": "DesktopBuddy/Panel/FocusView.swift",
+        "anchor": "private var taskPicker"
+      }
+    },
+    {
+      "figma": {
+        "name": "Focus/StreakDots",
+        "nodeId": "2014:1765",
+        "key": "cd203f616c164ed660735b2626cca3a1a89c089b"
+      },
+      "swift": {
+        "symbol": "FocusView.footer",
+        "file": "DesktopBuddy/Panel/FocusView.swift",
+        "anchor": "private var footer"
+      }
+    },
+    {
+      "figma": {
+        "name": "Focus/CompletionCard",
+        "nodeId": "2014:1795",
+        "key": "62186e7c183266251860b2ce9d58568fa984574c"
+      },
+      "swift": {
+        "symbol": "CompletionCard (FocusView.swift)",
+        "file": "DesktopBuddy/Panel/FocusView.swift",
+        "anchor": "private struct CompletionCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Focus/SessionPrompt",
+        "nodeId": "2028:1751",
+        "key": "8c1ff178340b60d52231fce9583512c1934c283f"
+      },
+      "swift": {
+        "symbol": "SkyFocusBanner.headsUp",
+        "file": "DesktopBuddy/Panel/Sky/SkyTodayCards.swift",
+        "anchor": "private var headsUp"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/MeetingHeadsUp",
+        "nodeId": "2028:1759",
+        "key": "b91df80704b0d1974f3d31e77f8b754720e44646"
+      },
+      "swift": {
+        "symbol": "SkyFocusBanner.headsUp",
+        "file": "DesktopBuddy/Panel/Sky/SkyTodayCards.swift",
+        "anchor": "private var headsUp"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/Message/User",
+        "nodeId": "2015:1641",
+        "key": "d36e28fffacc10fdfaa188407d87de28b677b60d"
+      },
+      "swift": {
+        "symbol": "TurnView (.user)",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private struct TurnView"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/Message/Coco",
+        "nodeId": "2015:1676",
+        "key": "4065dac3dd5cee40ab5577e8ba7888d0eccdaf97"
+      },
+      "swift": {
+        "symbol": "TurnView (.coco) · ThinkingDots",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private struct ThinkingDots"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/Composer",
+        "nodeId": "2015:1739",
+        "key": "d2362be2ca714091b10cd73d9643ebdcfbf5010d"
+      },
+      "swift": {
+        "symbol": "ChatView.composer · IconKey",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private var composer"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/Starters",
+        "nodeId": "2015:1740",
+        "key": "b2fdcbf5c927223c684ea154f3975dccd3326f8c"
+      },
+      "swift": {
+        "symbol": "Starters (ChatView.swift)",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private struct Starters"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/ConsentCard",
+        "nodeId": "2015:1820",
+        "key": "0591e1d9d34d359508adf10ef20d4c4e4a25ca6b"
+      },
+      "swift": {
+        "symbol": "AIConsentCard",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "struct AIConsentCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/ConnectPrompt",
+        "nodeId": "2015:1861",
+        "key": "57e952c5aded83f64f3de800e31541985ddb143b"
+      },
+      "swift": {
+        "symbol": "ConnectPrompt",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private struct ConnectPrompt"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/CompletionConfirmCard",
+        "nodeId": "2028:1763",
+        "key": "e8feaff03d19a841408f736c5dca54894ea06b70"
+      },
+      "swift": {
+        "symbol": "CompletionConfirmCard",
+        "file": "DesktopBuddy/Panel/ChatView.swift",
+        "anchor": "private struct CompletionConfirmCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Chat/EventRequestCard",
+        "nodeId": "2015:1819",
+        "key": "1c3daaa6a23f9d7ec5ee1552bbf0ae42c9320b57"
+      },
+      "swift": {
+        "symbol": "EventRequestCard",
+        "file": "DesktopBuddy/Panel/EventRequestCard.swift",
+        "anchor": "struct EventRequestCard"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/ScheduleCard",
+        "nodeId": "2029:2146",
+        "key": "60872b96054006a4a5db47ae1db5e924531266dc"
+      },
+      "swift": {
+        "symbol": "ScheduleStrip · WeekScheduleView",
+        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
+        "anchor": "struct ScheduleStrip"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/EventRow",
+        "nodeId": "2015:1932",
+        "key": "5a623452c9fad45fc0e0cf488d6e1bf656c62978"
+      },
+      "swift": {
+        "symbol": "EventRow",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "struct EventRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/OpenRow",
+        "nodeId": "2015:1933",
+        "key": "7f7191b34a758f2bf4caaa089a2c8d8724df8565"
+      },
+      "swift": {
+        "symbol": "OpenRow",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "struct OpenRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/AllDayRow",
+        "nodeId": "2028:1784",
+        "key": "ee1ddc4192900dbf9e2f6a736e939e5a550c98ec"
+      },
+      "swift": {
+        "symbol": "ScheduleStrip.today · DayAgenda.agenda",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "private func agenda"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/ComingUpRow",
+        "nodeId": "2015:1964",
+        "key": "c144087e25710017f05106a243d22b9c3274fb20"
+      },
+      "swift": {
+        "symbol": "ScheduleStrip.comingUp",
+        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
+        "anchor": "private func comingUp"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/DayKey",
+        "nodeId": "2015:1952",
+        "key": "24372dc45749be82df5200d79254c3f08f036ec5"
+      },
+      "swift": {
+        "symbol": "DayKey",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "private struct DayKey"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/DayStrip",
+        "nodeId": "2028:1811",
+        "key": "127fc94f38f144175f7e4c3ae8865dae970a23e5"
+      },
+      "swift": {
+        "symbol": "WeekScheduleView.strip",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "private func strip"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/WeekHeader",
+        "nodeId": "2028:1785",
+        "key": "9fbfad9a7d75c736b1b5d6824daa60947918940f"
+      },
+      "swift": {
+        "symbol": "WeekScheduleView.header",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "private func header"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/WeekSummary",
+        "nodeId": "2028:1810",
+        "key": "66bdbddb5b5707a435aed1a56d7330d8896d8044"
+      },
+      "swift": {
+        "symbol": "WeekSummary",
+        "file": "DesktopBuddy/Panel/WeekScheduleView.swift",
+        "anchor": "private struct WeekSummary"
+      }
+    },
+    {
+      "figma": {
+        "name": "Calendar/WeekToggle",
+        "nodeId": "2015:1961",
+        "key": "57fd8b84217e908e5fbcc8091f5ac9747b68da2c"
+      },
+      "swift": {
+        "symbol": "ScheduleStrip (Week toggle)",
+        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
+        "anchor": "struct ScheduleStrip"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/Hero",
+        "nodeId": "2039:1326",
+        "key": "42fa231265b5d383af653682245b9bb9bd1055d4"
+      },
+      "swift": {
+        "symbol": "OnboardingView.hero · LiveCoco",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private var hero"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/Footer",
+        "nodeId": "2039:1385",
+        "key": "5e137c8fcb9d4cef8e93306a7cd3f0764e6d2a13"
+      },
+      "swift": {
+        "symbol": "OnboardingView.footer",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private var footer"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/StepDots",
+        "nodeId": "2039:1051",
+        "key": "a8d0d9448cc2a2edbd89ee1a3d8711945b61dd6e"
+      },
+      "swift": {
+        "symbol": "StepDots",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private struct StepDots"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/Keycap",
+        "nodeId": "2039:1030",
+        "key": "b0a5d0ecb43b5f03d652d297c4927fc8735a7f2c"
+      },
+      "swift": {
+        "symbol": "Keycap",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private struct Keycap"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/ExtraCard",
+        "nodeId": "2039:1096",
+        "key": "6592dde6c7ec9672b85a34f3ea80e44d8c2588f7"
+      },
+      "swift": {
+        "symbol": "Extra",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private struct Extra"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/ShortcutRow",
+        "nodeId": "2039:1097",
+        "key": "4a72409793125e41c275765f782decc49fb38079"
+      },
+      "swift": {
+        "symbol": "ShortcutRow",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private struct ShortcutRow"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/TaskField",
+        "nodeId": "2039:1065",
+        "key": "96523d2b18f2a442f02530dcceb9c13df2663374"
+      },
+      "swift": {
+        "symbol": "OnboardingView.plan (first-task field)",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private var plan"
+      }
+    },
+    {
+      "figma": {
+        "name": "Welcome/Sky/AddedTask",
+        "nodeId": "2039:1052",
+        "key": "3b1dca210368c64dcea80253e5bed88386419fa0"
+      },
+      "swift": {
+        "symbol": "OnboardingView.plan (added tasks)",
+        "file": "DesktopBuddy/Panel/OnboardingView.swift",
+        "anchor": "private var plan"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/StatusPill",
+        "nodeId": "2049:1278",
+        "key": "eba0a6ba3ec8d37060ff0114f1cf0614d346f1a8"
+      },
+      "swift": {
+        "symbol": "StatusPill (ConnectionsView.swift)",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct StatusPill"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/Row",
+        "nodeId": "2049:1284",
+        "key": "1bc4cd0a0947e86d2133c61d716acea9129e34c4"
+      },
+      "swift": {
+        "symbol": "Row (ConnectionsView.swift)",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct Row"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/SetupSteps",
+        "nodeId": "2196:2363",
+        "key": "fd2c6ad74329136dfd68ee055376c62dc5c72e2c"
+      },
+      "swift": {
+        "symbol": "SetupSteps",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct SetupSteps"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/SetupStep",
+        "nodeId": "2049:1288",
+        "key": "63a04bf0a90d236d93e198313ffb37baedd97719"
+      },
+      "swift": {
+        "symbol": "SetupSteps (one step)",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct SetupSteps"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/CardHeader",
+        "nodeId": "2049:1302",
+        "key": "1eac1f114e88b574b10951613885d911bb6868df"
+      },
+      "swift": {
+        "symbol": "Card (title + StatusPill)",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct Card"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/CalendarRow",
+        "nodeId": "2049:1295",
+        "key": "47643e912d9ee0ff003c4efbc100a6c6eb82ce93"
+      },
+      "swift": {
+        "symbol": "AppleCalendarSection calendar toggles",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "Toggle(\"Read \\(info.title)\""
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/Card/Claude",
+        "nodeId": "2050:1326",
+        "key": "6cf5e66f64ad5032142273120f54ef04699f4f5a"
+      },
+      "swift": {
+        "symbol": "AssistantSection",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct AssistantSection"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/Card/Apple Calendar",
+        "nodeId": "2050:1393",
+        "key": "5c6ba738b47ac154ac4b43fe4460a13d08324ad8"
+      },
+      "swift": {
+        "symbol": "AppleCalendarSection",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct AppleCalendarSection"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/Card/Google Calendar",
+        "nodeId": "2050:1495",
+        "key": "d97c732382762ef1191989b7e31230c7603f2af3"
+      },
+      "swift": {
+        "symbol": "CalendarSection",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct CalendarSection"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/Card/Partiful",
+        "nodeId": "2050:1537",
+        "key": "db678bdd9a71750c04af42e81027546fa649372f"
+      },
+      "swift": {
+        "symbol": "PartifulSection",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "struct PartifulSection"
+      }
+    },
+    {
+      "figma": {
+        "name": "Connections/Sky/Card/Notion",
+        "nodeId": "2050:1624",
+        "key": "55175deb11001388fbf883794bb3e17453a13406"
+      },
+      "swift": {
+        "symbol": "NotionSection",
+        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
+        "anchor": "private struct NotionSection"
+      }
+    },
     {
       "figma": {
         "name": "Mono Label",
         "nodeId": "7:11",
-        "key": "7fc6bc7971385d79f1fa5f5e3f1404cdc53248a4"
+        "key": "7fc6bc7971385d79f1fa5f5e3f1404cdc53248a4",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "MonoLabel",
@@ -16,34 +1074,10 @@
     },
     {
       "figma": {
-        "name": "Checkbox",
-        "nodeId": "7:16",
-        "key": "ba6f37a6467c2cc765a88d90dd687dc1882c6435"
-      },
-      "swift": {
-        "symbol": "CheckSquare",
-        "file": "DesktopBuddy/Panel/TaskRow.swift",
-        "anchor": "struct CheckSquare"
-      }
-    },
-    {
-      "figma": {
-        "name": "Keycap",
-        "nodeId": "7:21",
-        "key": "c752926a3fa9e1ca3e48e0a2f2575c208d39d476"
-      },
-      "swift": {
-        "symbol": "ESC key + ShortcutRow keys",
-        "file": "DesktopBuddy/Panel/PanelRootView.swift",
-        "anchor": "Text(\"ESC\")"
-      },
-      "notes": "Size=Regular is the key cap in ShortcutRow (OnboardingView.swift)."
-    },
-    {
-      "figma": {
         "name": "Row Icon Button",
         "nodeId": "7:28",
-        "key": "c9b090d5f560a077202b864ce3fba5893ec22258"
+        "key": "c9b090d5f560a077202b864ce3fba5893ec22258",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "RowIconButton",
@@ -55,7 +1089,8 @@
       "figma": {
         "name": "Key Button",
         "nodeId": "8:101",
-        "key": "162619cc3148d60e5ef1d8fa93bc7c97a684a05f"
+        "key": "162619cc3148d60e5ef1d8fa93bc7c97a684a05f",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "KeyButtonStyle",
@@ -68,7 +1103,8 @@
       "figma": {
         "name": "Segment Item",
         "nodeId": "9:14",
-        "key": "8c03949dd2467e5ac6afff39e79d3682a5a098de"
+        "key": "8c03949dd2467e5ac6afff39e79d3682a5a098de",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "KeySegment.Item",
@@ -80,7 +1116,8 @@
       "figma": {
         "name": "Key Segment",
         "nodeId": "9:105",
-        "key": "3ceef967ea5ef659477eb7974f51ffe9ffb2602c"
+        "key": "3ceef967ea5ef659477eb7974f51ffe9ffb2602c",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "KeySegment",
@@ -91,21 +1128,10 @@
     },
     {
       "figma": {
-        "name": "Meter Segment",
-        "nodeId": "11:62",
-        "key": "7b01c45488dc170105c98d5953452dd9ee841cc8"
-      },
-      "swift": {
-        "symbol": "SegmentMeter",
-        "file": "DesktopBuddy/Panel/TodayView.swift",
-        "anchor": "struct SegmentMeter"
-      }
-    },
-    {
-      "figma": {
         "name": "Task Row",
         "nodeId": "11:179",
-        "key": "19c91060dab3f973aac272d8aa7c0e527cec6eab"
+        "key": "19c91060dab3f973aac272d8aa7c0e527cec6eab",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TaskRow",
@@ -118,7 +1144,8 @@
       "figma": {
         "name": "Quick Add Field",
         "nodeId": "11:198",
-        "key": "87177c8d429620d198073a3b7d61bcb66f8b7de3"
+        "key": "87177c8d429620d198073a3b7d61bcb66f8b7de3",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TodayView.quickAdd + MicButton",
@@ -130,7 +1157,8 @@
       "figma": {
         "name": "Up Next Card",
         "nodeId": "11:199",
-        "key": "12b8f732a7063e424eb8da9e747486efdfdf78ba"
+        "key": "12b8f732a7063e424eb8da9e747486efdfdf78ba",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "UpNextCard",
@@ -143,7 +1171,8 @@
       "figma": {
         "name": "Leftovers Banner",
         "nodeId": "11:210",
-        "key": "86cf93b554f1f1a9f82569b10a24d04a4c3053bb"
+        "key": "86cf93b554f1f1a9f82569b10a24d04a4c3053bb",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "LeftoversBanner",
@@ -155,7 +1184,8 @@
       "figma": {
         "name": "Panel Header",
         "nodeId": "14:203",
-        "key": "d7153cf751ef2bc8c4dcf21c00a04ecc9ae9c153"
+        "key": "d7153cf751ef2bc8c4dcf21c00a04ecc9ae9c153",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "PanelRootView.header",
@@ -168,7 +1198,8 @@
       "figma": {
         "name": "Countdown Chip",
         "nodeId": "14:213",
-        "key": "7d09ef6c516e95a4dd868b2ca50cd4b57d18ed72"
+        "key": "7d09ef6c516e95a4dd868b2ca50cd4b57d18ed72",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "CountdownChipView",
@@ -180,7 +1211,8 @@
       "figma": {
         "name": "Speech Bubble",
         "nodeId": "14:232",
-        "key": "156dfc098a470c00c62a3d3002b7535b07a7c03b"
+        "key": "156dfc098a470c00c62a3d3002b7535b07a7c03b",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "SpeechBubbleView",
@@ -193,7 +1225,8 @@
       "figma": {
         "name": "Chat / User Message",
         "nodeId": "14:233",
-        "key": "d4a93b7ac33123a5ecaf638a6a6ff692adbded4a"
+        "key": "d4a93b7ac33123a5ecaf638a6a6ff692adbded4a",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TurnView (.user)",
@@ -205,7 +1238,8 @@
       "figma": {
         "name": "Chat / Coco Message",
         "nodeId": "14:264",
-        "key": "14aede00935da062f368b689a7190c101f36c1ef"
+        "key": "14aede00935da062f368b689a7190c101f36c1ef",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TurnView (.coco) + ThinkingDots",
@@ -217,7 +1251,8 @@
       "figma": {
         "name": "Switch",
         "nodeId": "16:157",
-        "key": "235b618b32f1bd076a030e5a20be6b8fbbc0dc65"
+        "key": "235b618b32f1bd076a030e5a20be6b8fbbc0dc65",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Toggle (native .switch)",
@@ -230,7 +1265,8 @@
       "figma": {
         "name": "Stepper",
         "nodeId": "16:158",
-        "key": "c698c57b3c8bd87828fd85b05390a780bc5728cb"
+        "key": "c698c57b3c8bd87828fd85b05390a780bc5728cb",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Stepper (native)",
@@ -243,7 +1279,8 @@
       "figma": {
         "name": "Settings / Toggle Row",
         "nodeId": "16:173",
-        "key": "10dab66dafd68b961e260dcf5c30144489882b38"
+        "key": "10dab66dafd68b961e260dcf5c30144489882b38",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "ToggleRow",
@@ -255,7 +1292,8 @@
       "figma": {
         "name": "Settings / Row",
         "nodeId": "16:199",
-        "key": "e5e7c9d167e79496c2ebee9b95d856db9f748c7c"
+        "key": "e5e7c9d167e79496c2ebee9b95d856db9f748c7c",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Row / MinutesRow",
@@ -267,7 +1305,8 @@
       "figma": {
         "name": "Welcome / Extra Card",
         "nodeId": "16:221",
-        "key": "7af4164ff72bea945c6f5ce1c6077fa0dc94f11e"
+        "key": "7af4164ff72bea945c6f5ce1c6077fa0dc94f11e",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Extra",
@@ -280,7 +1319,8 @@
       "figma": {
         "name": "Welcome / Shortcut Row",
         "nodeId": "16:222",
-        "key": "59940ba3b30821e961f25044efd70ddf092b9255"
+        "key": "59940ba3b30821e961f25044efd70ddf092b9255",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "ShortcutRow",
@@ -290,21 +1330,10 @@
     },
     {
       "figma": {
-        "name": "Welcome / Step Dots",
-        "nodeId": "16:247",
-        "key": "955df81f33b8e096d5b935a465161cf288ecb747"
-      },
-      "swift": {
-        "symbol": "OnboardingView footer dots",
-        "file": "DesktopBuddy/Panel/OnboardingView.swift",
-        "anchor": "of \\(steps)"
-      }
-    },
-    {
-      "figma": {
         "name": "Mascot / Coco",
         "nodeId": "17:910",
-        "key": "205cbff5369877291556cfb44e5859124e9c0fc8"
+        "key": "205cbff5369877291556cfb44e5859124e9c0fc8",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "CocoLayerView",
@@ -317,7 +1346,8 @@
       "figma": {
         "name": "Brand / App Icon",
         "nodeId": "17:912",
-        "key": "d0d892e9e4348dd85f2b2c84e12dbd538e41b83c"
+        "key": "d0d892e9e4348dd85f2b2c84e12dbd538e41b83c",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "AppIcon (asset catalog)",
@@ -328,22 +1358,10 @@
     },
     {
       "figma": {
-        "name": "Step Key",
-        "nodeId": "27:249",
-        "key": "f6f13c334690c55ed118a8ef0b96e0bdca78754c"
-      },
-      "swift": {
-        "symbol": "StepButton / LengthButton",
-        "file": "DesktopBuddy/Panel/TaskEditor.swift",
-        "anchor": "struct StepButton"
-      },
-      "notes": "Size=Editor is StepButton (TaskEditor.swift, 24 × 22); Size=Focus is LengthButton (FocusView.swift, 26 × 22)."
-    },
-    {
-      "figma": {
         "name": "Icon Key",
         "nodeId": "27:259",
-        "key": "b80b67d8015a87e5cd64948f3d86be1f787dc8e4"
+        "key": "b80b67d8015a87e5cd64948f3d86be1f787dc8e4",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "IconKey",
@@ -353,22 +1371,10 @@
     },
     {
       "figma": {
-        "name": "Field Well",
-        "nodeId": "27:266",
-        "key": "323c8fdff41188b73e67fa7a36f11951a3754e56"
-      },
-      "swift": {
-        "symbol": "fieldWell()",
-        "file": "DesktopBuddy/Panel/TaskEditor.swift",
-        "anchor": "func fieldWell()"
-      },
-      "notes": "Kind=Date stands in for the native DatePicker(.field)."
-    },
-    {
-      "figma": {
         "name": "Draft Row",
         "nodeId": "27:267",
-        "key": "3f4b7c5e30023f04ba4b34e0b30936dbe66a0ac7"
+        "key": "3f4b7c5e30023f04ba4b34e0b30936dbe66a0ac7",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TaskDraftReviewCard row",
@@ -380,7 +1386,8 @@
       "figma": {
         "name": "Task Draft Review Card",
         "nodeId": "27:342",
-        "key": "da40a4b15d1e1d91e659645f45b16dc3cfb460b9"
+        "key": "da40a4b15d1e1d91e659645f45b16dc3cfb460b9",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TaskDraftReviewCard",
@@ -393,7 +1400,8 @@
       "figma": {
         "name": "Focus / Task Picker",
         "nodeId": "27:343",
-        "key": "1eaa133c5019bf6ea094359153a4c59ae8890c9d"
+        "key": "1eaa133c5019bf6ea094359153a4c59ae8890c9d",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "FocusView.taskPicker",
@@ -405,7 +1413,8 @@
       "figma": {
         "name": "Focus / Completion Card",
         "nodeId": "27:385",
-        "key": "1dc7502f03e1b3329151e28945dde5d0650e5d54"
+        "key": "1dc7502f03e1b3329151e28945dde5d0650e5d54",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "CompletionCard",
@@ -418,7 +1427,8 @@
       "figma": {
         "name": "Task Editor",
         "nodeId": "29:481",
-        "key": "a22073262493db15f177abef45a4860ce47f1d44"
+        "key": "a22073262493db15f177abef45a4860ce47f1d44",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TaskEditor",
@@ -431,7 +1441,8 @@
       "figma": {
         "name": "Chat / Composer",
         "nodeId": "29:558",
-        "key": "8c6791b6dfb041ca3e6b2ed568c0e6ff0e70a4a5"
+        "key": "8c6791b6dfb041ca3e6b2ed568c0e6ff0e70a4a5",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "ChatView.composer",
@@ -444,7 +1455,8 @@
       "figma": {
         "name": "Connections / Status",
         "nodeId": "29:567",
-        "key": "30e5bbeaaadd2f487dfc16641fb9a2852272fb47"
+        "key": "30e5bbeaaadd2f487dfc16641fb9a2852272fb47",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Card status",
@@ -456,7 +1468,8 @@
       "figma": {
         "name": "Connections / Setup Step",
         "nodeId": "29:568",
-        "key": "6037e2c62b1380363382eebf2e943ee5b96a9d04"
+        "key": "6037e2c62b1380363382eebf2e943ee5b96a9d04",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "SetupSteps",
@@ -468,7 +1481,8 @@
       "figma": {
         "name": "Connections / Value Row",
         "nodeId": "29:573",
-        "key": "6ccb6888dde40a6ca082fd89229da1fb917d6f20"
+        "key": "6ccb6888dde40a6ca082fd89229da1fb917d6f20",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Row + valueStyle()",
@@ -478,22 +1492,10 @@
     },
     {
       "figma": {
-        "name": "Text Field (native)",
-        "nodeId": "29:578",
-        "key": "508afb2ecdab3566fcb9e59bb2f5f6dc6c83d853"
-      },
-      "swift": {
-        "symbol": "TextField / SecureField (.roundedBorder)",
-        "file": "DesktopBuddy/Panel/ConnectionsView.swift",
-        "anchor": ".textFieldStyle(.roundedBorder)"
-      },
-      "notes": "Stand-in for the native control."
-    },
-    {
-      "figma": {
         "name": "Welcome / Added Task",
         "nodeId": "29:580",
-        "key": "d2f2584e52809adeb6308724400bd3d6d4fd128f"
+        "key": "d2f2584e52809adeb6308724400bd3d6d4fd128f",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "OnboardingView.plan task list",
@@ -503,22 +1505,10 @@
     },
     {
       "figma": {
-        "name": "Text / Prompt Line",
-        "nodeId": "50:439",
-        "key": "70c3d5028d9345a22d30ca39b0c23dd6c53e446b"
-      },
-      "swift": {
-        "symbol": "Coco's line: “›” + text",
-        "file": "DesktopBuddy/Panel/PanelRootView.swift",
-        "anchor": "Text(\"›\")"
-      },
-      "notes": "Size=Panel is the panel header line (PanelRootView.header); Size=Chat is her reply in TurnView (.coco) in ChatView.swift; Content=Thinking is ThinkingDots. Exposed inside Panel Header and Chat / Coco Message."
-    },
-    {
-      "figma": {
         "name": "Text / Task Title",
         "nodeId": "50:461",
-        "key": "aa840e92d34807a2e3aebb4d9a264c12f77780b8"
+        "key": "aa840e92d34807a2e3aebb4d9a264c12f77780b8",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TaskRow title + meta",
@@ -531,7 +1521,8 @@
       "figma": {
         "name": "Text / Title & Detail",
         "nodeId": "53:489",
-        "key": "e427556d3804462a83c1b35fe67027d7eb8b7c64"
+        "key": "e427556d3804462a83c1b35fe67027d7eb8b7c64",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Extra title/detail; StepTitle + StepText",
@@ -544,7 +1535,8 @@
       "figma": {
         "name": "Text / Label & Title",
         "nodeId": "53:494",
-        "key": "2b55e14c350838e7740024eaf7acdcc47718598c"
+        "key": "2b55e14c350838e7740024eaf7acdcc47718598c",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "UpNextCard label + title",
@@ -555,22 +1547,10 @@
     },
     {
       "figma": {
-        "name": "Panel / Status Bar",
-        "nodeId": "53:521",
-        "key": "e00eba0d770496b740134217830e96eaf6221886"
-      },
-      "swift": {
-        "symbol": "PanelRootView.header top row",
-        "file": "DesktopBuddy/Panel/PanelRootView.swift",
-        "anchor": "model.focus.timer.isRunning ? Theme.accent"
-      },
-      "notes": "Focus=Running ↔ focus.timer.isRunning. Exposed inside Panel Header as “status”."
-    },
-    {
-      "figma": {
         "name": "Text / Activity",
         "nodeId": "53:531",
-        "key": "7148062bbd7b02365d1551b6fed2fc126a7e77d3"
+        "key": "7148062bbd7b02365d1551b6fed2fc126a7e77d3",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TurnView activities",
@@ -583,7 +1563,8 @@
       "figma": {
         "name": "Today / Summary",
         "nodeId": "53:532",
-        "key": "a09f502ffcfac9c3ea26a5f56f1b4c389417a1f1"
+        "key": "a09f502ffcfac9c3ea26a5f56f1b4c389417a1f1",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "TodayView.summary + SegmentMeter",
@@ -595,7 +1576,8 @@
       "figma": {
         "name": "Connections / Card Header",
         "nodeId": "53:551",
-        "key": "d102803abe105e6777a926316e19385eb2c8711d"
+        "key": "d102803abe105e6777a926316e19385eb2c8711d",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Card title + status",
@@ -607,7 +1589,8 @@
       "figma": {
         "name": "Pip",
         "nodeId": "56:557",
-        "key": "ea05f2c250ed3bf3a07a91b2aa3f7ceab69a76a9"
+        "key": "ea05f2c250ed3bf3a07a91b2aa3f7ceab69a76a9",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "ThinkingDots",
@@ -620,7 +1603,8 @@
       "figma": {
         "name": "Mic Key",
         "nodeId": "56:567",
-        "key": "4641b4549d99c1cb69c93ec35a1ddcd14513ff91"
+        "key": "4641b4549d99c1cb69c93ec35a1ddcd14513ff91",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "MicButton",
@@ -631,22 +1615,10 @@
     },
     {
       "figma": {
-        "name": "Panel / Header Key",
-        "nodeId": "56:574",
-        "key": "4fb56489044063d0396f048752cf3b425712153a"
-      },
-      "swift": {
-        "symbol": "PanelRootView.header buttons",
-        "file": "DesktopBuddy/Panel/PanelRootView.swift",
-        "anchor": ".frame(width: 22, height: 18)"
-      },
-      "notes": "Active ↔ agenda.isConnected or Notion connected (link) / barksEnabled && !soundsMuted (speaker.wave.2.fill vs speaker.slash — the mute key, barking on or off). Exposed inside Panel / Status Bar as “connections”."
-    },
-    {
-      "figma": {
         "name": "Text Button",
         "nodeId": "56:579",
-        "key": "f56959a0f1bba005fc0f395eaa0a2c528cf1ee52"
+        "key": "f56959a0f1bba005fc0f395eaa0a2c528cf1ee52",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Button(\"New chat\")",
@@ -659,7 +1631,8 @@
       "figma": {
         "name": "Calendar / Event Row",
         "nodeId": "88:693",
-        "key": "9c954c42693924e6c9872572e58d02d253c439da"
+        "key": "9c954c42693924e6c9872572e58d02d253c439da",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "EventRow",
@@ -672,7 +1645,8 @@
       "figma": {
         "name": "Calendar / Open Row",
         "nodeId": "89:606",
-        "key": "d1cb5eb3e62773eec4580bcf56ce5dd7993077c4"
+        "key": "d1cb5eb3e62773eec4580bcf56ce5dd7993077c4",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "OpenRow",
@@ -683,22 +1657,10 @@
     },
     {
       "figma": {
-        "name": "Calendar / All-Day Row",
-        "nodeId": "89:624",
-        "key": "51dae1dc75c933c6d96fd09c965eb3a1909dc61d"
-      },
-      "swift": {
-        "symbol": "All-day rows",
-        "file": "DesktopBuddy/Panel/ConnectionCards.swift",
-        "anchor": "MonoLabel(\"All day\")"
-      },
-      "notes": "Context=Today ↔ ScheduleStrip.today; Context=Week ↔ DayAgenda.agenda (well fill, “free” when !isBusy)."
-    },
-    {
-      "figma": {
         "name": "Calendar / Coming Up Row",
         "nodeId": "89:625",
-        "key": "1aed78268194f54a52370d8d27835d424b4ef075"
+        "key": "1aed78268194f54a52370d8d27835d424b4ef075",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "ScheduleStrip.comingUp",
@@ -711,7 +1673,8 @@
       "figma": {
         "name": "Calendar / Day Key",
         "nodeId": "89:656",
-        "key": "900d2666e3a153dd649e66252c81b20e74415ed7"
+        "key": "900d2666e3a153dd649e66252c81b20e74415ed7",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "DayKey",
@@ -724,7 +1687,8 @@
       "figma": {
         "name": "Calendar / Week Toggle",
         "nodeId": "89:678",
-        "key": "81295ce3c40376307791a98bb23650c6a2f903bb"
+        "key": "81295ce3c40376307791a98bb23650c6a2f903bb",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "ScheduleStrip Week button",
@@ -737,7 +1701,8 @@
       "figma": {
         "name": "Connections / Calendar Choice Row",
         "nodeId": "89:695",
-        "key": "47bda8ace13291f9c8c689709ced6cbd6e5ac723"
+        "key": "47bda8ace13291f9c8c689709ced6cbd6e5ac723",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "AppleCalendarSection calendar list",
@@ -750,7 +1715,8 @@
       "figma": {
         "name": "Calendar / Schedule Card",
         "nodeId": "91:1208",
-        "key": "0a61c69a1e8f72122b90a5cdebf852012e3f09ba"
+        "key": "0a61c69a1e8f72122b90a5cdebf852012e3f09ba",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "ScheduleStrip",
@@ -763,7 +1729,8 @@
       "figma": {
         "name": "Connections / Apple Calendar Card",
         "nodeId": "92:1287",
-        "key": "7033f50a01d886a338089ac69ad0f7b4855b795c"
+        "key": "7033f50a01d886a338089ac69ad0f7b4855b795c",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "AppleCalendarSection",
@@ -778,7 +1745,8 @@
       "figma": {
         "name": "Icon/checkmark",
         "nodeId": "6:4",
-        "key": "4e7f3e7e119ffefe3f40065439e860bd74a3f24d"
+        "key": "4e7f3e7e119ffefe3f40065439e860bd74a3f24d",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"checkmark\")"
@@ -788,7 +1756,8 @@
       "figma": {
         "name": "Icon/xmark",
         "nodeId": "6:7",
-        "key": "406b8f1777b406db19144154950bbbe1cdc47a9c"
+        "key": "406b8f1777b406db19144154950bbbe1cdc47a9c",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"xmark\")"
@@ -798,7 +1767,8 @@
       "figma": {
         "name": "Icon/plus",
         "nodeId": "6:10",
-        "key": "8ca53c0957559aa1bc203cdb2bd2b9e568b4a33e"
+        "key": "8ca53c0957559aa1bc203cdb2bd2b9e568b4a33e",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"plus\")"
@@ -806,19 +1776,10 @@
     },
     {
       "figma": {
-        "name": "Icon/minus",
-        "nodeId": "6:13",
-        "key": "8c11c9426dabedc818e0fc2f6363a755e7db6142"
-      },
-      "swift": {
-        "symbol": "Image(systemName: \"minus\")"
-      }
-    },
-    {
-      "figma": {
         "name": "Icon/play.fill",
         "nodeId": "6:16",
-        "key": "0d8297e89841a6a321c90dc65d38c9e085b39b82"
+        "key": "0d8297e89841a6a321c90dc65d38c9e085b39b82",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"play.fill\")"
@@ -828,7 +1789,8 @@
       "figma": {
         "name": "Icon/pause.fill",
         "nodeId": "6:19",
-        "key": "b96401f72d82203ea614156416270bf8bcdd9523"
+        "key": "b96401f72d82203ea614156416270bf8bcdd9523",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"pause.fill\")"
@@ -838,7 +1800,8 @@
       "figma": {
         "name": "Icon/stop.fill",
         "nodeId": "6:22",
-        "key": "963561b865c8c80f38ef3bfe57d73dce184003c6"
+        "key": "963561b865c8c80f38ef3bfe57d73dce184003c6",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"stop.fill\")"
@@ -848,7 +1811,8 @@
       "figma": {
         "name": "Icon/mic.fill",
         "nodeId": "6:25",
-        "key": "5f1d70d29aa4c7993b00ee3fab855adf29560d33"
+        "key": "5f1d70d29aa4c7993b00ee3fab855adf29560d33",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"mic.fill\")"
@@ -858,7 +1822,8 @@
       "figma": {
         "name": "Icon/waveform",
         "nodeId": "6:28",
-        "key": "c92a5e0666834268802fa71833fe37fcd0120d1e"
+        "key": "c92a5e0666834268802fa71833fe37fcd0120d1e",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"waveform\")"
@@ -868,7 +1833,8 @@
       "figma": {
         "name": "Icon/link",
         "nodeId": "6:37",
-        "key": "5c3076a0b3be0c687f109e07bf6ffd23ef66737c"
+        "key": "5c3076a0b3be0c687f109e07bf6ffd23ef66737c",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"link\")"
@@ -878,7 +1844,8 @@
       "figma": {
         "name": "Icon/calendar",
         "nodeId": "6:40",
-        "key": "403708ef3387418d49dfe24e668f183702b9d086"
+        "key": "403708ef3387418d49dfe24e668f183702b9d086",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"calendar\")"
@@ -888,7 +1855,8 @@
       "figma": {
         "name": "Icon/bubble.left",
         "nodeId": "6:43",
-        "key": "d3a3f9e8e02a59acf6b2217fdda0f2e604f27f0e"
+        "key": "d3a3f9e8e02a59acf6b2217fdda0f2e604f27f0e",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"bubble.left\")"
@@ -898,7 +1866,8 @@
       "figma": {
         "name": "Icon/text.alignleft",
         "nodeId": "6:46",
-        "key": "32c133c47cfb9b61b3e04374c1f2ba44a087fb6e"
+        "key": "32c133c47cfb9b61b3e04374c1f2ba44a087fb6e",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"text.alignleft\")"
@@ -908,7 +1877,8 @@
       "figma": {
         "name": "Icon/chevron.right",
         "nodeId": "6:49",
-        "key": "4afc266e926fec8c026116706f467da7bb7614c2"
+        "key": "4afc266e926fec8c026116706f467da7bb7614c2",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"chevron.right\")"
@@ -918,7 +1888,8 @@
       "figma": {
         "name": "Icon/arrow.up",
         "nodeId": "6:52",
-        "key": "a1899830cc770afcaa66531e1a793a6288c49c97"
+        "key": "a1899830cc770afcaa66531e1a793a6288c49c97",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"arrow.up\")"
@@ -928,7 +1899,8 @@
       "figma": {
         "name": "Icon/arrow.up.right",
         "nodeId": "6:55",
-        "key": "ed6f03bb22ef2b287735d44c7e32372e0658c1ea"
+        "key": "ed6f03bb22ef2b287735d44c7e32372e0658c1ea",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"arrow.up.right\")"
@@ -938,7 +1910,8 @@
       "figma": {
         "name": "Icon/checkmark.circle.fill",
         "nodeId": "6:58",
-        "key": "a06d85a166cc30bd9eaa4b1eafbd9d7fa4ce7bec"
+        "key": "a06d85a166cc30bd9eaa4b1eafbd9d7fa4ce7bec",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"checkmark.circle.fill\")"
@@ -946,19 +1919,10 @@
     },
     {
       "figma": {
-        "name": "Icon/arrow.up.right.square",
-        "nodeId": "27:241",
-        "key": "14d1276a66202f6ee6753cb2bcd0bffd473474a9"
-      },
-      "swift": {
-        "symbol": "Image(systemName: \"arrow.up.right.square\")"
-      }
-    },
-    {
-      "figma": {
         "name": "Icon/chevron.left",
         "nodeId": "87:599",
-        "key": "7cb943470e82645abed53da56052bfe385f1a4ef"
+        "key": "7cb943470e82645abed53da56052bfe385f1a4ef",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"chevron.left\")"
@@ -968,7 +1932,8 @@
       "figma": {
         "name": "Icon/chevron.up",
         "nodeId": "87:602",
-        "key": "11eb9c5df1174655f2f20303d74d16fa7b3a41b8"
+        "key": "11eb9c5df1174655f2f20303d74d16fa7b3a41b8",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"chevron.up\")"
@@ -978,7 +1943,8 @@
       "figma": {
         "name": "Icon/chevron.down",
         "nodeId": "87:605",
-        "key": "29994a63928a41bc3eb08a2a25114491398fa129"
+        "key": "29994a63928a41bc3eb08a2a25114491398fa129",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"chevron.down\")"
@@ -988,7 +1954,8 @@
       "figma": {
         "name": "Icon/repeat",
         "nodeId": "87:608",
-        "key": "e3c84ac4d26f41d837614f2b80cbe9c1616e4cc9"
+        "key": "e3c84ac4d26f41d837614f2b80cbe9c1616e4cc9",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"repeat\")"
@@ -997,7 +1964,8 @@
     {
       "figma": {
         "name": "Icon/speaker.wave.2.fill",
-        "nodeId": "6:31"
+        "nodeId": "6:31",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"speaker.wave.2.fill\")"
@@ -1006,7 +1974,8 @@
     {
       "figma": {
         "name": "Icon/speaker.slash",
-        "nodeId": "6:34"
+        "nodeId": "6:34",
+        "file": "legacy"
       },
       "swift": {
         "symbol": "Image(systemName: \"speaker.slash\")"
@@ -1018,7 +1987,8 @@
       "figma": {
         "name": "Calendar / Event Detail",
         "nodeId": "93:1229",
-        "key": "67177309b617ffc26b540ec211d80c2a6d61179b"
+        "key": "67177309b617ffc26b540ec211d80c2a6d61179b",
+        "file": "legacy"
       },
       "notes": "Designed, not built: event details (title, when, place, notes, every calendar it's in, Join). Today the row tooltip lists the calendars."
     },
@@ -1026,7 +1996,8 @@
       "figma": {
         "name": "Chat / Calendar Summary",
         "nodeId": "93:1375",
-        "key": "8401e414cec336f2f2eea33564ae05838ef4a098"
+        "key": "8401e414cec336f2f2eea33564ae05838ef4a098",
+        "file": "legacy"
       },
       "notes": "Designed, not built: a card under Coco's chat reply (Today, Next Meeting, Coming Up, Free Time). Today the chat answers in text with an activity line."
     }

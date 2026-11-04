@@ -141,6 +141,18 @@ final class FocusController {
         }
     }
 
+    #if DEBUG
+    /// Snapshots only: moves this controller's clock `seconds` ahead, finishing the session if
+    /// it ends by then, so a render can show a running or completed session.
+    func advanceClockForSnapshot(by seconds: TimeInterval) {
+        now = Date().addingTimeInterval(seconds)
+        if timer.advance(to: now) {
+            let ended = timer
+            onEvent?(.finished(ended.phase, duration: ended.duration, taskID: ended.taskID, whileAway: false))
+        }
+    }
+    #endif
+
     private func commit() {
         try? store?.save(timer)
         scheduleTimers()

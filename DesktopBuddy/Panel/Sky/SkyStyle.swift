@@ -1,54 +1,28 @@
+import AppKit
 import SwiftUI
 
-/// The pop-up panel's look: Blue Skies Plus (the Figma Make "Blue Skies" style, with Sunny
-/// Side's orange as the accent). Values are copied from the style's CSS. The panel and the
-/// Connections window use these; the Settings and welcome windows keep the Theme tokens.
+/// The pop-up panel's look: Blue Skies Plus, as redrawn in the Coco-2 Figma file. The panel,
+/// the welcome window and the Connections window use these; Settings keeps the Theme tokens.
+///
+/// The colours, radii, spacing, sizes and text styles are generated from Figma's “Sky” variable
+/// collection and “Sky/…” text styles into DesignTokens.generated.swift (docs/DESIGN_SYSTEM.md).
+/// This file holds what Figma doesn't: how a text style becomes a font, and the motion.
 enum Sky {
-    // MARK: Colour
+    // MARK: Tokens (values in DesignTokens.generated.swift)
 
-    /// Sunny Side's orange: primary buttons, progress, the focus ring.
-    static let accent = Color(hex: 0xFF741B)
-    /// Blue Skies' soft brand fill: the selected segment and the slider's passed ticks.
-    static let accentSoft = Color(hex: 0xFFB07A)
-    /// Orange text on white: kickers and urgent notes.
-    static let accentText = Color(hex: 0xD9480F)
-    /// The pale tint behind Coco's line, her bubbles and the active tab.
-    static let accentPale = Color(hex: 0xFFF1E6)
-    /// Blue Skies' `--bs-ink`.
-    static let ink = Color(hex: 0x1D1F20)
-    /// Blue Skies' `--bs-muted`.
-    static let muted = Color(hex: 0x71777A)
-    /// Placeholders and finished items.
-    static let faint = Color(hex: 0xA3ABAE)
-    /// Blue Skies' `--bs-line`: the hairlines between rows.
-    static let line = Color(hex: 0xEDF0F1)
-    /// Input wells.
-    static let well = Color(hex: 0xF5F8F9)
-    /// Empty checkboxes and the dashed outlines.
-    static let ring = Color(hex: 0xBFCBD0)
-    /// Your own chat bubbles.
-    static let bubbleYou = Color(hex: 0xF2F4F4)
-    /// Dark brown for the focus countdown card (Sunny Side's banner).
-    static let dusk = Color(hex: 0x39251F)
-    static let paper = Color.white
-
-    // MARK: Shape
-
-    enum Radius {
-        static let panel: CGFloat = 30
-        static let card: CGFloat = 22
-        static let field: CGFloat = 18
-        static let key: CGFloat = 14
-    }
+    enum Radius {}
+    enum Space {}
+    enum Size {}
 
     // MARK: Type
-    // The app bundles no fonts, so this is the system face (SF Pro) rather than the comps' DM Sans.
+    // `text` and `display` are the system face (SF Pro), which the code uses wherever Figma
+    // sets Inter. Owners roles use the named styles in SkyType.
 
     static func text(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         .system(size: size, weight: weight)
     }
 
-    /// Big numbers and headings. Callers add the tight tracking the comps use.
+    /// Big numbers in the system face. Callers add the tight tracking the comps use.
     static func display(_ size: CGFloat) -> Font {
         .system(size: size, weight: .medium)
     }
@@ -60,5 +34,58 @@ enum Sky {
         static let enter = Animation.easeInOut(duration: 0.35)
         /// The squish of a pressed or dragged thing.
         static let squish = Animation.spring(response: 0.3, dampingFraction: 0.7)
+    }
+}
+
+/// A Figma “Sky/…” text style: Owners or Owners Wide (MCKL) at a set size, weight and tracking.
+///
+/// Owners comes from Adobe Fonts, whose licence doesn't allow bundling it, so the app uses it
+/// wherever it's installed and otherwise falls back to the system face at the same size and
+/// weight — the wide cut falls back to SF Pro's expanded width. Styles Figma sets in Inter
+/// have no `face` and always use the system face.
+struct SkyType: Sendable {
+    /// The Figma family: "Owners", "Owners Wide" or "Inter".
+    let family: String
+    /// The PostScript name to load, or nil for the system face.
+    let face: String?
+    let weight: Font.Weight
+    let size: CGFloat
+    var tracking: CGFloat = 0
+    var uppercase = false
+
+    var font: Font {
+        if let face, Self.installed.contains(face) {
+            return .custom(face, fixedSize: size)
+        }
+        let system = Font.system(size: size, weight: weight)
+        return family.hasSuffix("Wide") ? system.width(.expanded) : system
+    }
+
+    /// The same style at another size, for the few places that scale a role.
+    func sized(_ size: CGFloat) -> SkyType {
+        SkyType(family: family, face: face, weight: weight, size: size, tracking: tracking, uppercase: uppercase)
+    }
+
+    /// PostScript names of every font this Mac can use, read once.
+    private static let installed = Set(NSFontManager.shared.availableFonts)
+
+    /// Whether the Owners faces are available here (false means the system fallback is showing).
+    static var ownersInstalled: Bool { installed.contains("Owners-Medium") }
+}
+
+extension View {
+    /// Sets a Figma text style: font, tracking and case.
+    func skyType(_ style: SkyType) -> some View {
+        font(style.font)
+            .tracking(style.tracking)
+            .textCase(style.uppercase ? .uppercase : nil)
+    }
+}
+
+extension Text {
+    /// `skyType` for Text that gets concatenated (`Text + Text`): font and tracking only, so
+    /// upper-case the string yourself. A different name so it never shadows the View version.
+    func skyStyled(_ style: SkyType) -> Text {
+        font(style.font).tracking(style.tracking)
     }
 }

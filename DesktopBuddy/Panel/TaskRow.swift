@@ -19,7 +19,8 @@ struct TaskRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Button { model.toggleTask(task.id) } label: {
-                SkyCheck(checked: task.isCompleted, size: 18)
+                // Top-level tasks tick orange; subtasks keep the checkbox's green.
+                SkyCheck(checked: task.isCompleted, size: 18, fill: task.parentID == nil ? Sky.accent : Sky.confirm)
             }
             .buttonStyle(.plain)
             .padding(.top, isEditing ? 10 : 1)
@@ -32,9 +33,8 @@ struct TaskRow: View {
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(task.title)
-                        .font(Sky.text(13.5, .medium))
+                        .skyType(.titleRow)
                         .foregroundStyle(task.isCompleted ? Sky.faint : Sky.ink)
-                        .strikethrough(task.isCompleted, color: Sky.faint)
                         .lineLimit(2)
                     meta
                 }
@@ -48,7 +48,7 @@ struct TaskRow: View {
             if hovering && !isEditing {
                 HStack(spacing: 2) {
                     if !task.isCompleted {
-                        RowIconButton(symbol: "plus", help: "Add subtask") { model.openTaskForm(parent: task.id) }
+                        RowIconButton(symbol: "plus", help: "Add subtask", ringed: true) { model.openTaskForm(parent: task.id) }
                         RowIconButton(symbol: "play.fill", help: "Focus on this") { model.focus(on: task.id) }
                     }
                     RowIconButton(symbol: "xmark", help: "Remove") { model.removeTask(task.id) }
@@ -81,7 +81,7 @@ struct TaskRow: View {
     private var background: Color {
         if isEditing { return Sky.well }
         if isNew { return Sky.accentPale }
-        return hovering ? Sky.well.opacity(0.7) : .clear
+        return hovering ? Sky.well : .clear
     }
 
     /// A thin line down the check column of each parent level, tying subtasks to their parent.
@@ -89,7 +89,7 @@ struct TaskRow: View {
         ZStack(alignment: .leading) {
             ForEach(0..<min(row.depth, 3), id: \.self) { level in
                 Rectangle()
-                    .fill(Sky.ring.opacity(0.55))
+                    .fill(Sky.ring)
                     .frame(width: 1.5)
                     .padding(.leading, 20 + CGFloat(level) * 20 + 8.25)
             }
@@ -102,31 +102,35 @@ struct TaskRow: View {
     private var meta: some View {
         let parts = metaParts
         let due = TaskLabels.due(task)
-        if !parts.isEmpty || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty
+        if !parts.isEmpty || task.estimateMinutes != nil || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty
             || task.external != nil || row.hasSubtasks || (task.priority != .none && !task.isCompleted) {
             HStack(spacing: 8) {
                 if row.hasSubtasks { subtaskToggle }
                 if isInFocus {
                     HStack(spacing: 4) {
                         Circle().fill(Sky.accent).frame(width: 5, height: 5)
-                        SkyKicker("In focus", color: Sky.accentText)
+                        SkyKicker("In focus", tone: .accent)
                     }
                 }
                 if task.priority != .none, !task.isCompleted { priorityMark }
                 if let due, !task.isCompleted {
-                    SkyKicker(due.text, color: due.urgent ? Sky.accentText : Sky.muted)
+                    if due.overdue { SkyKicker(due.text, color: Sky.accentText) } else { SkyKicker(due.text, tone: .ink) }
                 }
                 if task.scope == .today {
-                    SkyKicker("Today only", color: Sky.faint)
+                    SkyKicker("Today only", tone: .faint)
                 }
                 if task.external?.source == .notion {
                     SkyKicker("Notion")
                         .help("Linked to a Notion page — title and due date come from Notion")
                 }
-                ForEach(parts, id: \.self) { SkyKicker($0, color: Sky.faint) }
+                if let estimate = task.estimateMinutes {
+                    // Faint while open; ink once the task is done.
+                    SkyKicker("Est \(TodayView.duration(estimate))", tone: task.isCompleted ? .ink : .faint)
+                }
+                ForEach(parts, id: \.self) { SkyKicker($0, tone: .faint) }
                 if !task.notes.isEmpty {
                     Image(systemName: "text.alignleft")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Sky.faint)
                         .accessibilityLabel("Has notes")
                 }
@@ -143,7 +147,7 @@ struct TaskRow: View {
                     .font(.system(size: 7.5, weight: .bold))
                     .rotationEffect(.degrees(row.isExpanded ? 90 : 0))
                 Text("\(row.completedSubtaskCount)/\(row.subtaskCount)")
-                    .font(Sky.text(10, .semibold))
+                    .skyType(.labelCount)
                     .monospacedDigit()
             }
             .foregroundStyle(allDone ? Sky.accentText : Sky.muted)
@@ -163,9 +167,7 @@ struct TaskRow: View {
     private var priorityMark: some View {
         if task.priority == .urgent {
             Text("Urgent")
-                .font(Sky.text(9.5, .semibold))
-                .tracking(9.5 * 0.12)
-                .textCase(.uppercase)
+                .skyType(.kickerStrong)
                 .foregroundStyle(Sky.accentText)
                 .padding(.horizontal, 6)
                 .frame(height: 16)
@@ -180,10 +182,7 @@ struct TaskRow: View {
     }
 
     private var metaParts: [String] {
-        var parts: [String] = []
-        if let estimate = task.estimateMinutes { parts.append("Est \(TodayView.duration(estimate))") }
-        if task.focusMinutes > 0 { parts.append("Focused \(TodayView.duration(task.focusMinutes))") }
-        return parts
+        task.focusMinutes > 0 ? ["Focused \(TodayView.duration(task.focusMinutes))"] : []
     }
 
     @ViewBuilder
@@ -223,18 +222,21 @@ struct TaskRow: View {
 enum TaskLabels {
     struct Due {
         var text: String
-        var urgent: Bool
+        /// Due today or overdue.
+        var urgent = false
+        /// Past its date: the one due label that keeps the accent colour (Figma shows due dates in ink).
+        var overdue = false
     }
 
     static func due(_ task: BuddyTask, now: Date = .now) -> Due? {
         guard let deadline = task.deadline,
               let days = DayPlanner.daysUntilDeadline(task, now: now) else { return nil }
         switch days {
-        case ..<0: return Due(text: "Overdue", urgent: true)
+        case ..<0: return Due(text: "Overdue", urgent: true, overdue: true)
         case 0: return Due(text: "Due today", urgent: true)
-        case 1: return Due(text: "Due tomorrow", urgent: false)
-        case 2...6: return Due(text: "Due " + deadline.formatted(.dateTime.weekday(.abbreviated)), urgent: false)
-        default: return Due(text: "Due " + deadline.formatted(.dateTime.month(.abbreviated).day()), urgent: false)
+        case 1: return Due(text: "Due tomorrow")
+        case 2...6: return Due(text: "Due " + deadline.formatted(.dateTime.weekday(.abbreviated)))
+        default: return Due(text: "Due " + deadline.formatted(.dateTime.month(.abbreviated).day()))
         }
     }
 
@@ -250,9 +252,12 @@ enum TaskLabels {
     }
 }
 
+/// A hovered row's small round action (UI/IconButton, 22 pt). `ringed` is the add-subtask +:
+/// 24 pt in a faded ink ring (Task/AddSubtaskAction).
 struct RowIconButton: View {
     let symbol: String
     let help: String
+    var ringed = false
     let action: () -> Void
     @State private var hovering = false
 
@@ -261,8 +266,11 @@ struct RowIconButton: View {
             Image(systemName: symbol)
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(hovering ? Sky.ink : Sky.muted)
-                .frame(width: 24, height: 24)
+                .frame(width: ringed ? 24 : 22, height: ringed ? 24 : 22)
                 .background(Circle().fill(hovering ? Sky.line : .clear))
+                .overlay { if ringed { Circle().strokeBorder(Sky.ink, lineWidth: 1) } }
+                .opacity(ringed && !hovering ? 0.5 : 1)
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }

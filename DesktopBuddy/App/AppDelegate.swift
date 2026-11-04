@@ -96,7 +96,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings = HostedWindowController(title: "Settings", size: NSSize(width: 540, height: 680)) {
             AnyView(SettingsView(model: model))
         }
-        onboarding = HostedWindowController(title: "Welcome", size: NSSize(width: 460, height: 610)) { [weak self] in
+        // 14 pt taller than the Figma frame: SF Pro (standing in for Inter) sets the extras
+        // cards' small print a little taller, and step 3 would otherwise clip its last card.
+        onboarding = HostedWindowController(title: "Welcome", size: NSSize(width: 460, height: 624), drawsOwnEdge: true) { [weak self] in
             AnyView(OnboardingView(model: model) {
                 self?.onboarding.close()
                 model.finishOnboarding()

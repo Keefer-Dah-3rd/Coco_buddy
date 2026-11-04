@@ -61,8 +61,7 @@ struct SkyTimeSlider: View {
             HStack {
                 Spacer()
                 Text(label)
-                    .font(Sky.display(22))
-                    .tracking(-0.6)
+                    .skyType(.displaySlider)
                     .monospacedDigit()
                     .foregroundStyle(Sky.ink)
                     .contentTransition(.numericText(value: Double(minutes)))

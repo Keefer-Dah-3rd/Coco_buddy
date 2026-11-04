@@ -10,13 +10,24 @@ import BuddyIntegrations
 ///
 ///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --snapshots ~/Desktop/coco-snapshots
 ///
-/// (Run an unsandboxed build, or pass a folder inside the app's container.)
+/// (Run an unsandboxed build, or pass a folder inside the app's container.) Set
+/// `SNAPSHOT_ONLY=panel-chat,welcome` to write only the files whose names start with those.
 enum SnapshotRenderer {
+    /// Name prefixes from SNAPSHOT_ONLY; empty means write everything.
+    private static let only = (ProcessInfo.processInfo.environment["SNAPSHOT_ONLY"] ?? "")
+        .split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+
+    private static func wanted(_ name: String) -> Bool {
+        only.isEmpty || only.contains { name.hasPrefix($0) }
+    }
+
     static func run(into folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         renderIcon(to: folder.appendingPathComponent("icon-1024.png"))
-        exportMascot(to: folder.appendingPathComponent("mascot"))
-        RunPreview.exportTricks(to: folder.appendingPathComponent("mascot"))
+        if wanted("mascot") {
+            exportMascot(to: folder.appendingPathComponent("mascot"))
+            RunPreview.exportTricks(to: folder.appendingPathComponent("mascot"))
+        }
         renderBubbleWindow(to: folder.appendingPathComponent("bubble-window.png"))
         write(callTargetSheet(), to: folder.appendingPathComponent("call-target.png"))
         for (name, background) in [("light", NSColor(hex: 0xD9E0E6)), ("dark", NSColor(hex: 0x1E252D))] {
@@ -31,6 +42,22 @@ enum SnapshotRenderer {
             write(view(SpeechBubbleView(text: "Focusing on “Homepage hero”. I'll be quiet.", tail: .bottom, tailAnchor: 0.5)
                 .padding(8), appearance: appearance), to: folder.appendingPathComponent("bubble-\(name).png"))
         }
+        // The Focus tab mid-session, paused, and finished with and without the "Did it get done?" prompt.
+        let running = demoModel()
+        running.panelTab = .focus
+        running.focus.start(.focus, taskID: running.tasks.today().first?.id)
+        running.focus.advanceClockForSnapshot(by: 290)
+        write(view(PanelRootView(model: running), appearance: .aqua), to: folder.appendingPathComponent("panel-focus-running.png"))
+        running.focus.pause()
+        write(view(PanelRootView(model: running), appearance: .aqua), to: folder.appendingPathComponent("panel-focus-paused.png"))
+        let finished = demoModel()
+        finished.panelTab = .focus
+        finished.focus.start(.focus, taskID: finished.tasks.today().first?.id)
+        finished.focus.advanceClockForSnapshot(by: finished.focus.timer.duration + 1)
+        write(view(PanelRootView(model: finished), appearance: .aqua), to: folder.appendingPathComponent("panel-focus-complete.png"))
+        finished.dismissCompletionPrompt()
+        write(view(PanelRootView(model: finished), appearance: .aqua), to: folder.appendingPathComponent("panel-focus-complete-noprompt.png"))
+
         let review = demoModel()
         review.taskDrafts = TaskSplitter.split("I need to finish the homepage, review three portfolio projects for about an hour, and send two emails today")
             .map(AppModel.TaskDraft.init)
@@ -125,6 +152,7 @@ enum SnapshotRenderer {
         let consent = demoModel()
         consent.panelTab = .chat
         consent.preferences.aiConsentVersion = 0
+        consent.assistant.loadPreview([], cost: 0)  // a key is set; only consent is missing
         write(view(PanelRootView(model: consent), appearance: .aqua), to: folder.appendingPathComponent("panel-chat-consent.png"))
 
         let chatting = demoModel()
@@ -550,7 +578,8 @@ enum SnapshotRenderer {
     }
 
     private static func write(_ image: NSImage, to url: URL) {
-        guard let tiff = image.tiffRepresentation,
+        guard wanted(url.lastPathComponent),
+              let tiff = image.tiffRepresentation,
               let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return }
         try? png.write(to: url)
     }

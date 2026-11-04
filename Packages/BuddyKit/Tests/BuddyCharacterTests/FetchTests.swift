@@ -157,6 +157,17 @@ import Testing
         #expect(animator.pose(at: game.contactTime - 0.001).reach > 0.95)
     }
 
+    @Test func reduceMotionTurnsRoundWithoutTheBob() {
+        let game = fetch(to: SIMD2(650, 280))
+        let midTurn = game.homeward.startTime + Fetch.turnAround / 2
+        var animator = CharacterAnimator()
+        animator.setFetch(game)
+        #expect(animator.pose(at: midTurn).gallop > 0.2)
+        animator.reduceMotion = true
+        #expect(animator.pose(at: midTurn).gallop == 0)
+        #expect(animator.pose(at: midTurn).carry == 1)
+    }
+
     @Test func aBallLandingRightBesideHerIsStillFetched() {
         let game = fetch(to: home + SIMD2(-30, -10))
         #expect(game.endTime > game.startTime)

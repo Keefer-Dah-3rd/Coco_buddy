@@ -10,7 +10,7 @@ struct EventRequestCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SkyKicker(heading, color: Sky.ink)
+            SkyKicker(heading, tone: .ink)
             content
             if !request.conflicts.isEmpty, case .waiting = request.state {
                 VStack(alignment: .leading, spacing: 2) {
@@ -23,8 +23,10 @@ struct EventRequestCard: View {
             }
             footer
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .skyCard(radius: Sky.Radius.card)
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.accentSoft))
         .accessibilityElement(children: .contain)
     }
 
@@ -52,10 +54,10 @@ struct EventRequestCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(changes.title ?? event.title).font(Sky.text(13.5, .semibold)).foregroundStyle(Sky.ink)
                 if let start = changes.start, let end = changes.end {
-                    Text(AppModel.describe(event.start, event.end, allDay: event.isAllDay))
-                        .font(Sky.text(12)).foregroundStyle(Sky.faint).strikethrough()
+                    Text(AppModel.describe(event.start, event.end, allDay: event.isAllDay)).strikethrough()
+                        .skyType(.bodySmall).foregroundStyle(Sky.faint)
                     Text("→ " + AppModel.describe(start, end, allDay: event.isAllDay))
-                        .font(Sky.text(12)).foregroundStyle(Sky.ink)
+                        .skyType(.bodySmall).foregroundStyle(Sky.ink)
                 }
                 if let title = changes.title, title != event.title {
                     Text("Was “\(event.title)”").font(Sky.text(11)).foregroundStyle(Sky.muted)
@@ -90,7 +92,7 @@ struct EventRequestCard: View {
     private func line(_ title: String, _ when: String, _ location: String?) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(Sky.text(13.5, .semibold)).foregroundStyle(Sky.ink)
-            Text(when).font(Sky.text(12)).foregroundStyle(Sky.ink)
+            Text(when).skyType(.bodySmall).foregroundStyle(Sky.ink)
             if let location, !location.isEmpty {
                 Text(location).font(Sky.text(11)).foregroundStyle(Sky.muted).lineLimit(2)
             }

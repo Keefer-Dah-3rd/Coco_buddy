@@ -1,8 +1,10 @@
 import SwiftUI
 import BuddyCore
 
-/// The compact panel that opens when you click the buddy. Blue Skies Plus look: the speech line
-/// up top, the tabs along the bottom, where the mouse already is after the click on Coco.
+/// The compact panel that opens when you click the buddy. Blue Skies Plus look (Figma:
+/// Companion/Panel): the date and three round keys up top, the tabs along the bottom, where the
+/// mouse already is after the click on Coco, and a navy rim. Coco's lines aren't shown here —
+/// the redesign dropped the speech line — so while the panel is open she only mouths along.
 struct PanelRootView: View {
     @Bindable var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -23,7 +25,7 @@ struct PanelRootView: View {
                     .clipped()
                     nav
                 }
-                // The new-task form rises over the list and tabs; Coco's line stays in view above it.
+                // The new-task form rises over the list and tabs; the header stays in view above it.
                 if let draft = model.taskForm {
                     TaskFormView(model: model, draft: draft)
                         .id(draft.id)
@@ -38,10 +40,10 @@ struct PanelRootView: View {
             }
             .animation(reduceMotion ? .easeOut(duration: 0.15) : .snappy(duration: 0.3), value: model.taskForm?.id)
         }
-        .frame(width: Metrics.panelWidth, height: Metrics.panelHeight)
+        .frame(width: Sky.Size.panelWidth, height: Sky.Size.panelHeight)
         .background(Sky.paper)
         .clipShape(RoundedRectangle(cornerRadius: Sky.Radius.panel, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.panel, style: .continuous).strokeBorder(Sky.line))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.panel, style: .continuous).strokeBorder(Sky.navy, lineWidth: 2))
         // The Blue Skies look is light by design, so the panel stays light in dark mode too.
         .environment(\.colorScheme, .light)
         .onExitCommand {
@@ -50,46 +52,15 @@ struct PanelRootView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(model.focus.timer.isRunning ? Sky.accent : Sky.faint)
-                    .frame(width: 7, height: 7)
-                Text(Buddy.name)
-                    .font(Sky.display(19))
-                    .tracking(-0.4)
-                    .foregroundStyle(Sky.ink)
-                Text("· " + Date.now.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                    .font(Sky.text(11.5))
-                    .foregroundStyle(Sky.muted)
-                Spacer()
-                linkButton
-                barkButton
-                closeButton
-            }
-
-            // In Chat the conversation itself is Coco's voice, so the speech line steps aside.
-            if model.panelTab != .chat {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("›")
-                        .font(Sky.text(15, .bold))
-                        .foregroundStyle(Sky.accentText)
-                    Text(model.buddyLine)
-                        .font(Sky.text(13))
-                        .foregroundStyle(Sky.ink)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .id(model.buddyLine)
-                        .transition(.opacity)
-                }
-                .padding(.horizontal, 13)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, minHeight: 40, alignment: .topLeading)
-                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Sky.accentPale))
-                .animation(Sky.Motion.quick, value: model.buddyLine)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(Buddy.name) says: \(model.buddyLine)")
-            }
+        HStack(spacing: 8) {
+            Text(Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                .skyType(.receiptDisplay)
+                .foregroundStyle(Sky.muted)
+                .lineLimit(1)
+            Spacer()
+            linkButton
+            barkButton
+            closeButton
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -121,7 +92,7 @@ struct PanelRootView: View {
         Button { model.setPanelOpen(false) } label: {
             Image(systemName: "xmark")
         }
-        .buttonStyle(SkyRoundStyle(size: 26, tint: Sky.muted))
+        .buttonStyle(SkyRoundStyle(size: 26, tint: Sky.ink))
         .help("Close (Esc)")
         .accessibilityLabel("Close")
     }
@@ -136,10 +107,12 @@ struct PanelRootView: View {
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .padding(.bottom, 10)
-        .overlay(alignment: .top) { Rectangle().fill(Sky.line).frame(height: 1) }
+        .background(Sky.indigo)
+        .overlay(alignment: .top) { Rectangle().fill(Sky.ink).frame(height: 2) }
     }
 
-    /// Icon over label. The current tab sits on a pale tile and its icon fills in.
+    /// Icon over label, white on the indigo bar. The current tab sits on a navy tile and its icon
+    /// fills in. Figma: Companion/NavItem.
     private func navItem(_ tab: PanelTab, _ title: String, symbol: String, trailing: String? = nil, key: Character) -> some View {
         let selected = model.panelTab == tab
         return Button { model.panelTab = tab } label: {
@@ -147,6 +120,7 @@ struct PanelRootView: View {
                 Image(systemName: symbol)
                     .font(.system(size: 15, weight: .regular))
                     .symbolVariant(selected ? .fill : .none)
+                    .frame(height: 16)
                 HStack(spacing: 4) {
                     Text(title)
                     if let trailing {
@@ -155,13 +129,13 @@ struct PanelRootView: View {
                             .opacity(0.7)
                     }
                 }
-                .font(Sky.text(10, .medium))
+                .skyType(.labelNav)
             }
-            .foregroundStyle(selected ? Sky.ink : Sky.muted)
+            .foregroundStyle(Sky.paper)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(selected ? Sky.accentPale : .clear))
+            .background(RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous).fill(selected ? Sky.navy : .clear))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

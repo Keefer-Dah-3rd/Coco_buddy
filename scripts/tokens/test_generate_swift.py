@@ -4,6 +4,7 @@ import copy
 import json
 import unittest
 
+import apply_figma_export as applier
 import generate_swift as gen
 
 
@@ -43,6 +44,62 @@ class GeneratorTests(unittest.TestCase):
         self.assertIn("static let monoLabel = TypeStyle(design: .monospaced, weight: .semibold, size: 10, "
                       "tracking: 0.8, uppercase: true)", swift)
         self.assertIn("static let body = TypeStyle(design: .default, weight: .regular, size: 13)", swift)
+
+    def test_sky_tokens_land_in_their_namespaces(self):
+        swift = gen.generate(self.tokens)
+        sky = gen.entries(self.tokens["sky"])
+        navy = next(t for t in sky.values() if t["swift"] == "navy")
+        self.assertIn(f"static let navy = Color(hex: {self.hex_of(navy['value'])})", swift)
+        for namespace, name in (("Radius", "panel"), ("Space", "gutter"), ("Size", "panelHeight")):
+            token = next(t for t in sky.values() if t["swift"] == f"{namespace}.{name}")
+            block = swift.split(f"extension Sky.{namespace} {{\n", 1)[1].split("\n}", 1)[0]
+            self.assertIn(f"static let {name}: CGFloat = {gen.number(token['value'])}", block)
+
+    def test_sky_type_derives_face_and_weight_from_family_and_style(self):
+        tokens = copy.deepcopy(self.tokens)
+        tokens["skyTypography"] = {
+            "Sky/Kicker": {"swift": "kicker", "family": "Owners", "style": "Bold", "size": 10, "tracking": 1.25, "uppercase": True},
+            "Sky/Display/Countdown": {"swift": "displayCountdown", "family": "Owners Wide", "style": "Semi Bold", "size": 46},
+            "Sky/Body/Caption": {"swift": "bodyCaption", "family": tokens["fonts"]["sans"]["figma"], "style": "Regular", "size": 11},
+        }
+        swift = gen.generate(tokens)
+        self.assertIn('static let kicker = SkyType(family: "Owners", face: "Owners-Bold", weight: .bold, size: 10, '
+                      'tracking: 1.25, uppercase: true)', swift)
+        self.assertIn('static let displayCountdown = SkyType(family: "Owners Wide", face: "OwnersWide-SemiBold", '
+                      'weight: .semibold, size: 46)', swift)
+        family = tokens["fonts"]["sans"]["figma"]
+        self.assertIn(f'static let bodyCaption = SkyType(family: "{family}", face: nil, weight: .regular, size: 11)', swift)
+
+    def test_rejects_unknown_sky_namespaces_and_font_styles(self):
+        tokens = copy.deepcopy(self.tokens)
+        tokens["sky"]["shadow/soft"] = {"swift": "Shadow.soft", "value": 4}
+        tokens["skyTypography"]["Sky/Kicker"]["style"] = "Wobbly"
+        with self.assertRaises(gen.TokenError) as raised:
+            gen.generate(tokens)
+        self.assertIn("Sky.Shadow", str(raised.exception))
+        self.assertIn("Wobbly", str(raised.exception))
+
+    def test_sky_names_may_repeat_across_namespaces_but_not_within_one(self):
+        tokens = copy.deepcopy(self.tokens)
+        tokens["sky"]["space/panel"] = {"swift": "Space.panel", "value": 30}  # Sky.Radius.panel exists too: fine
+        gen.generate(tokens)
+        tokens["sky"]["radius/panel-2"] = {"swift": "Radius.panel", "value": 31}
+        with self.assertRaisesRegex(gen.TokenError, "also used by"):
+            gen.generate(tokens)
+
+    def test_rejects_an_export_missing_a_group(self):
+        tokens = copy.deepcopy(self.tokens)
+        del tokens["skyTypography"]
+        with self.assertRaisesRegex(gen.TokenError, "missing group 'skyTypography'"):
+            gen.generate(tokens)
+
+    def test_applier_lists_a_group_new_to_tokens_json_as_additions(self):
+        before = copy.deepcopy(self.tokens)
+        del before["sky"]
+        description = self.tokens["$description"]
+        found = applier.changes(applier.canonical(before, description), applier.canonical(self.tokens, description))
+        self.assertEqual(len(found), len(gen.entries(self.tokens["sky"])))
+        self.assertTrue(all(line.startswith("  + sky ") for line in found))
 
     def test_changing_a_primitive_changes_every_semantic_color_that_uses_it(self):
         tokens = copy.deepcopy(self.tokens)

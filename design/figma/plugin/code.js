@@ -12,8 +12,11 @@
 //   await exportTokens()        — read Figma back into the design/tokens.json shape.
 //
 // Naming: a token's key is its Figma variable (or text style) name. The Swift name travels as
-// the variable's iOS code syntax ("Theme.paper", "Space.xl") or, for text styles, the
-// description line "Swift: TypeStyle.bodySmall".
+// the variable's iOS code syntax ("Theme.paper", "Space.xl", "Sky.Radius.panel") or, for text
+// styles, the description line "Swift: TypeStyle.bodySmall" ("Swift: SkyType.kicker" for “Sky/…”).
+//
+// The “Sky” collection is the pop-up panel's look. It mixes colors and numbers, and only its
+// “Value” mode is synced; any other mode is left alone and reported as a warning.
 
 const COCO_GROUPS = {
   // group key in tokens.json → Swift type used in iOS code syntax and default scopes
@@ -22,6 +25,7 @@ const COCO_GROUPS = {
   space: { swiftType: 'Space', kind: 'FLOAT', scopes: ['GAP'] },
   radius: { swiftType: 'Radius', kind: 'FLOAT', scopes: ['CORNER_RADIUS'] },
   metrics: { swiftType: 'Metrics', kind: 'FLOAT' },
+  sky: { swiftType: 'Sky' }, // kind follows each token: a color or a number
 };
 const COCO_WEIGHTS = {
   // tokens.json weight → Figma style name per family key
@@ -46,6 +50,11 @@ function cocoEntries(group) {
 // Figma hands descriptions back HTML-escaped ("Coco&#39;s").
 function cocoUnescape(text) {
   return String(text || '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+// A description's own text plus a last line "Swift: <symbol>", replacing any earlier Swift line.
+function cocoWithSwiftLine(description, symbol) {
+  const notes = cocoUnescape(description).split('\n').filter(line => !/^Swift: \w+\./.test(line.trim())).join('\n').trim();
+  return (notes ? notes + '\n' : '') + `Swift: ${symbol}`;
 }
 // FNV-1a over the UTF-16 code units of the compact JSON; scripts/tokens/apply_figma_export.py checks it.
 function cocoChecksum(text) {
@@ -100,15 +109,17 @@ async function importTokens(tokens) {
 
   for (const [group, spec] of Object.entries(COCO_GROUPS)) {
     const source = tokens[group];
+    if (!source) continue;
     const modes = source.$modes || ['Value'];
     const c = await collection(source.$collection, modes);
     const seen = new Set();
     for (const [name, token] of cocoEntries(source)) {
-      const v = variable(c, name, spec.kind);
+      const kind = spec.kind || (typeof token.value === 'number' ? 'FLOAT' : 'COLOR');
+      const v = variable(c, name, kind);
       seen.add(name);
-      if (spec.kind === 'COLOR' && source.$modes) {
+      if (kind === 'COLOR' && source.$modes) {
         modes.forEach(m => v.setValueForMode(c.modes.find(x => x.name === m).modeId, colorValue(token[m.toLowerCase()])));
-      } else if (spec.kind === 'COLOR') {
+      } else if (kind === 'COLOR') {
         v.setValueForMode(c.modes[0].modeId, colorValue(token.value));
       } else {
         // Figma measures opacity variables in percent; the code (and tokens.json) uses 0–1.
@@ -155,8 +166,30 @@ async function importTokens(tokens) {
     s.textCase = t.uppercase ? 'UPPER' : 'ORIGINAL';
     s.description = `Swift: TypeStyle.${t.swift}`;
   }
+
+  // Sky text styles name their font directly (Owners, Owners Wide, Inter). Their descriptions keep
+  // the designer's notes with our "Swift:" line last; line height isn't a token, so it's left alone.
+  for (const [name, t] of cocoEntries(tokens.skyTypography)) {
+    const fontName = { family: t.family, style: t.style };
+    await figma.loadFontAsync(fontName);
+    let s = styles.find(x => x.name === name);
+    if (!s) {
+      s = figma.createTextStyle();
+      s.name = name;
+      styles.push(s);
+      report.textStyles.push(`created ${name}`);
+    } else {
+      report.textStyles.push(`updated ${name}`);
+    }
+    s.fontName = fontName;
+    s.fontSize = t.size;
+    s.letterSpacing = { unit: 'PIXELS', value: t.tracking || 0 };
+    s.textCase = t.uppercase ? 'UPPER' : 'ORIGINAL';
+    s.description = cocoWithSwiftLine(s.description, `SkyType.${t.swift}`);
+  }
   for (const s of styles) {
-    if (!tokens.typography[s.name]) report.extrasInFigma.push(`text style ${s.name}`);
+    const group = (s.name.startsWith('Sky/') ? tokens.skyTypography : tokens.typography) || {};
+    if (!group[s.name]) report.extrasInFigma.push(`text style ${s.name}`);
   }
   return report;
 }
@@ -196,25 +229,34 @@ async function exportTokens() {
     return derived;
   };
 
-  const groupFor = { Color: 'color', Brand: 'brand', Space: 'space', Radius: 'radius', Metrics: 'metrics' };
+  const groupFor = { Color: 'color', Brand: 'brand', Space: 'space', Radius: 'radius', Metrics: 'metrics', Sky: 'sky' };
   for (const [collectionName, group] of Object.entries(groupFor)) {
     const c = find(collectionName);
     if (!c) throw new Error(`No “${collectionName}” collection`);
     const spec = COCO_GROUPS[group];
     const section = { $collection: collectionName };
+    // Color exports every mode; the rest export “Value” (or their only mode) and ignore the others.
+    const mode = c.modes.find(m => m.name === 'Value') || c.modes[0];
     if (group === 'color') section.$modes = c.modes.map(m => m.name);
+    else for (const m of c.modes.filter(m => m.modeId !== mode.modeId)) warnings.push(`${collectionName}: mode “${m.name}” is ignored; only “${mode.name}” is exported`);
     for (const v of varsIn(c)) {
+      const kind = spec.kind || v.resolvedType;
+      if (kind !== 'COLOR' && kind !== 'FLOAT') {
+        warnings.push(`${collectionName}/${v.name}: ${kind} variables aren't tokens; skipped`);
+        continue;
+      }
       const token = { swift: swiftName(v, spec.swiftType) };
       if (group === 'color') {
         for (const m of c.modes) token[m.name.toLowerCase()] = colorRef(v.valuesByMode[m.modeId], v.name);
-      } else if (spec.kind === 'COLOR') {
-        token.value = colorRef(v.valuesByMode[c.modes[0].modeId], v.name);
+      } else if (kind === 'COLOR') {
+        token.value = colorRef(v.valuesByMode[mode.modeId], v.name);
       } else {
-        const raw = v.valuesByMode[c.modes[0].modeId];
+        const raw = v.valuesByMode[mode.modeId];
         token.value = cocoRound(v.scopes.includes('OPACITY') ? raw / 100 : raw);
       }
+      // Groups without default scopes (color, metrics, sky) always carry theirs.
       const sameAsDefault = JSON.stringify(v.scopes) === JSON.stringify(spec.scopes || []);
-      if (group === 'color' || group === 'metrics' || !sameAsDefault) token.scopes = v.scopes;
+      if (!spec.scopes || !sameAsDefault) token.scopes = v.scopes;
       if (v.description) token.description = cocoUnescape(v.description);
       section[v.name] = token;
     }
@@ -232,8 +274,22 @@ async function exportTokens() {
   }
 
   out.typography = {};
+  out.skyTypography = {};
   const familyKey = family => Object.keys(out.fonts).find(k => out.fonts[k].figma === family);
+  const derivedName = name => name.split(/[\/ ]+/).map((p, i) => (i ? p[0].toUpperCase() + p.slice(1) : p.toLowerCase())).join('');
+  const trackingOf = s => (s.letterSpacing.unit === 'PIXELS' ? cocoRound(s.letterSpacing.value) : cocoRound((s.letterSpacing.value / 100) * s.fontSize));
   for (const s of await figma.getLocalTextStylesAsync()) {
+    if (s.name.startsWith('Sky/')) {
+      const match = /Swift: SkyType\.(\w+)/.exec(cocoUnescape(s.description));
+      const swift = match ? match[1] : derivedName(s.name.slice(4));
+      if (!match) warnings.push(`text style ${s.name}: no “Swift: SkyType.…” in its description; using “${swift}”`);
+      const style = { swift, family: s.fontName.family, style: s.fontName.style, size: cocoRound(s.fontSize) };
+      const tracking = trackingOf(s);
+      if (tracking) style.tracking = tracking;
+      if (s.textCase === 'UPPER') style.uppercase = true;
+      out.skyTypography[s.name] = style;
+      continue;
+    }
     const family = familyKey(s.fontName.family);
     if (!family) {
       warnings.push(`text style ${s.name}: font ${s.fontName.family} isn't font/sans or font/mono; skipped`);
@@ -242,10 +298,10 @@ async function exportTokens() {
     const plain = s.fontName.style.toLowerCase().replace(/\s+/g, '');
     const weight = { extrabold: 'heavy', ultrabold: 'heavy' }[plain] || plain;
     const match = /Swift: TypeStyle\.(\w+)/.exec(s.description || '');
-    const swift = match ? match[1] : s.name.split(/[\/ ]+/).map((p, i) => (i ? p[0].toUpperCase() + p.slice(1) : p.toLowerCase())).join('');
+    const swift = match ? match[1] : derivedName(s.name);
     if (!match) warnings.push(`text style ${s.name}: no “Swift: TypeStyle.…” in its description; using “${swift}”`);
     const style = { swift, family, weight, size: cocoRound(s.fontSize) };
-    const tracking = s.letterSpacing.unit === 'PIXELS' ? cocoRound(s.letterSpacing.value) : cocoRound((s.letterSpacing.value / 100) * s.fontSize);
+    const tracking = trackingOf(s);
     if (tracking) style.tracking = tracking;
     if (s.textCase === 'UPPER') style.uppercase = true;
     out.typography[s.name] = style;

@@ -4,8 +4,8 @@ import BuddyIntegrations
 
 // MARK: - Little wins (Coco Nook)
 
-/// Nook's "1/3 little wins" card in Blue Skies' look: the done count, a thin orange meter and a
-/// short note. It leads Today's count line.
+/// Nook's "1/3 little wins" card in Blue Skies' look: the done count beside "little wins" over an
+/// orange meter, on the confirm green. It leads Today's count line.
 struct SkyWinsCard: View {
     let done: Int
     let total: Int
@@ -15,59 +15,51 @@ struct SkyWinsCard: View {
         HStack(alignment: .center, spacing: 10) {
             HStack(alignment: .lastTextBaseline, spacing: 1) {
                 Text("\(done)")
-                    .font(Sky.display(28))
-                    .foregroundStyle(Sky.ink)
+                    .skyType(.displayWins)
                     .contentTransition(.numericText())
                 Text("/\(total)")
                     .font(Sky.text(14))
-                    .foregroundStyle(Sky.muted)
                     .contentTransition(.numericText())
             }
+            .foregroundStyle(Sky.ink)
             .monospacedDigit()
-            Text("little wins")
-                .font(Sky.text(10.5))
-                .foregroundStyle(Sky.muted)
-                .fixedSize()
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Sky.line)
-                    Capsule().fill(Sky.accent)
-                        .frame(width: max(share > 0 ? 6 : 0, proxy.size.width * share))
+            .fixedSize()
+            VStack(alignment: .leading, spacing: 4) {
+                Text("little wins")
+                    .skyType(.bodyTiny)
+                    .foregroundStyle(Sky.ink)
+                    .lineLimit(1)
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Sky.line
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(Sky.accent)
+                            .frame(width: max(share > 0 ? 6 : 0, proxy.size.width * share))
+                    }
                 }
-                .frame(height: 6)
-                .frame(maxHeight: .infinity)
+                .frame(height: 9)
+                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 3, style: .continuous).strokeBorder(.black, lineWidth: 1))
             }
-            .frame(height: 20)
-            Text(note)
-                .font(Sky.text(10.5))
-                .foregroundStyle(Sky.muted)
-                .fixedSize()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
-        .skyCard(radius: Sky.Radius.card)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.confirm))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
         .animation(Sky.Motion.enter, value: done)
         .animation(Sky.Motion.enter, value: total)
-    }
-
-    private var note: String {
-        if total == 0 { return "Room for anything." }
-        if done == 0 { return "A gentle start." }
-        if done == total { return "All done. Lovely." }
-        return done * 2 < total ? "Growing nicely." : "Look at you go."
     }
 }
 
 // MARK: - Focus banner (Sunny Side)
 
 /// Sunny Side's focus banner at the top of Today: the countdown in big figures and the one
-/// button the timer needs. It drives the same FocusController as the Focus tab.
+/// button the timer needs, on navy. It drives the same FocusController as the Focus tab.
 struct SkyFocusBanner: View {
     @Bindable var model: AppModel
     private var focus: FocusController { model.focus }
     private var timer: FocusTimer { focus.timer }
-    /// The lighter brown of the banner's icon disc.
-    private static let disc = Color(hex: 0x4D3C37)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -79,24 +71,21 @@ struct SkyFocusBanner: View {
     private var banner: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                Image(systemName: timer.phase == .focus ? "sun.max" : "cup.and.saucer")
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .background(Circle().fill(Self.disc))
                 VStack(alignment: .leading, spacing: 3) {
                     (Text(lead).foregroundColor(Sky.accent) + Text(tail).foregroundColor(.white))
                         .font(Sky.text(17, .medium))
                         .tracking(-0.4)
                         .monospacedDigit()
+                        .lineLimit(1)
                         .contentTransition(.numericText(countsDown: true))
                         .animation(.linear(duration: 0.2), value: focus.remaining.rounded(.up))
                     Text(subtitle)
-                        .font(Sky.text(10.5))
+                        .skyType(.bodySmall)
                         .foregroundStyle(.white.opacity(0.65))
                         .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 // No space-bar shortcut here: Today's add field needs the space key.
                 Button(action: primary) { Text(primaryTitle) }
                     .buttonStyle(SkyButtonStyle(kind: .accent))
@@ -114,19 +103,21 @@ struct SkyFocusBanner: View {
                 HStack {
                     if let task = model.tasks.task(timer.taskID) {
                         Text("On “\(BuddyVoice.short(task.title, limit: 26))”")
-                            .font(Sky.text(10.5))
+                            .skyType(.bodySmall)
                             .foregroundStyle(.white.opacity(0.65))
+                            .lineLimit(1)
                     }
                     Spacer()
                     Button("Stop") { focus.stop() }
                         .buttonStyle(.plain)
-                        .font(Sky.text(10.5, .medium))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .skyType(.labelButtonCompact)
+                        .foregroundStyle(Sky.accentText.opacity(0.8))
                 }
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.dusk))
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.navy))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
         .animation(Sky.Motion.enter, value: timer.isActive)
         .animation(Sky.Motion.enter, value: timer.isFinished)
     }
@@ -177,7 +168,7 @@ struct SkyFocusBanner: View {
         if timer.isFinished, let id = model.completionPrompt, let task = model.tasks.task(id), !task.isCompleted {
             HStack(spacing: 8) {
                 Text("Did “\(BuddyVoice.short(task.title, limit: 22))” get done?")
-                    .font(Sky.text(12))
+                    .skyType(.bodySmall)
                     .foregroundStyle(Sky.ink)
                     .lineLimit(2)
                 Spacer(minLength: 4)
@@ -215,12 +206,9 @@ struct SkyHelpRows: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("How can I help?")
-                .font(Sky.display(16))
+                .font(Sky.text(16, .medium))
                 .tracking(-0.4)
                 .foregroundStyle(Sky.ink)
-                .padding(.horizontal, 6)
-                .padding(.top, 4)
-                .padding(.bottom, 4)
             SkyActionRow(title: "Make a little plan", help: "Jump to the add field", action: makePlan)
             SkyActionRow(title: "Let a thought out", help: "Say what's on your mind — Coco lists it for you") {
                 model.toggleListening()
@@ -232,7 +220,8 @@ struct SkyHelpRows: View {
     }
 }
 
-/// A white pill row with an orange arrow: the quick actions in Today and the chat's starters.
+/// A black-rimmed white pill row with an arrow on an indigo disc: the quick actions in Today and
+/// the chat's starters. Figma: UI/ActionRow.
 struct SkyActionRow: View {
     let title: String
     var symbol = "arrow.right"
@@ -249,14 +238,15 @@ struct SkyActionRow: View {
                 Spacer(minLength: 6)
                 Image(systemName: symbol)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Sky.ink)
+                    .foregroundStyle(Sky.line)
                     .frame(width: 26, height: 26)
-                    .background(Circle().fill(Sky.accentPale))
+                    .background(Circle().fill(Sky.indigo))
             }
             .padding(.leading, 16)
             .padding(.trailing, 4)
             .padding(.vertical, 4)
-            .background(Capsule().fill(Sky.paper))
+            .background(Capsule(style: .circular).fill(Sky.paper))
+            .overlay(Capsule(style: .circular).strokeBorder(.black, lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(SkyPressStyle())

@@ -3,6 +3,7 @@
 How Desktop Buddy's design system is organized, how Figma and the Swift code stay in sync, and what still needs a human.
 
 - **Figma file:** [Coco](https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco)
+- **Coco-2** (`3y1ZhdqAPVIYPJf2bTuOsY`): the redesign. It has every collection above plus the “Sky” collection and “Sky/…” text styles (see [The panel's Sky tokens](#the-panels-sky-tokens)).
 - **Token source:** [design/tokens.json](../design/tokens.json), the one file both the app and Figma are generated from.
 - **Component ↔ code map:** [design/figma-map.json](../design/figma-map.json)
 
@@ -17,7 +18,8 @@ The system was built from the app's code in October 2026 (the Figma file started
              design/tokens.json  ◀── scripts/tokens/apply_figma_export.py  (checksum, validation, diff)
                    │
                    ▼ scripts/tokens/generate_swift.py
-DesktopBuddy/Generated/DesignTokens.generated.swift  →  Theme.*, Space, Radius, Metrics, BrandPalette, TypeStyle
+DesktopBuddy/Generated/DesignTokens.generated.swift  →  Theme.*, Space, Radius, Metrics, BrandPalette, TypeStyle,
+                                                        Sky.*, Sky.Radius/Space/Size, SkyType
                    │
                    ▼ used by every SwiftUI view and by CocoLayerView
                the app  →  --snapshots  →  scripts/visual-diff.swift (before/after pixel diff)
@@ -75,14 +77,14 @@ To show it to someone without file access, use **Share prototype** in Figma's pr
 | Thing | Convention | Examples |
 |---|---|---|
 | Variables | `group/name`, lowercase, in collections by kind | `surface/paper`, `ink/secondary`, `accent/default`, `coco/fur`; space `xl`; radius `key` |
-| Collections | Primitives (hidden raw colors), Color (Light/Dark), Brand, Space, Radius, Metrics, Type | — |
+| Collections | Primitives (hidden raw colors), Color (Light/Dark), Brand, Space, Radius, Metrics, Type, Sky | — |
 | Text styles | `Group/Name` | `Body/Small`, `Mono/Label`, `Display/Countdown` |
 | Components | Title Case; area-specific pieces as `Area / Name` | `Key Button`, `Task Row`, `Settings / Toggle Row`, `Chat / Coco Message` |
 | Variants | `Property=Value` | `Kind=Primary, Size=Compact, State=Hover` |
 | Icons | `Icon/<SF Symbol name>` | `Icon/play.fill` |
 | Mascot | `Mascot / Coco`, `State=<pose>` | `State=Sleeping` |
 
-Swift names come from the code and travel with the token. Each variable's **iOS code syntax** is its Swift name (`Theme.paper`, `Space.xl`, `Radius.key`, `Metrics.disabledOpacity`, `BrandPalette.fur`). Each text style's description says `Swift: TypeStyle.bodySmall`. Each component's description names the SwiftUI view that implements it.
+Swift names come from the code and travel with the token. Each variable's **iOS code syntax** is its Swift name (`Theme.paper`, `Space.xl`, `Radius.key`, `Metrics.disabledOpacity`, `BrandPalette.fur`, `Sky.navy`, `Sky.Radius.panel`). Each text style's description says `Swift: TypeStyle.bodySmall` (or ends with the line `Swift: SkyType.kicker` for a “Sky/…” style). Each component's description names the SwiftUI view that implements it.
 
 ## 3. Tokens and how they map to code
 
@@ -98,6 +100,19 @@ Swift names come from the code and travel with the token. Each variable's **iOS 
 | `metrics` | Metrics | `Metrics.hairline`, `.disabledOpacity`, `.pressedOpacity`, `.panelWidth`, `.panelHeight` | Opacity is 0–1 in code and tokens.json, 0–100 in Figma; the bridge converts. |
 | `fonts` | Type (`font/sans`, `font/mono`) | `Font.Design.default` / `.monospaced` | The app uses SF Pro / SF Mono; Figma uses Inter / Roboto Mono (see Limitations). |
 | `typography` | Text styles | `TypeStyle.body`, `.monoLabel`, … | Use `.font(.style(.bodySmall))`, or `.textStyle(.monoKey)` to also get tracking and uppercase. |
+| `sky` | Sky (mode “Value”) | `Sky.navy`, `Sky.Radius.panel`, `Sky.Space.gutter`, `Sky.Size.panelHeight`, … | The pop-up panel's look; see below. |
+| `skyTypography` | Text styles “Sky/…” | `SkyType.kicker`, `.displayCountdown`, … | Use `.skyType(.kicker)`. |
+
+### The panel's Sky tokens
+
+The pop-up panel, the welcome window and the Connections window use the Blue Skies Plus look from Coco-2. It is synced like everything else, with a few differences:
+
+- **One collection, several kinds.** “Sky” holds colors, radii, spacing and sizes. A token's `swift` is its iOS code syntax after `Sky.`: `navy`, or `Radius.panel` for one of the nested enums (`Radius`, `Space`, `Size`). Those enums, `SkyType` itself and the motion live in `DesktopBuddy/Panel/Sky/SkyStyle.swift`. A new namespace needs an enum there and an entry in `SKY_NAMESPACES` in the generator.
+- **Only the “Value” mode is synced.** The collection also has a mode called “Mode”. The export ignores it and warns, and the import never writes to it.
+- **Fonts are named directly.** A `skyTypography` entry stores the Figma family and font style (`"Owners Wide"`, `"Bold"`). The generator turns these into the PostScript name SkyType loads (`OwnersWide-Bold`) and a weight. Inter, the system font's stand-in, gets `face: nil`, so the app draws it in SF Pro. Owners is an Adobe font the app can't bundle; without it installed, SkyType falls back to the system font at the same size and weight.
+- **Descriptions are kept.** The `Swift: SkyType.…` line is the last line of a Sky style's description. The import replaces only that line and leaves the rest of the description and the line height alone.
+
+Synced from Coco-2 on 2026-10-27: 33 variables and 26 text styles. The only change to the existing tokens was `panel/height` 540 → 620, set in both Metrics and Sky.
 
 **Rule for code:** use these tokens instead of literal values. Literals are allowed only for one-off optical details: icon glyph sizes, the `+` and `›` prompt glyphs, the LCD digits, and nudges of 1–3 pt. These are listed as exceptions in the binding audit below.
 
@@ -134,7 +149,7 @@ The app icon (`Brand / App Icon`, `AppIcon.appiconset`) is rendered by `Snapshot
 
 ## 6. Syncing Figma → code
 
-What actually syncs automatically: **variables and text styles**, meaning colors (both modes), Coco's colors, space, radius, metrics, font families and the type ramp. Component structure does not. A changed component is a design for a code change, and `figma-map.json` tells you which Swift file to edit.
+What actually syncs automatically: **variables and text styles**, meaning colors (both modes), Coco's colors, space, radius, metrics, font families, the type ramp, and the panel's Sky collection and text styles. Component structure does not. A changed component is a design for a code change, and `figma-map.json` tells you which Swift file to edit.
 
 **Steps**
 1. Change variables or text styles in Figma. To add a token, give it iOS code syntax (`Theme.myColor`, `Space.huge`, …); otherwise the exporter derives a name and warns.
@@ -178,6 +193,7 @@ What actually syncs automatically: **variables and text styles**, meaning colors
 | `design/figma-map.json` | Hand-maintained; checked by `check_figma_map.py` | Yes, when components change. |
 | `design/figma/prototype-wiring.js` | Hand-written: the prototype's interactions | Yes; re-run it in Figma after a screen's layout or a button label changes. |
 | `DesktopBuddy/Panel/Theme.swift` | Hand-written: `TypeStyle`, `MonoLabel`, `KeyButtonStyle`, color helper | Yes. |
+| `DesktopBuddy/Panel/Sky/SkyStyle.swift` | Hand-written: the `Sky` enums, `SkyType` (font loading and fallback), motion | Yes. Its token values are generated. |
 | `DesktopBuddy/App/LayerSVGExporter.swift`, `SnapshotRenderer.swift` | Hand-written dev tools (Debug only) | Yes. |
 | `scripts/visual-diff.swift`, `scripts/sync-design-tokens.sh`, `scripts/tokens/*.py` | Hand-written tooling | Yes. |
 | Mascot SVGs, `icon-1024.png` | Generated by `--snapshots` | **No.** Regenerate. |

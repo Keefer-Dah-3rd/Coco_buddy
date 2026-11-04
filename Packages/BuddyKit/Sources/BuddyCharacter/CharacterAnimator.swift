@@ -174,7 +174,7 @@ public struct CharacterAnimator: Sendable {
             Self.applyBegging(beg, at: t, to: &p)
         }
         if let fetch, t < fetch.endTime {
-            Self.apply(fetch, at: t, to: &p)
+            Self.apply(fetch, at: t, reduceMotion: reduceMotion, to: &p)
         }
         if let treat, t < treat.endTime {
             Self.apply(treat, at: t, to: &p)
@@ -464,7 +464,7 @@ extension CharacterAnimator {
 
     /// Fetch, beat by beat. The handovers between the sitting and running drawings are the
     /// same squash-hidden swaps as being called.
-    static func apply(_ game: Fetch, at t: TimeInterval, to p: inout CharacterPose) {
+    static func apply(_ game: Fetch, at t: TimeInterval, reduceMotion: Bool = false, to p: inout CharacterPose) {
         switch game.phase(at: t) {
         case .notice(let k):
             // Spots the throw: eyes follow the ball, ears up, a bounce of excitement.
@@ -522,7 +522,8 @@ extension CharacterAnimator {
                 // Turns round with it, paws stepping.
                 r = runningPose(from: p, facing: turn(from: game.pickupFacing, to: game.homewardFacing(at: t), by: ease(k)),
                                 strides: game.homeward.strides(at: t) + 1.2 * k, effort: 0, at: t)
-                r.gallop = 0.25 * sin(k * .pi)
+                // A little bob as she comes round; Reduce Motion turns without it.
+                r.gallop = reduceMotion ? 0 : 0.25 * sin(k * .pi)
             default:
                 r = runningPose(from: p, facing: game.homewardFacing(at: t), strides: game.homeward.strides(at: t),
                                 effort: game.homeward.effort(at: t), at: t)

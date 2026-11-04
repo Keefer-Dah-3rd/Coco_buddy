@@ -17,7 +17,7 @@ struct ScheduleStrip: View {
             } label: {
                 HStack(spacing: 4) {
                     Text("Week")
-                    Image(systemName: model.scheduleExpanded ? "chevron.up" : "chevron.down").font(.system(size: 8, weight: .bold))
+                    Image(systemName: model.scheduleExpanded ? "chevron.up" : "chevron.down").font(.system(size: 8, weight: .semibold))
                 }
             }
             .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
@@ -74,7 +74,7 @@ struct ScheduleStrip: View {
         let items = (schedule.events.map(Item.event) + open.map(Item.open)).sorted { ($0.start, $0.id) < ($1.start, $1.id) }
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                SkyKicker("Today", color: Sky.ink)
+                SkyKicker("Today", tone: .ink)
                 Spacer(minLength: 6)
                 if !schedule.events.isEmpty {
                     SkyKicker(remaining.isEmpty ? "done" : "\(remaining.count) left"
@@ -93,13 +93,13 @@ struct ScheduleStrip: View {
                 }
             } else if schedule.events.isEmpty && schedule.allDayEvents.isEmpty {
                 Text("No meetings today — wide open.")
-                    .font(Sky.text(12))
+                    .skyType(.bodySmall)
                     .foregroundStyle(Sky.muted)
             }
             ForEach(schedule.allDayEvents) { event in
                 HStack(spacing: 8) {
                     SkyKicker("All day")
-                    Text(event.title).font(Sky.text(12)).foregroundStyle(Sky.ink).lineLimit(1)
+                    Text(event.title).skyType(.bodySmall).foregroundStyle(Sky.ink).lineLimit(1)
                 }
                 .help(event.sourcesDescription)
             }
@@ -111,7 +111,7 @@ struct ScheduleStrip: View {
             }
             if !schedule.events.isEmpty && remaining.isEmpty {
                 Text("That's all for today — no more meetings.")
-                    .font(Sky.text(12))
+                    .skyType(.bodySmall)
                     .foregroundStyle(Sky.muted)
             }
             problemLine(now: now)
@@ -131,9 +131,17 @@ struct ScheduleStrip: View {
         let failing = model.agenda.activeSources.filter { $0.problem(for: now) != nil }.map(\.sourceName)
         if model.calendar.status == .needsReconnect || !failing.isEmpty {
             Button { model.openConnections() } label: {
-                SkyKicker(model.calendar.status == .needsReconnect ? "Google Calendar needs reconnecting ›"
-                          : "Couldn't refresh \(failing.joined(separator: " or ")) · showing what's saved ›",
-                          color: Sky.accentText)
+                Text(model.calendar.status == .needsReconnect ? "Google Calendar needs reconnecting ›"
+                     : "Couldn't refresh \(failing.joined(separator: " or ")) · showing what's saved ›")
+                    .skyType(.labelNav)
+                    .foregroundStyle(Sky.accentText)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 3)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Sky.accentText.opacity(0.08)))
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
@@ -145,21 +153,21 @@ struct ScheduleStrip: View {
         let agenda = model.agenda
         let upcoming = agenda.comingUp(after: now, limit: 3)
         let weekAhead = Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
-        Rectangle().fill(Sky.line).frame(height: 1).padding(.vertical, 2)
+        Rectangle().fill(Sky.line).frame(height: 1)
         SkyKicker("Coming up")
         if upcoming.isEmpty {
             // Only "nothing" once the week ahead has actually been read.
             Text(agenda.events(on: weekAhead) == nil
                  ? (agenda.problem(for: weekAhead) == nil ? "Loading…" : "Couldn't read the next 7 days.")
                  : "Nothing in the next 7 days.")
-                .font(Sky.text(12))
+                .skyType(.bodySmall)
                 .foregroundStyle(Sky.muted)
         }
         ForEach(upcoming) { event in
             HStack(spacing: 8) {
                 SkyKicker(RelativeTiming.day(of: event.start, now: now))
                     .frame(width: 66, alignment: .leading)
-                Text(event.title).font(Sky.text(12)).foregroundStyle(Sky.ink).lineLimit(1)
+                Text(event.title).skyType(.bodySmall).foregroundStyle(Sky.ink).lineLimit(1)
                 Spacer(minLength: 6)
                 Text(event.isAllDay ? "all day" : event.start.formatted(date: .omitted, time: .shortened))
                     .font(Sky.text(10.5, .medium))
@@ -180,17 +188,17 @@ struct NotionPickerCard: View {
 
     var body: some View {
         let candidates = model.notionCandidates
-        VStack(alignment: .leading, spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: Sky.Space.row) {
             Button {
                 if !expanded { selected = Set(candidates.filter(isDueSoon).map(\.id)) }
                 expanded.toggle()
             } label: {
-                HStack(spacing: Space.sm) {
-                    MonoLabel("Notion", color: Theme.ink)
+                HStack(spacing: Sky.Space.row) {
+                    SkyKicker("Notion", tone: .ink)
                     Text("\(candidates.count) open in “\(model.notion.mapping?.dataSourceTitle ?? "Notion")”")
-                        .font(.style(.bodySmall)).foregroundStyle(Theme.inkSecondary).lineLimit(1)
+                        .skyType(.bodySmall).foregroundStyle(Sky.muted).lineLimit(1)
                     Spacer()
-                    MonoLabel(expanded ? "Close" : "Pick ›", color: Theme.accent)
+                    SkyKicker(expanded ? "Close" : "Pick ›", color: Sky.accentText)
                 }
                 .contentShape(Rectangle())
             }
@@ -201,37 +209,35 @@ struct NotionPickerCard: View {
                     Button {
                         if selected.contains(task.id) { selected.remove(task.id) } else { selected.insert(task.id) }
                     } label: {
-                        HStack(spacing: Space.sm) {
-                            Image(systemName: selected.contains(task.id) ? "checkmark.square.fill" : "square")
-                                .font(.system(size: 12))
-                                .foregroundStyle(selected.contains(task.id) ? Theme.accent : Theme.inkTertiary)
-                            Text(task.title).font(.style(.bodySmall)).foregroundStyle(Theme.ink).lineLimit(1)
+                        HStack(spacing: Sky.Space.row) {
+                            SkyCheck(checked: selected.contains(task.id), size: 16)
+                            Text(task.title).skyType(.bodySmall).foregroundStyle(Sky.ink).lineLimit(1)
                             Spacer()
                             if let due = task.due {
-                                MonoLabel(dueText(due), color: isDueSoon(task) ? Theme.accent : Theme.inkTertiary)
+                                SkyKicker(dueText(due), color: isDueSoon(task) ? Sky.accentText : Sky.faint)
                             }
                         }
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityAddTraits(selected.contains(task.id) ? .isSelected : [])
                 }
                 HStack {
                     Button("Refresh") { Task { await model.notion.refreshTasks() } }
-                        .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
+                        .buttonStyle(SkyButtonStyle(kind: .quiet, compact: true))
                     Spacer()
                     Button(selected.isEmpty ? "Add" : "Add \(selected.count)") {
                         model.addFromNotion(candidates.filter { selected.contains($0.id) })
                         selected = []
                         expanded = false
                     }
-                    .buttonStyle(KeyButtonStyle(kind: .primary, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .accent, compact: true))
                     .disabled(selected.isEmpty)
                 }
             }
         }
-        .padding(.horizontal, Space.md)
-        .padding(.vertical, Space.sm)
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Theme.hairline))
+        .padding(12)
+        .skyCard(radius: Sky.Radius.card)
         .animation(.snappy(duration: 0.2), value: expanded)
     }
 
@@ -252,19 +258,19 @@ struct NotionCompletionCard: View {
     let task: BuddyTask
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: Sky.Space.row) {
             Text("Also mark “\(BuddyVoice.short(task.title, limit: 34))” done in Notion?")
-                .font(.style(.bodySmallEmphasis))
-                .foregroundStyle(Theme.ink)
+                .skyType(.bodySmall)
+                .foregroundStyle(Sky.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: Space.sm) {
+            HStack(spacing: Sky.Space.row) {
                 Button("Mark done in Notion") { model.confirmNotionCompletion() }
-                    .buttonStyle(KeyButtonStyle(kind: .primary, fillWidth: true, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .accent, compact: true, fillWidth: true))
                 Button("Only here") { model.skipNotionCompletion() }
-                    .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
+                    .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             }
         }
-        .padding(Space.md)
-        .background(Theme.well, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .padding(12)
+        .background(Sky.well, in: RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous))
     }
 }

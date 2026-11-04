@@ -25,9 +25,9 @@ SCOPE_ORDER = [
     "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR", "STROKE_FLOAT", "EFFECT_FLOAT", "EFFECT_COLOR", "OPACITY",
     "FONT_FAMILY", "FONT_STYLE", "FONT_WEIGHT", "FONT_SIZE", "LINE_HEIGHT", "LETTER_SPACING",
 ]
-KEY_ORDER = ["swift", "figma", "light", "dark", "value", "family", "weight", "size", "tracking", "uppercase",
+KEY_ORDER = ["swift", "figma", "light", "dark", "value", "family", "style", "weight", "size", "tracking", "uppercase",
              "scopes", "description"]
-GROUP_ORDER = ["primitives", "color", "brand", "space", "radius", "metrics", "fonts", "typography"]
+GROUP_ORDER = ["primitives", "color", "brand", "space", "radius", "metrics", "sky", "fonts", "typography", "skyTypography"]
 
 
 def checksum(text):
@@ -44,6 +44,8 @@ def canonical(tokens, description):
     """Same content, stable order: groups, then tokens as Figma lists them, then keys."""
     out = {"$description": description, "$version": tokens.get("$version", 1)}
     for group in GROUP_ORDER:
+        if group not in tokens:  # a group new in this sync; validation decides whether that's allowed
+            continue
         section = tokens[group]
         ordered = {k: v for k, v in section.items() if k.startswith("$")}
         for name, token in section.items():

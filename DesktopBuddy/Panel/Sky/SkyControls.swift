@@ -1,46 +1,90 @@
 import SwiftUI
 
-/// A small uppercase label: the comps' kicker ("TODAY", "UP NEXT", "COCO").
+/// A small uppercase label: the comps' kicker ("TODAY", "UP NEXT", "COCO"). Figma: UI/Kicker.
+/// Muted, Ink and Faint are plain Sky/Kicker text; Accent sits on a navy pill in accent text.
 struct SkyKicker: View {
-    let text: String
-    var color: Color = Sky.muted
-    var size: CGFloat = 9.5
+    enum Tone { case muted, ink, faint, accent }
 
-    init(_ text: String, color: Color = Sky.muted, size: CGFloat = 9.5) {
+    let text: String
+    var tone: Tone = .muted
+    var color: Color?
+    var size: CGFloat?
+
+    init(_ text: String, tone: Tone = .muted) {
+        self.text = text
+        self.tone = tone
+    }
+
+    /// A muted kicker at another size.
+    init(_ text: String, size: CGFloat) {
+        self.text = text
+        self.size = size
+    }
+
+    /// A plain kicker in any colour, optionally at another size.
+    init(_ text: String, color: Color, size: CGFloat? = nil) {
         self.text = text
         self.color = color
         self.size = size
     }
 
     var body: some View {
-        Text(text.uppercased())
-            .font(Sky.text(size, .medium))
-            .tracking(size * 0.12)
-            .foregroundStyle(color)
-            .fixedSize(horizontal: false, vertical: true)
+        if tone == .accent {
+            Text(text)
+                .font(SkyType.labelCount.font)
+                .tracking(1)
+                .foregroundStyle(Sky.accentText)
+                .lineLimit(1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 3)
+                .background(Capsule(style: .circular).fill(Sky.navy))
+        } else {
+            Text(text)
+                .skyType(size.map { SkyType.kicker.sized($0) } ?? .kicker)
+                .foregroundStyle(color ?? plainColor)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var plainColor: Color {
+        switch tone {
+        case .ink: Sky.ink
+        case .faint: Sky.faint
+        case .muted, .accent: Sky.muted
+        }
     }
 }
 
 extension View {
-    /// A recessed field: the well colour with room around the text.
-    func skyField() -> some View {
+    /// A recessed field: the well colour with room around the text and an orange rim, 1 pt at
+    /// rest and 1.5 pt while focused. Figma: UI/Input. Pass `rim: nil` for a rimless well.
+    func skyField(rim: Color? = Sky.accent, focused: Bool = false) -> some View {
         padding(.horizontal, 13)
             .padding(.vertical, 10)
-            .background(RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous).fill(Sky.well))
+            .background(RoundedRectangle(cornerRadius: Sky.Radius.field, style: .circular).fill(Sky.well))
+            .overlay {
+                if let rim {
+                    RoundedRectangle(cornerRadius: Sky.Radius.field, style: .circular)
+                        .strokeBorder(focused ? Sky.accent : rim, lineWidth: focused ? 1.5 : 1)
+                }
+            }
     }
 
     /// A white card with the hairline rim.
     func skyCard(radius: CGFloat = Sky.Radius.card) -> some View {
-        background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(Sky.paper))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Sky.line))
+        background(RoundedRectangle(cornerRadius: radius, style: .circular).fill(Sky.paper))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .circular).strokeBorder(Sky.line))
     }
 
 }
 
-/// The pill button. `.accent` is the main action, `.ink` the strongest, `.outline` a white
-/// pill with a hairline, and `.quiet` a text-like link that darkens on hover.
+/// The pill button. `.accent` is the main action (white on orange with a black rim), `.ink`
+/// the strongest, `.outline` a white pill with a hairline, `.quiet` a text-like link that
+/// darkens on hover, and `.confirm` a go-now action in green (Join). Figma: UI/Button.
+///
+/// Rims here use circular corners, as Figma draws them (no corner smoothing).
 struct SkyButtonStyle: ButtonStyle {
-    enum Kind { case accent, ink, outline, quiet }
+    enum Kind { case accent, ink, outline, quiet, confirm }
 
     var kind: Kind = .accent
     var compact = false
@@ -59,17 +103,17 @@ private struct SkyButtonBody: View {
 
     var body: some View {
         configuration.label
-            .font(Sky.text(style.compact ? 11.5 : 13, .medium))
+            .skyType(style.compact ? .labelButtonCompact : .labelButton)
             .foregroundStyle(foreground)
             .lineLimit(1)
             .padding(.horizontal, style.kind == .quiet ? 4 : (style.compact ? 12 : 16))
             .frame(height: style.kind == .quiet ? 24 : (style.compact ? 28 : 36))
             .frame(maxWidth: style.fillWidth ? .infinity : nil)
-            .background(Capsule().fill(background))
-            .overlay(Capsule().strokeBorder(style.kind == .outline ? Sky.line : .clear, lineWidth: 1))
+            .background(Capsule(style: .circular).fill(background))
+            .overlay(Capsule(style: .circular).strokeBorder(rim, lineWidth: 1))
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .opacity(isEnabled ? 1 : 0.35)
-            .contentShape(Capsule())
+            .contentShape(Capsule(style: .circular))
             .onHover { hovering = $0 }
             .animation(Sky.Motion.quick, value: hovering)
             .animation(Sky.Motion.quick, value: configuration.isPressed)
@@ -77,9 +121,17 @@ private struct SkyButtonBody: View {
 
     private var foreground: Color {
         switch style.kind {
-        case .accent, .outline: Sky.ink
-        case .ink: .white
+        case .accent, .ink: Sky.paper
+        case .outline, .confirm: Sky.ink
         case .quiet: hovering ? Sky.ink : Sky.muted
+        }
+    }
+
+    private var rim: Color {
+        switch style.kind {
+        case .accent, .confirm: .black
+        case .outline: Sky.line
+        case .ink, .quiet: .clear
         }
     }
 
@@ -89,14 +141,16 @@ private struct SkyButtonBody: View {
         case .ink: Sky.ink
         case .outline: hovering ? Sky.well : Sky.paper
         case .quiet: .clear
+        case .confirm: Sky.confirm
         }
     }
 }
 
-/// A round icon button: the comps' `.bs-round`.
+/// A round icon button: the comps' `.bs-round`. Figma: UI/IconButton — Small 22, Medium 26,
+/// Large 30; no fill by default, `Sky.accent` for the prominent tone.
 struct SkyRoundStyle: ButtonStyle {
     var size: CGFloat = 30
-    var fill: Color = Sky.well
+    var fill: Color = .clear
     var tint: Color = Sky.ink
 
     func makeBody(configuration: Configuration) -> some View {
@@ -111,8 +165,8 @@ struct SkyRoundStyle: ButtonStyle {
     }
 }
 
-/// A row of pill segments on a well: the selected one fills soft orange. Replaces the old
-/// square-cornered key segments, with the same items, shortcuts and bindings.
+/// A row of pill segments on a black-rimmed well: the selected one fills orange with white
+/// text. Figma: UI/Segment. Same items, shortcuts and bindings as the old key segments.
 struct SkySegment<Value: Hashable>: View {
     struct Item {
         var value: Value
@@ -140,7 +194,8 @@ struct SkySegment<Value: Hashable>: View {
         }
         .padding(3)
         .frame(height: height)
-        .background(Capsule().fill(Sky.well))
+        .background(Capsule(style: .circular).fill(Sky.well))
+        .overlay(Capsule(style: .circular).strokeBorder(.black, lineWidth: 1))
     }
 
     @ViewBuilder
@@ -151,19 +206,20 @@ struct SkySegment<Value: Hashable>: View {
         } label: {
             HStack(spacing: 5) {
                 Text(item.title)
-                    .font(Sky.text(11.5, .medium))
+                    .skyType(.labelButtonCompact)
                 if let trailing = item.trailing {
                     Text(trailing)
-                        .font(Sky.text(10.5, .medium))
+                        .skyType(.labelCount)
                         .monospacedDigit()
                         .opacity(0.65)
                 }
             }
-            .foregroundStyle(selected ? Sky.ink : Sky.muted)
+            .foregroundStyle(selected ? Sky.paper : Sky.muted)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Capsule().fill(selected ? Sky.accentSoft : Color.clear))
-            .contentShape(Capsule())
+            .background(Capsule(style: .circular).fill(selected ? Sky.accent : Color.clear))
+            .overlay(Capsule(style: .circular).strokeBorder(selected ? Color.black : .clear, lineWidth: 1))
+            .contentShape(Capsule(style: .circular))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(item.trailing.map { "\(item.title), \($0)" } ?? item.title)
@@ -177,15 +233,18 @@ struct SkySegment<Value: Hashable>: View {
     }
 }
 
-/// The round check: a ring that fills orange with a tick when done.
+/// The round check: a ring that fills with an ink tick when done. Figma: UI/Checkbox — green
+/// (`Sky.confirm`) with an ink rim; top-level task rows fill orange instead, as in the screens.
 struct SkyCheck: View {
     let checked: Bool
     var size: CGFloat = 20
+    var fill: Color = Sky.confirm
 
     var body: some View {
         ZStack {
-            Circle().fill(checked ? Sky.accent : Sky.paper)
-            Circle().strokeBorder(checked ? Sky.accent : Sky.ring, lineWidth: 1.5)
+            Circle().fill(checked ? fill : Sky.paper)
+            Circle().strokeBorder(checked ? (fill == Sky.confirm ? Sky.ink : fill) : Sky.ring,
+                                  lineWidth: checked ? 1 : 1.5)
             if checked {
                 Image(systemName: "checkmark")
                     .font(.system(size: size * 0.5, weight: .bold))

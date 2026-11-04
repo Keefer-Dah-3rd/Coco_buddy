@@ -20,10 +20,20 @@ final class ConnectionsWindowController {
             )
             window.title = "Connections"
             window.titlebarAppearsTransparent = true
+            // ConnectionsView draws the title in Owners beside the traffic lights, and the navy rim.
+            window.titleVisibility = .hidden
             // Light like the panel: the Sky colours have no dark variant.
             window.appearance = NSAppearance(named: .aqua)
             window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: ConnectionsView(model: model))
+            var view = ConnectionsView(model: model)
+            if let zoom = window.standardWindowButton(.zoomButton) {
+                view.titleLeading = zoom.convert(zoom.bounds, to: nil).maxX + 8
+                view.titleBarHeight = window.frame.height - window.contentLayoutRect.height
+            }
+            let hosting = NSHostingView(rootView: view)
+            // Keep the window 540 × 680: sized to fit, it would grow by the title bar.
+            hosting.sizingOptions = []
+            window.contentView = hosting
             window.center()
             self.window = window
         }

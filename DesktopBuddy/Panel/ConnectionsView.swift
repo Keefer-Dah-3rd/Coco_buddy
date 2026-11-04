@@ -8,18 +8,22 @@ struct ConnectionsView: View {
     let model: AppModel
     /// The window's height; snapshots render it taller to show every card at once.
     var height: CGFloat = 680
+    /// Where the window's title sits: this far from the left, centred in a bar this tall — just
+    /// right of the traffic lights. The window controller measures its real buttons; the
+    /// defaults are the Figma frame's.
+    var titleLeading: CGFloat = 78
+    var titleBarHeight: CGFloat = 39
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Connections")
-                        .font(Sky.display(22))
-                        .tracking(-0.4)
+                        .skyType(.displayWindow)
                         .foregroundStyle(Sky.ink)
                         .accessibilityAddTraits(.isHeader)
                     Text("\(Buddy.name) works fully on her own. Connect a service only if you want its data in your day.")
-                        .font(Sky.text(13))
+                        .skyType(.bodyDefault)
                         .foregroundStyle(Sky.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -32,19 +36,36 @@ struct ConnectionsView: View {
                     NotionSection(service: model.notion, model: model)
                 }
                 Text("Keys and sign-ins are kept in your Keychain. Calendar and task details reach Anthropic only when you ask the chat something that needs them — the chat shows each time. Nothing goes to analytics.")
-                    .font(Sky.text(11.5))
-                    .foregroundStyle(Sky.faint)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 4)
+                    .captionStyle()
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 40)
-            .padding(.bottom, 24)
+            // 24 (40 at the top) inside the 2 pt rim.
+            .padding(.horizontal, 26)
+            .padding(.top, 42)
+            .padding(.bottom, 26)
         }
+        .contentMargins(.top, titleBarHeight, for: .scrollIndicators)
+        .overlay(alignment: .top) { titleBar }
         .frame(width: 540, height: height)
         .background(Sky.paper)
+        .modifier(WindowRim())
+        // The view fills the whole window, title bar included; it draws the title itself.
+        .ignoresSafeArea()
         // The Sky colours are light-only, like the panel's.
         .environment(\.colorScheme, .light)
+    }
+
+    /// The window title in Owners beside the traffic lights (the system title is hidden). Its
+    /// paper bar hides the cards as they scroll under the title bar.
+    private var titleBar: some View {
+        Text("Connections")
+            .skyType(.titleEmphasis)
+            .foregroundStyle(Sky.muted)
+            .padding(.leading, titleLeading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: titleBarHeight)
+            .background(Sky.paper)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 
@@ -53,6 +74,7 @@ struct ConnectionsView: View {
 private struct AssistantSection: View {
     let service: AssistantService
     @State private var key = ""
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
         Card(title: "Claude (chat)", status: statusLabel) {
@@ -66,10 +88,8 @@ private struct AssistantSection: View {
                     ("Create an API key in the Anthropic Console.", URL(string: "https://console.anthropic.com/settings/keys")),
                     ("Paste it below — it's checked with a free request, then saved to your Keychain.", nil),
                 ])
-                SecureField("API key", text: $key, prompt: Text("sk-ant-…"))
-                    .textFieldStyle(.plain)
-                    .font(Sky.text(13))
-                    .skyField()
+                SecureField("API key", text: $key, prompt: Text(""))
+                    .fieldStyle("sk-ant-…", isEmpty: key.isEmpty, focused: $fieldFocused)
                 HStack {
                     Spacer()
                     if service.keyStatus == .verifying { ProgressView().controlSize(.small) }
@@ -91,7 +111,7 @@ private struct AssistantSection: View {
                 }
             }
             if let problem = service.keyProblem {
-                Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
+                Text(problem).captionStyle(Sky.accentText)
             }
         }
     }
@@ -167,22 +187,22 @@ private struct AppleCalendarSection: View {
             ForEach(service.calendars) { info in
                 HStack(spacing: Space.sm) {
                     Circle().fill(color(info.color)).frame(width: 8, height: 8)
-                    Text(info.title).font(Sky.text(12.5)).foregroundStyle(Sky.ink).lineLimit(1)
-                    SkyKicker(info.account)
+                    Text(info.title).skyType(.bodyWindow).foregroundStyle(Sky.ink).lineLimit(1)
+                    SkyKicker(info.account, tone: .faint)
                     Spacer()
                     Toggle("Read \(info.title)", isOn: Binding(get: { service.isIncluded(info) }, set: { service.setIncluded($0, info) }))
                         .toggleStyle(.switch).controlSize(.mini).labelsHidden()
-                        .tint(Sky.accent)
+                        .tint(Sky.confirm)
                 }
             }
             if service.calendars.isEmpty {
                 Text("No calendars found in the Calendar app.").bodyStyle()
             }
             Text("Birthdays, subscribed calendars (holidays) and calendars you can't edit — usually other people's — start switched off.")
-                .font(Sky.text(11.5)).foregroundStyle(Sky.faint).fixedSize(horizontal: false, vertical: true)
+                .captionStyle()
         }
         if let problem = service.problem(for: .now) {
-            Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
+            Text(problem).captionStyle(Sky.accentText)
         }
         HStack {
             Button("Stop using Apple Calendar") { service.disconnect() }
@@ -215,6 +235,7 @@ private struct AppleCalendarSection: View {
 private struct CalendarSection: View {
     @Bindable var service: GoogleCalendarService
     let model: AppModel
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
         Card(title: "Google Calendar", status: statusLabel) {
@@ -230,13 +251,11 @@ private struct CalendarSection: View {
                     ("Create an OAuth client ID of type iOS with bundle ID com.keefer.DesktopBuddy.", URL(string: "https://console.cloud.google.com/auth/clients")),
                     ("Paste the client ID below and sign in.", nil),
                 ])
-                TextField("Client ID", text: $service.clientID, prompt: Text("1234…apps.googleusercontent.com"))
-                    .textFieldStyle(.plain)
-                    .font(Sky.text(13))
-                    .skyField()
+                TextField("Client ID", text: $service.clientID, prompt: Text(""))
+                    .fieldStyle("1234…apps.googleusercontent.com", isEmpty: service.clientID.isEmpty, focused: $fieldFocused)
                 HStack {
                     if !service.clientID.isEmpty && service.client == nil {
-                        Text("That doesn't look like a Google client ID.").font(Sky.text(11.5)).foregroundStyle(Sky.accentText)
+                        Text("That doesn't look like a Google client ID.").captionStyle(Sky.accentText)
                     }
                     Spacer()
                     Button("Sign in with Google") { connect() }
@@ -272,7 +291,7 @@ private struct CalendarSection: View {
                 Row("Remind me") {
                     SkySegment(selection: $service.reminderMinutes, items: [
                         .init(0, "Off"), .init(5, "5m"), .init(10, "10m"), .init(15, "15m"),
-                    ], height: 22)
+                    ], height: 26)
                     .frame(width: 200)
                 }
                 HStack {
@@ -286,7 +305,7 @@ private struct CalendarSection: View {
             }
 
             if let problem = service.problem {
-                Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
+                Text(problem).captionStyle(Sky.accentText)
             }
         }
     }
@@ -315,6 +334,7 @@ struct PartifulSection: View {
     @State private var link = ""
     @State private var problem: String?
     @State private var connecting = false
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
         Card(title: "Partiful", status: service.isConnected ? ("Connected", true) : ("Not connected", false)) {
@@ -328,8 +348,8 @@ struct PartifulSection: View {
                 ForEach(upcoming, id: \.uid) { event in
                     HStack(spacing: Space.sm) {
                         Text(event.start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
-                            .font(Sky.text(11.5, .medium)).monospacedDigit().foregroundStyle(Sky.muted)
-                        Text(event.title).font(Sky.text(12.5)).foregroundStyle(Sky.ink).lineLimit(1)
+                            .skyType(.bodyWindowCaption).monospacedDigit().foregroundStyle(Sky.muted)
+                        Text(event.title).skyType(.bodyWindow).foregroundStyle(Sky.ink).lineLimit(1)
                         Spacer(minLength: 0)
                     }
                 }
@@ -349,15 +369,13 @@ struct PartifulSection: View {
                     ("Click the calendar icon under the event details, then choose Google Calendar.", nil),
                     ("Click Copy Link — that's your personal calendar link. Paste it below.", nil),
                 ])
-                TextField("Calendar link", text: $link, prompt: Text("webcal://… or https://…"))
-                    .textFieldStyle(.plain)
-                    .font(Sky.text(13))
-                    .skyField()
+                TextField("Calendar link", text: $link, prompt: Text(""))
+                    .fieldStyle("webcal://… or https://…", isEmpty: link.isEmpty, focused: $fieldFocused)
                     .onSubmit(connect)
-                HStack {
+                HStack(spacing: 16) {
                     Text("Keep this link private — anyone with it can see your Partiful events.")
-                        .font(Sky.text(11.5)).foregroundStyle(Sky.faint).fixedSize(horizontal: false, vertical: true)
-                    Spacer()
+                        .captionStyle()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Button(connecting ? "Checking…" : "Import events") { connect() }
                         .buttonStyle(SkyButtonStyle(kind: .accent))
                         .disabled(link.trimmingCharacters(in: .whitespaces).isEmpty || connecting)
@@ -365,7 +383,7 @@ struct PartifulSection: View {
             }
 
             if let message = problem ?? service.problem {
-                Text(message).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
+                Text(message).captionStyle(Sky.accentText)
             }
         }
     }
@@ -400,6 +418,7 @@ private struct NotionSection: View {
     @State private var token = ""
     @State private var draft: NotionMapping?
     @State private var choosing = false
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
         Card(title: "Notion", status: statusLabel) {
@@ -420,10 +439,8 @@ private struct NotionSection: View {
                 ])
                 Text("A connection sees only the databases you give it — the least access, and what we recommend. A personal access token sees everything you can see, and expires (Notion lets you pick 7 days to a year); \(Buddy.name) asks you to reconnect when it does. Only a workspace's owner can create connections, and some plans limit tokens too: if Notion won't let you create either, ask the owner, or use a workspace of your own.")
                     .bodyStyle()
-                SecureField("Token", text: $token, prompt: Text("ntn_…"))
-                    .textFieldStyle(.plain)
-                    .font(Sky.text(13))
-                    .skyField()
+                SecureField("Token", text: $token, prompt: Text(""))
+                    .fieldStyle("ntn_…", isEmpty: token.isEmpty, focused: $fieldFocused)
                 HStack {
                     Spacer()
                     if service.status == .verifying { ProgressView().controlSize(.small) }
@@ -488,7 +505,7 @@ private struct NotionSection: View {
                 ProgressView().controlSize(.small)
             }
             if let problem = service.problem {
-                Text(problem).font(Sky.text(11.5)).foregroundStyle(Sky.accentText).fixedSize(horizontal: false, vertical: true)
+                Text(problem).captionStyle(Sky.accentText)
             }
         }
     }
@@ -518,7 +535,7 @@ private struct DataSourcePicker: View {
             ForEach(service.dataSources) { source in
                 Button { choose(source) } label: {
                     HStack {
-                        Text(source.title).font(Sky.text(13)).foregroundStyle(Sky.ink)
+                        Text(source.title).skyType(.bodyDefault).foregroundStyle(Sky.ink)
                         Spacer()
                         Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Sky.faint)
                     }
@@ -573,10 +590,10 @@ private struct MappingEditor: View {
             }
             Toggle(isOn: $draft.writeBackEnabled) {
                 Text("Let \(Buddy.name) mark tasks done in Notion (she asks first, every time)")
-                    .font(Sky.text(12.5))
+                    .skyType(.bodyWindow)
                     .foregroundStyle(Sky.ink)
             }
-            .tint(Sky.accent)
+            .tint(Sky.confirm)
             .disabled(!draft.canWriteCompletion)
             HStack {
                 Spacer()
@@ -607,6 +624,7 @@ private struct MappingEditor: View {
 
 // MARK: - Building blocks
 
+/// A service's card: white, an accent-soft rim, title and status on top. Figma: Connections/Sky/Card/*.
 private struct Card<Content: View>: View {
     let title: String
     let status: (String, Bool)
@@ -615,50 +633,59 @@ private struct Card<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(title).font(Sky.text(16, .semibold)).foregroundStyle(Sky.ink)
+                Text(title).skyType(.titleCard).foregroundStyle(Sky.ink)
                 Spacer()
                 StatusPill(text: status.0, on: status.1)
             }
             content
         }
-        .padding(20)
-        .skyCard()
+        .padding(21) // 20 inside the 1 pt rim
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.accentSoft))
     }
 }
 
-/// "Connected" on pale orange with an orange dot; anything else on the well, greyed.
+/// "Connected" in green on navy with a green dot; anything else muted on the well.
+/// Figma: Connections/Sky/StatusPill.
 private struct StatusPill: View {
     let text: String
     let on: Bool
 
     var body: some View {
         HStack(spacing: 6) {
-            Circle().fill(on ? Sky.accent : Sky.faint).frame(width: 6, height: 6)
-            SkyKicker(text, color: on ? Sky.accentText : Sky.muted)
+            if on {
+                Circle().fill(Sky.confirm).frame(width: 6, height: 6)
+            }
+            SkyKicker(text, color: on ? Sky.confirm : Sky.muted)
         }
         .padding(.horizontal, 10)
         .frame(height: 24)
-        .background(Capsule().fill(on ? Sky.accentPale : Sky.well))
+        .background(Capsule().fill(on ? Sky.navy : Sky.well))
     }
 }
 
+/// Numbered steps on a well; a step with a page to open gets a round ↗ link.
+/// Figma: Connections/Sky/SetupSteps, SetupStep.
 private struct SetupSteps: View {
     let steps: [(String, URL?)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                HStack(alignment: .top, spacing: 10) {
                     Text("\(index + 1)")
-                        .font(Sky.text(10.5, .semibold))
+                        .skyType(.labelStep)
                         .foregroundStyle(Sky.accentText)
                         .frame(width: 18, height: 18)
                         .background(Circle().fill(Sky.accentPale))
-                    Text(step.0).font(Sky.text(12.5)).foregroundStyle(Sky.ink).fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 4)
+                    Text(step.0)
+                        .skyType(.bodyWindow)
+                        .foregroundStyle(Sky.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     if let url = step.1 {
                         Link(destination: url) {
-                            Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold))
+                            Image(systemName: "arrow.up.right").font(.system(size: 7, weight: .semibold))
                         }
                         .buttonStyle(SkyRoundStyle(size: 22, fill: Sky.paper, tint: Sky.accentText))
                         .help(url.absoluteString)
@@ -667,10 +694,12 @@ private struct SetupSteps: View {
             }
         }
         .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Sky.well, in: RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous))
     }
 }
 
+/// A label and a value (or a control). Figma: Connections/Sky/Row.
 private struct Row<Content: View>: View {
     let label: String
     @ViewBuilder let content: Content
@@ -682,7 +711,7 @@ private struct Row<Content: View>: View {
 
     var body: some View {
         HStack {
-            SkyKicker(label, size: 10)
+            Text(label).skyType(.kickerRow).foregroundStyle(Sky.muted)
             Spacer()
             content
         }
@@ -690,12 +719,57 @@ private struct Row<Content: View>: View {
     }
 }
 
+/// The window's 2 pt navy rim, inside its edge. On macOS 26 it follows the window's own corners
+/// (Figma's 8 pt where there's no window, as in snapshots); earlier windows have 10 pt corners.
+private struct WindowRim: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            let shape = ConcentricRectangle(corners: .concentric(minimum: .fixed(8)), isUniform: true)
+            content
+                .overlay(shape.stroke(Sky.navy, lineWidth: 4))
+                .clipShape(shape)
+        } else {
+            let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+            content
+                .overlay(shape.strokeBorder(Sky.navy, lineWidth: 2))
+                .clipShape(shape)
+        }
+    }
+}
+
+private extension View {
+    /// A key or link field: Owners Wide on the orange-rimmed well, a heavier rim while typing.
+    /// The placeholder is drawn here, faint — a prompt would take the field's ink. Figma: UI/Input.
+    func fieldStyle(_ placeholder: String, isEmpty: Bool, focused: FocusState<Bool>.Binding) -> some View {
+        textFieldStyle(.plain)
+            .skyType(.titleEmphasis)
+            .foregroundStyle(Sky.ink)
+            .focused(focused)
+            .overlay(alignment: .leading) {
+                if isEmpty {
+                    Text(placeholder)
+                        .skyType(.titleEmphasis)
+                        .foregroundStyle(Sky.faint)
+                        .lineLimit(1)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .skyField(focused: focused.wrappedValue)
+    }
+}
+
 private extension Text {
     func bodyStyle() -> some View {
-        font(Sky.text(12.5)).foregroundStyle(Sky.muted).fixedSize(horizontal: false, vertical: true)
+        skyType(.bodyWindow).foregroundStyle(Sky.muted).fixedSize(horizontal: false, vertical: true)
     }
 
     func valueStyle() -> some View {
-        font(Sky.text(12.5, .medium)).foregroundStyle(Sky.ink).lineLimit(1)
+        skyType(.bodyWindowEmphasis).foregroundStyle(Sky.ink).lineLimit(1)
+    }
+
+    /// Small print: faint notes, or problems in accent text.
+    func captionStyle(_ color: Color = Sky.faint) -> some View {
+        skyType(.bodyWindowCaption).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
     }
 }

@@ -7,7 +7,10 @@ struct TaskEditor: View {
     let task: BuddyTask
     let model: AppModel
     @State private var draft: BuddyTask
+    /// The month calendar under the Due row, opened from the date chip.
+    @State private var pickingDate = false
     @FocusState private var titleFocused: Bool
+    @FocusState private var notesFocused: Bool
 
     init(task: BuddyTask, model: AppModel) {
         self.task = task
@@ -19,25 +22,26 @@ struct TaskEditor: View {
         VStack(alignment: .leading, spacing: 12) {
             TextField("Title", text: $draft.title)
                 .textFieldStyle(.plain)
-                .font(Sky.text(14, .semibold))
+                .font(SkyType.titleEmphasis.font)
                 .foregroundStyle(Sky.ink)
                 .focused($titleFocused)
                 .onSubmit { model.editingTaskID = nil }
-                .skyField()
+                .skyField(focused: titleFocused)
 
             TextField("Notes", text: $draft.notes, prompt: Text("Notes — links, details, the first step…")
                 .foregroundStyle(Sky.faint), axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(Sky.text(12.5))
+                .font(SkyType.bodySmall.font)
                 .foregroundStyle(Sky.ink)
                 .lineLimit(2...5)
-                .skyField()
+                .focused($notesFocused)
+                .skyField(focused: notesFocused)
 
             row("Priority") {
                 SkySegment(selection: $draft.priority, items: [
                     .init(.none, "–"), .init(.low, "!"), .init(.medium, "!!"), .init(.high, "!!!"), .init(.urgent, "!!!!"),
                 ], height: 28)
-                .frame(width: 210)
+                .frame(width: 196)
                 .help("Priority: none, low, medium, high, urgent — the same marks as quick-add")
                 .accessibilityLabel("Priority \(draft.priority.label)")
             }
@@ -49,6 +53,19 @@ struct TaskEditor: View {
             }
 
             row("Due") { deadlineControl }
+            if pickingDate, let deadline = draft.deadline {
+                DatePicker("Due date", selection: Binding(
+                    get: { deadline },
+                    set: { picked in
+                        draft.deadline = Calendar.current.startOfDay(for: picked)
+                        withAnimation(Sky.Motion.quick) { pickingDate = false }
+                    }
+                ), displayedComponents: .date)
+                .labelsHidden()
+                .datePickerStyle(.graphical)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
 
             row("Keep") {
                 SkySegment(selection: scopeBinding, items: [
@@ -74,6 +91,7 @@ struct TaskEditor: View {
         }
         .onAppear { titleFocused = true }
         .onChange(of: draft) { _, new in save(new) }
+        .animation(Sky.Motion.quick, value: pickingDate)
     }
 
     // MARK: - Pieces
@@ -82,15 +100,25 @@ struct TaskEditor: View {
     private var deadlineControl: some View {
         if let deadline = draft.deadline {
             HStack(spacing: 6) {
-                DatePicker("Due date", selection: Binding(
-                    get: { deadline },
-                    set: { draft.deadline = Calendar.current.startOfDay(for: $0) }
-                ), displayedComponents: .date)
-                .labelsHidden()
-                .datePickerStyle(.field)
-                .font(Sky.text(12))
-                Button { draft.deadline = nil } label: { Image(systemName: "xmark") }
-                    .buttonStyle(SkyRoundStyle(size: 24, tint: Sky.ink))
+                // The date as a chip; clicking it opens a month calendar under the row.
+                Button { pickingDate.toggle() } label: {
+                    Text(deadline.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                        .skyType(.bodySmall)
+                        .foregroundStyle(Sky.ink)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous).fill(Sky.well))
+                        .contentShape(RoundedRectangle(cornerRadius: Sky.Radius.key, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .help(pickingDate ? "Close the calendar" : "Pick another day")
+                .accessibilityLabel("Due date")
+                .accessibilityValue(deadline.formatted(date: .complete, time: .omitted))
+                Button {
+                    pickingDate = false
+                    draft.deadline = nil
+                } label: { Image(systemName: "xmark") }
+                    .buttonStyle(SkyRoundStyle(size: 22, tint: Sky.ink))
                     .help("No due date")
                     .accessibilityLabel("No due date")
             }
@@ -120,7 +148,7 @@ struct TaskEditor: View {
         } label: {
             HStack(spacing: 5) {
                 Text(current.map { BuddyVoice.short($0.title, limit: 22) } ?? "Top level")
-                    .font(Sky.text(12, .medium))
+                    .skyType(.labelButtonCompact)
                     .foregroundStyle(Sky.ink)
                     .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
@@ -149,9 +177,10 @@ struct TaskEditor: View {
     }
 
     private func row<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
-        HStack {
+        HStack(spacing: 8) {
             SkyKicker(label)
-            Spacer()
+                .fixedSize()
+            Spacer(minLength: 0)
             content()
         }
         .frame(minHeight: 26)
@@ -161,42 +190,39 @@ struct TaskEditor: View {
     private var receipt: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Your focus receipt")
-                .font(Receipt.display(15))
-                .tracking(-0.3)
-                .foregroundStyle(Receipt.brown)
+                .skyType(.receiptDisplay)
+                .foregroundStyle(Sky.receiptInk)
             Text("A little structure. Plenty of breathing room.")
                 .font(Sky.text(10))
-                .foregroundStyle(Receipt.muted)
-                .padding(.top, 2)
+                .foregroundStyle(Sky.receiptInk)
                 .padding(.bottom, 6)
             receiptLine("Estimate", draft.estimateMinutes.map(TodayView.duration) ?? "—")
             receiptLine("Focused on this", TodayView.duration(task.focusMinutes))
             HStack(alignment: .lastTextBaseline) {
                 Text("Total time, well spent")
                     .font(Sky.text(11))
-                    .foregroundStyle(Receipt.brown)
+                    .foregroundStyle(Sky.receiptInk)
                 Spacer()
                 Text(TodayView.duration(task.focusMinutes))
-                    .font(Receipt.display(18))
+                    .font(Sky.text(18, .black))
                     .monospacedDigit()
-                    .foregroundStyle(Receipt.orange)
+                    .foregroundStyle(Sky.receiptOrange)
             }
-            .padding(.top, 10)
+            .padding(.top, 8)
             .overlay(alignment: .top) {
                 // A clipped path rather than a dashed border: the border drew doubled edges.
                 Path { path in
                     path.move(to: .zero)
                     path.addLine(to: CGPoint(x: 10_000, y: 0))
                 }
-                .stroke(Receipt.dash, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                .stroke(Sky.receiptDash, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
                 .frame(height: 1)
                 .clipped()
             }
-            .padding(.top, 6)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Receipt.card))
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.receiptCard))
         .accessibilityElement(children: .combine)
     }
 
@@ -204,12 +230,12 @@ struct TaskEditor: View {
         HStack {
             Text(title)
                 .font(Sky.text(11))
-                .foregroundStyle(Receipt.brown)
+                .foregroundStyle(Sky.receiptInk)
             Spacer()
             Text(value)
                 .font(Sky.text(11, .bold))
                 .monospacedDigit()
-                .foregroundStyle(Receipt.brown)
+                .foregroundStyle(Sky.receiptInk)
         }
         .padding(.vertical, 4)
     }
@@ -240,19 +266,5 @@ struct TaskEditor: View {
             stored.scope = edited.scope
             stored.plannedDay = edited.plannedDay
         }
-    }
-}
-
-/// The receipt's colours, from Coco Day Club's style (its headings use Titan One, which the
-/// app doesn't bundle, so a heavy rounded face stands in).
-private enum Receipt {
-    static let card = Color(hex: 0xF7F6F0)
-    static let brown = Color(hex: 0x38120C)
-    static let muted = Color(hex: 0x87756D)
-    static let orange = Color(hex: 0xEF833A)
-    static let dash = Color(hex: 0xBCAFA0)
-
-    static func display(_ size: CGFloat) -> Font {
-        .system(size: size, weight: .black, design: .rounded)
     }
 }

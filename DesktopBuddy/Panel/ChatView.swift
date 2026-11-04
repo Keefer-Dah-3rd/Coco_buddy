@@ -73,19 +73,30 @@ struct ChatView: View {
             HStack(alignment: .bottom, spacing: 8) {
                 if model.voiceIn.isListening {
                     Text(model.voiceIn.transcript.isEmpty ? "Listening…" : model.voiceIn.transcript)
-                        .font(Sky.text(13))
+                        .skyType(.bodyDefault)
                         .foregroundStyle(model.voiceIn.transcript.isEmpty ? Sky.faint : Sky.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 8)
                 } else {
-                    TextField("Message", text: $draft, prompt: Text("Ask \(Buddy.name) anything…").foregroundStyle(Sky.faint),
-                              axis: .vertical)
+                    TextField("Message", text: $draft, prompt: Text(""), axis: .vertical)
                         .textFieldStyle(.plain)
-                        .font(Sky.text(13))
+                        .skyType(.bodyDefault)
                         .foregroundStyle(Sky.ink)
                         .lineLimit(1...4)
                         .focused($inputFocused)
                         .onSubmit(send)
+                        // macOS draws a field's own prompt in its grey, so the faint one is drawn here.
+                        .background(alignment: .topLeading) {
+                            if draft.isEmpty {
+                                Text("Ask \(Buddy.name) anything…")
+                                    .skyType(.bodyDefault)
+                                    .foregroundStyle(Sky.faint)
+                                    .lineLimit(1)
+                                    .allowsHitTesting(false)
+                                    .accessibilityHidden(true)
+                            }
+                        }
+                        .accessibilityHint("Ask \(Buddy.name) anything")
                         .padding(.vertical, 8)
                 }
                 IconKey(symbol: model.voiceIn.isListening ? "stop.fill" : "mic.fill",
@@ -103,12 +114,14 @@ struct ChatView: View {
             .padding(.leading, 14)
             .padding(.trailing, 5)
             .background(RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous).fill(Sky.well))
+            .overlay(RoundedRectangle(cornerRadius: Sky.Radius.field, style: .continuous).strokeBorder(.black, lineWidth: 1))
 
             HStack(spacing: 12) {
                 Button("New chat") { model.assistant.newChat() }
                     .buttonStyle(.plain)
                     .font(Sky.text(11, .medium))
                     .foregroundStyle(Sky.muted)
+                    .opacity(assistant.turns.isEmpty ? 0.35 : 1)
                     .disabled(assistant.turns.isEmpty)
                     .keyboardShortcut("n", modifiers: .command)
                 Spacer()
@@ -142,39 +155,35 @@ private struct TurnView: View {
             HStack {
                 Spacer(minLength: 40)
                 Text(turn.text)
-                    .font(Sky.text(13))
+                    .skyType(.bodyDefault)
                     .foregroundStyle(Sky.ink)
                     .textSelection(.enabled)
                     .padding(.horizontal, 13)
                     .padding(.vertical, 9)
                     .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Sky.bubbleYou))
+                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.black, lineWidth: 1))
             }
         case .coco:
             HStack(alignment: .top, spacing: 9) {
-                // Coco's voice: a pale disc with her chevron, the same mark as the speech line.
+                // Coco's mark: her chevron on a navy disc, or on a pale one when the turn failed.
                 Text("›")
                     .font(Sky.text(13, .bold))
-                    .foregroundStyle(Sky.accentText)
+                    .foregroundStyle(turn.failure == nil ? Sky.receiptOrange : Sky.accentText)
                     .frame(width: 22, height: 22)
-                    .background(Circle().fill(Sky.accentPale))
+                    .background(Circle().fill(turn.failure == nil ? Sky.navy : Sky.accentPale))
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(turn.activities, id: \.self) { activity in
-                        HStack(spacing: 5) {
-                            Circle().fill(Sky.accent).frame(width: 4, height: 4)
-                            SkyKicker(activity)
-                        }
+                        SkyKicker(activity)
                     }
                     if !turn.text.isEmpty || turn.isStreaming {
                         if turn.text.isEmpty {
                             ThinkingDots()
-                                .padding(.top, 5)
                         } else {
                             Text(turn.text)
-                                .font(Sky.text(13))
+                                .skyType(.bodyDefault)
                                 .foregroundStyle(Sky.ink)
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .padding(.top, 2)
                         }
                     }
                     if let failure = turn.failure {
@@ -190,7 +199,6 @@ private struct TurnView: View {
                             Text("Report").font(Sky.text(11)).foregroundStyle(Sky.faint)
                         }
                         .buttonStyle(.plain)
-                        .padding(.top, 2)
                         .help("Report this reply — opens an email to \(Support.email)")
                         .accessibilityLabel("Report this reply")
                     }
@@ -228,13 +236,14 @@ private struct CompletionConfirmCard: View {
                 .foregroundStyle(Sky.ink)
             HStack(spacing: 8) {
                 Button { model.confirmCompletion(task.id) } label: { Label("Mark done", systemImage: "checkmark") }
-                    .buttonStyle(SkyButtonStyle(kind: .accent, compact: true, fillWidth: true))
+                    .buttonStyle(SkyButtonStyle(kind: .confirm, compact: true))
                 Button("Not yet") { model.declineCompletion(task.id) }
                     .buttonStyle(SkyButtonStyle(kind: .outline, compact: true))
             }
         }
         .padding(12)
-        .skyCard(radius: Sky.Radius.card)
+        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.confirm))
     }
 }
 
@@ -250,16 +259,16 @@ private struct Starters: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Ask about your day, think something through, or get a plan. \(Buddy.name) looks at your tasks and calendar only when you ask about them.")
-                .font(Sky.text(12))
+                .skyType(.bodySmall)
                 .foregroundStyle(Sky.muted)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 4)
             ForEach(prompts, id: \.self) { prompt in
                 SkyActionRow(title: prompt, symbol: "arrow.up.right") { send(prompt) }
             }
         }
         .padding(10)
         .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.well))
+        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
     }
 }
 
@@ -272,11 +281,10 @@ struct AIConsentCard: View {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Before you chat")
-                        .font(Sky.display(20))
-                        .tracking(-0.4)
+                        .skyType(.displayHeading)
                         .foregroundStyle(Sky.ink)
                     Text("To answer you, \(Buddy.name) sends some of your information to \(AIConsent.recipient), using your API key. Here's exactly what.")
-                        .font(Sky.text(12))
+                        .skyType(.bodySmall)
                         .foregroundStyle(Sky.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -285,7 +293,7 @@ struct AIConsentCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     SkyKicker("Never sent")
                     Text(AIConsent.never)
-                        .font(Sky.text(12))
+                        .skyType(.bodySmall)
                         .foregroundStyle(Sky.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -305,7 +313,9 @@ struct AIConsentCard: View {
                         .accessibilityLabel("Not now: keep the chat off")
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
+            .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Sky.accentSoft))
         }
         .scrollIndicators(.never)
     }
@@ -314,10 +324,10 @@ struct AIConsentCard: View {
         VStack(alignment: .leading, spacing: 6) {
             SkyKicker(title)
             ForEach(items, id: \.self) { item in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Circle().fill(Sky.accent).frame(width: 4, height: 4).alignmentGuide(.firstTextBaseline) { $0[.bottom] + 4 }
+                HStack(alignment: .top, spacing: 8) {
+                    Circle().fill(Sky.accent).frame(width: 4, height: 4)
                     Text(item)
-                        .font(Sky.text(12))
+                        .skyType(.bodySmall)
                         .foregroundStyle(Sky.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -330,27 +340,31 @@ private struct ConnectPrompt: View {
     let model: AppModel
 
     var body: some View {
-        VStack(spacing: 12) {
-            Spacer()
-            Image(systemName: "bubble.left.and.text.bubble.right")
-                .font(.system(size: 20, weight: .regular))
-                .foregroundStyle(Sky.accentText)
-                .frame(width: 52, height: 52)
-                .background(Circle().fill(Sky.accentPale))
-            Text("Chat needs a Claude API key.")
-                .font(Sky.text(14, .semibold))
-                .foregroundStyle(Sky.ink)
-            Text("Add it in Connections. Everything else works without it.")
-                .font(Sky.text(12))
-                .foregroundStyle(Sky.muted)
-                .multilineTextAlignment(.center)
-            Button("Open Connections") { model.openConnections() }
-                .buttonStyle(SkyButtonStyle(kind: .accent, compact: true))
-            Spacer()
-            Spacer()
+        VStack(spacing: 0) {
+            VStack(spacing: 12) {
+                Image(systemName: "bubble.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Sky.accentText)
+                    .frame(width: 52, height: 52)
+                    .background(Circle().fill(Sky.accentPale))
+                Text("Chat needs a Claude API key.")
+                    .skyType(.titleEmphasis)
+                    .foregroundStyle(Sky.ink)
+                Text("Add it in Connections. Everything else works without it.")
+                    .skyType(.bodySmall)
+                    .foregroundStyle(Sky.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Open Connections") { model.openConnections() }
+                    .buttonStyle(SkyButtonStyle(kind: .accent, compact: true))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+            .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Sky.accentText.opacity(0.49)))
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity)
-        .padding(20)
+        .padding(.horizontal, Sky.Space.gutter)
+        .padding(.top, 90)
     }
 }
 

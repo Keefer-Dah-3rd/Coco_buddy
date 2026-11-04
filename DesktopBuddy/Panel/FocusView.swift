@@ -177,17 +177,6 @@ struct FocusView: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                SkyKicker("Until long break")
-                Spacer()
-                HStack(spacing: 4) {
-                    ForEach(0..<model.preferences.focusSettings.sessionsBeforeLongBreak, id: \.self) { index in
-                        Capsule()
-                            .fill(index < timer.focusStreak ? Sky.confirm : Sky.line)
-                            .frame(width: 12, height: 6)
-                    }
-                }
-            }
-            HStack(spacing: 8) {
                 SkyKicker("During focus")
                 Spacer()
                 @Bindable var preferences = model.preferences

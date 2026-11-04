@@ -136,9 +136,9 @@ nonisolated enum Metrics {
     /// `opacity/pressed`
     static let pressedOpacity: Double = 0.85
     /// `panel/width`
-    static let panelWidth: CGFloat = 390
+    static let panelWidth: CGFloat = 425
     /// `panel/height`
-    static let panelHeight: CGFloat = 620
+    static let panelHeight: CGFloat = 700
 }
 
 // MARK: - Sky (Figma collection “Sky”, mode “Value”): the pop-up panel's look
@@ -216,9 +216,9 @@ extension Sky.Space {
 
 extension Sky.Size {
     /// `size/panel-width` — Metrics.panelWidth
-    static let panelWidth: CGFloat = 390
+    static let panelWidth: CGFloat = 425
     /// `size/panel-height` — Metrics.panelHeight — never grows
-    static let panelHeight: CGFloat = 620
+    static let panelHeight: CGFloat = 700
 }
 
 // MARK: - Typography (Figma text styles)

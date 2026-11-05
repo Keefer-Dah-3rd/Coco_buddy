@@ -260,7 +260,8 @@ enum SnapshotRenderer {
 
     // MARK: - App icon
 
-    /// Renders the 1024 px app icon: Coco on a warm paper tile in the macOS icon shape.
+    /// Renders the 1024 px app icon (Figma `Brand/AppIcon`, drawn there at ¼ scale): Coco, large
+    /// and cropped by the macOS icon shape, on a Sky orange tile with a navy floor band.
     static func renderIcon(to url: URL) {
         let art = CocoLayerView(frame: NSRect(x: 0, y: 0, width: 330, height: 392))
         let window = NSWindow(contentRect: NSRect(x: -20_000, y: -20_000, width: 330, height: 392),
@@ -269,14 +270,8 @@ enum SnapshotRenderer {
         window.isOpaque = false
         window.contentView = art
         window.orderFrontRegardless()
-        var animator = CharacterAnimator()
-        animator.setState(.idle, at: 0)
-        var pose = animator.pose(at: 1000.25)
-        pose.eyeOpen = 1
-        pose.headTilt = 0.1
-        pose.mouthOpen = 0.32
-        pose.tongue = 0.75
-        pose.earPerk = 0.95
+        // The pose Figma's icon uses: Coco/Mascot State=Panting, exported from this same frame.
+        let pose = characterFrames().first { $0.label == "panting" }!.pose
         art.layoutSubtreeIfNeeded()
         art.render(pose, focusProgress: nil)
         RunLoop.main.run(until: Date().addingTimeInterval(0.4))
@@ -300,20 +295,25 @@ enum SnapshotRenderer {
             shadow.shadowBlurRadius = 24
             shadow.shadowOffset = NSSize(width: 0, height: -10)
             shadow.set()
-            BrandPalette.iconTile.setFill()
+            NSColor(Sky.accent).setFill()
             shape.fill()
             NSGraphicsContext.restoreGraphicsState()
-            // A darker floor band gives the tile a little physical depth.
+            // A navy floor band across the bottom third.
             NSGraphicsContext.saveGraphicsState()
             shape.addClip()
-            BrandPalette.iconFloor.setFill()
-            NSRect(x: 100, y: 100, width: 824, height: 210).fill()
+            NSColor(Sky.navy).setFill()
+            NSRect(x: 100, y: 100, width: 824, height: 272).fill()
             NSGraphicsContext.restoreGraphicsState()
             BrandPalette.iconStroke.setStroke()
             shape.lineWidth = 3
             shape.stroke()
-            // Coco, feet on the floor band.
-            coco.draw(in: NSRect(x: 512 - 330, y: 150, width: 660, height: 784))
+            // Coco on top, big enough that the tile's bottom edge crops her at the paws.
+            NSGraphicsContext.saveGraphicsState()
+            shape.addClip()
+            let cocoHeight: CGFloat = 1144
+            let cocoWidth = cocoHeight * art.bounds.width / art.bounds.height
+            coco.draw(in: NSRect(x: 512 - cocoWidth / 2, y: 1024 - cocoHeight, width: cocoWidth, height: cocoHeight))
+            NSGraphicsContext.restoreGraphicsState()
             return true
         }
         write(icon, to: url)

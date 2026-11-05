@@ -112,6 +112,10 @@ colours and 50+ timings match the code. Open items:
 - [x] App icon (`Brand/AppIcon`, 2026-11-04): was a flat 256 px picture; now layers matching
   `SnapshotRenderer.renderIcon` at ¼ scale — tile and floor bound to Brand `icon/*`, 3 px
   outline, shadow, Coco/Mascot State=Panting — plus a Dock/Finder size row (128–16 pt)
+- [x] App icon redesign (2026-11-05): Sky `color/accent` tile, Sky `color/blue2` (navy) floor
+  band over the bottom third, Coco scaled ×1.46 and cropped by the tile (crop frame 2282:6658).
+  `renderIcon` now draws the same Panting pose as Figma; Brand `icon/tile` and `icon/floor` are
+  no longer used by the icon
 - Documented differences, not changed: `dash/settle` brake share (Figma text 64%, code 0.45)
   and the treat sparkle fade-in (80 ms vs ≈108 ms) — the code values are the tuned ones the
   Figma notes were written from.

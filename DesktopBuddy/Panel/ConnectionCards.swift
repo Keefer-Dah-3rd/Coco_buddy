@@ -165,8 +165,13 @@ struct ScheduleStrip: View {
         }
         ForEach(upcoming) { event in
             HStack(spacing: 8) {
-                SkyKicker(RelativeTiming.day(of: event.start, now: now))
-                    .frame(width: 66, alignment: .leading)
+                // The column is as wide as "Tomorrow", the longest label, so no label wraps
+                // and every title starts at the same x.
+                ZStack(alignment: .leading) {
+                    SkyKicker("Tomorrow").hidden()
+                    SkyKicker(RelativeTiming.day(of: event.start, now: now))
+                }
+                .fixedSize()
                 Text(event.title).skyType(.bodySmall).foregroundStyle(Sky.ink).lineLimit(1)
                 Spacer(minLength: 6)
                 Text(event.isAllDay ? "all day" : event.start.formatted(date: .omitted, time: .shortened))

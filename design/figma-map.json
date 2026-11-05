@@ -1083,9 +1083,9 @@
         "file": "legacy"
       },
       "swift": {
-        "symbol": "KeySegment.Item",
-        "file": "DesktopBuddy/Panel/PanelRootView.swift",
-        "anchor": "struct Item"
+        "symbol": "SegmentItem (KeySegment.Item)",
+        "file": "DesktopBuddy/Panel/Sky/SkyControls.swift",
+        "anchor": "struct SegmentItem"
       }
     },
     {
@@ -1097,7 +1097,7 @@
       },
       "swift": {
         "symbol": "KeySegment",
-        "file": "DesktopBuddy/Panel/PanelRootView.swift",
+        "file": "DesktopBuddy/Panel/Theme.swift",
         "anchor": "struct KeySegment"
       },
       "notes": "Size=Regular → height 28 (tabs, 26 in Focus); Size=Small → height: 22 (Settings)."
@@ -1320,17 +1320,16 @@
     },
     {
       "figma": {
-        "name": "Brand / App Icon",
+        "name": "Brand/AppIcon",
         "nodeId": "17:912",
-        "key": "d0d892e9e4348dd85f2b2c84e12dbd538e41b83c",
-        "file": "legacy"
+        "key": "f16239025956bef7d73f928a71b6f0fe742e4416"
       },
       "swift": {
         "symbol": "AppIcon (asset catalog)",
         "file": "DesktopBuddy/App/SnapshotRenderer.swift",
         "anchor": "static func renderIcon"
       },
-      "notes": "Rendered by SnapshotRenderer.renderIcon into Resources/Assets.xcassets/AppIcon.appiconset."
+      "notes": "The Dock/Finder icon. Rendered by SnapshotRenderer.renderIcon into Resources/Assets.xcassets/AppIcon.appiconset. In Figma it is layered at 1/4 scale: Tile + Floor bound to Brand icon/*, Coco = Coco/Mascot State=Panting (05.2 - Mascot Library, with a 128/64/32/16 size row)."
     },
     {
       "figma": {

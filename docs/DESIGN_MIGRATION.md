@@ -109,6 +109,9 @@ colours and 50+ timings match the code. Open items:
 
 - [x] Welcome hero: Coco 132×157 on a 148 pt accent-pale halo
 - [x] Reduce Motion: the carry turnaround bob stops (Figma: “without the bob”), with a test
+- [x] App icon (`Brand/AppIcon`, 2026-11-04): was a flat 256 px picture; now layers matching
+  `SnapshotRenderer.renderIcon` at ¼ scale — tile and floor bound to Brand `icon/*`, 3 px
+  outline, shadow, Coco/Mascot State=Panting — plus a Dock/Finder size row (128–16 pt)
 - Documented differences, not changed: `dash/settle` brake share (Figma text 64%, code 0.45)
   and the treat sparkle fade-in (80 ms vs ≈108 ms) — the code values are the tuned ones the
   Figma notes were written from.
@@ -123,7 +126,7 @@ welcome flow, keyboard shortcuts (⌘1–3, ⌘N, ⌘L, ⌘↩, Esc, arrows), pe
 
 - Code Connect is refused for this file: “Code connections can only be made in libraries that are
   in Organization or Enterprise plans” (tried 2026-10-27 on UI/Button).
-- [x] `design/figma-map.json` now maps 95 Coco-2 components to their Swift code (plus the legacy
+- [x] `design/figma-map.json` now maps 96 Coco-2 components to their Swift code (plus the legacy
       Coco file's entries that still exist); `scripts/tokens/check_figma_map.py` verifies them all.
       Each Figma component's description also names its code (“Code: …”).
 - Still manual: a Figma change reaches the app by syncing tokens (`scripts/sync-design-tokens.sh`)

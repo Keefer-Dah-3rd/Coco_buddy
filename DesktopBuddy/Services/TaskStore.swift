@@ -58,6 +58,13 @@ final class TaskStore {
         list.outline(now: now, collapsed: collapsed)
     }
 
+    /// Open tasks a new or moved task could go under, as an outline — never `excluding` itself
+    /// or anything below it, so the list can't loop.
+    func parentCandidates(excluding id: BuddyTask.ID? = nil) -> [TaskOutlineRow] {
+        let blocked = id.map { list.descendantIDs(of: $0).union([$0]) } ?? []
+        return outline(collapsed: []).filter { !$0.task.isCompleted && !blocked.contains($0.id) }
+    }
+
     /// Adds a task built by the new-task form. Duplicates (same title, same parent) aren't added.
     @discardableResult
     func add(_ task: BuddyTask) -> TaskList.AddResult {

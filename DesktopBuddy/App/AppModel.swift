@@ -60,8 +60,6 @@ final class AppModel {
     private(set) var isPanelOpen = false
     /// Bumped each time the panel opens, so views can restore keyboard focus.
     private(set) var panelOpenCount = 0
-    /// The buddy's latest line, shown at the top of the panel.
-    private(set) var buddyLine: String
     /// After a focus session on a task ends, the buddy asks — it never assumes — whether it's done.
     private(set) var completionPrompt: BuddyTask.ID?
     private(set) var recentlyRemoved: BuddyTask?
@@ -189,7 +187,6 @@ final class AppModel {
         assistant = AssistantService(persistent: !preview)
         sounds = SoundPlayer(preferences: preferences)
         weather = WeatherStore(preferences: preferences, persistent: !preview, locationAccess: !preview)
-        buddyLine = BuddyVoice.greeting()
     }
 
     func start() {
@@ -272,7 +269,6 @@ final class AppModel {
         notifications.cancelAll()
         preferences.reset()
         windows?.resetPosition()
-        buddyLine = BuddyVoice.greeting()
         panelTab = .today
         windows?.showOnboarding()
     }
@@ -499,7 +495,7 @@ final class AppModel {
         else { return }
         // A remark about the weather or the time of day, at its own, rarer pace.
         if now.timeIntervalSince(lastSpokeAt) >= 10 * 60, now.timeIntervalSince(lastTogetherAt) >= 3 * 60,
-           remarkOnTheDay(now) {
+           remarkOnTheDay(now) != nil {
             nextChatterAt = max(nextChatterAt, now.addingTimeInterval(Self.chatterGap.lowerBound))
             return
         }
@@ -519,23 +515,23 @@ final class AppModel {
     }
 
     /// Says something about the weather, the light or today's banner if one is due
-    /// (`BannerCommentPacing`: once per part of the day at most). Returns whether she spoke.
-    private func remarkOnTheDay(_ now: Date) -> Bool {
+    /// (`BannerCommentPacing`: once per part of the day at most). Returns what she said, if anything.
+    private func remarkOnTheDay(_ now: Date) -> String? {
         banner.refresh(now: now)
         let reading = weatherForRemarks(now)
         let shown = reading?.bannerWeather
-        guard preferences.environmentPacing.isDue(now: now, time: banner.time, weather: shown) else { return false }
+        guard preferences.environmentPacing.isDue(now: now, time: banner.time, weather: shown) else { return nil }
         let context = BannerCommentEngine.Context(banner: banner.banner, time: banner.time, weather: reading, now: now,
                                                   hour: Calendar.current.component(.hour, from: now))
-        guard let remark = environmentRemarks.comment(for: context) else { return false }
+        guard let remark = environmentRemarks.comment(for: context) else { return nil }
         preferences.environmentPacing.record(now: now, time: banner.time, weather: shown)
         speak(remark.text, .ambient)
-        return true
+        return remark.text
     }
 
     #if DEBUG
-    /// Self-test: try for a remark at `now` (manners aside). Returns whether she spoke.
-    func remarkForSelfTest(_ now: Date) -> Bool { remarkOnTheDay(now) }
+    /// Self-test: try for a remark at `now` (manners aside). Returns what she said, if anything.
+    func remarkForSelfTest(_ now: Date) -> String? { remarkOnTheDay(now) }
     #endif
 
     /// The reading Coco may talk about: fresh enough to be true (stale readings stay on the
@@ -556,7 +552,7 @@ final class AppModel {
     }
 
     private func inMeeting(at now: Date) -> Bool {
-        agenda.events(on: now)?.contains { !$0.isAllDay && $0.isBusy && $0.start <= now && $0.end > now } ?? false
+        agenda.schedule.current(at: now)?.isBusy ?? false
     }
 
     func openPanel(_ tab: PanelTab? = nil) {
@@ -745,11 +741,8 @@ final class AppModel {
         }
         character.dismissSpeech()
         taskDrafts = []
-        Task {
-            await voiceIn.start()
-            // Problems are spoken through `voiceIn.onProblem`.
-            if voiceIn.status == .listening { buddyLine = BuddyVoice.listening }
-        }
+        // Problems are spoken through `voiceIn.onProblem`.
+        Task { await voiceIn.start() }
     }
 
     func talkToBuddy() {
@@ -863,7 +856,7 @@ final class AppModel {
         case .getToday:
             let timer = focus.timer
             let focusState = timer.isActive
-                ? "\(timer.phase.label.lowercased()) \(timer.isPaused ? "paused" : "running"), \(Self.clock(focus.remaining)) left"
+                ? "\(timer.phase.label.lowercased()) \(timer.isPaused ? "paused" : "running"), \(DurationText.clock(focus.remaining)) left"
                     + (tasks.task(timer.taskID).map { " on “\($0.title)”" } ?? "")
                 : "not running (default focus length \(preferences.focusSettings.focusMinutes) min)"
             var problems: [String] = []
@@ -904,7 +897,7 @@ final class AppModel {
                 taskID = uuid
             }
             if focus.timer.isActive {
-                return .init(result: "Not started: a \(focus.timer.phase.label.lowercased()) session is already running (\(Self.clock(focus.remaining)) left).", isError: true)
+                return .init(result: "Not started: a \(focus.timer.phase.label.lowercased()) session is already running (\(DurationText.clock(focus.remaining)) left).", isError: true)
             }
             focusStartedFromChat = true
             focus.start(.focus, taskID: taskID, minutes: minutes)
@@ -1334,7 +1327,6 @@ final class AppModel {
     // MARK: - Speaking
 
     func speak(_ text: String, _ importance: Importance) {
-        buddyLine = text
         lastSpokeAt = .now
         if isPanelOpen {
             character.mouthAlong(text)
@@ -1461,10 +1453,8 @@ final class AppModel {
                 if !task.isCompleted { completionPrompt = task.id }
             }
             panelTab = .focus
-            if whileAway {
-                buddyLine = BuddyVoice.endedWhileAway(phase.label)
-                return
-            }
+            // Ended while the app wasn't running: nothing to celebrate now, long after the fact.
+            if whileAway { return }
             if phase == .focus {
                 // Time's up — Coco tells you herself.
                 bark()
@@ -1506,7 +1496,7 @@ final class AppModel {
             || (focusing && preferences.focusPresentation == .smaller)
         let quiet = focusing && preferences.focusPresentation == .quiet
         let countdown = timer.isActive
-            ? CharacterModel.Countdown(text: Self.clock(focus.remaining), isBreak: timer.phase.isBreak, isPaused: timer.isPaused)
+            ? CharacterModel.Countdown(text: DurationText.clock(focus.remaining), isBreak: timer.phase.isBreak, isPaused: timer.isPaused)
             : nil
         return CharacterSync(
             base: base,
@@ -1524,14 +1514,5 @@ final class AppModel {
         if character.isDimmed != sync.dimmed { character.isDimmed = sync.dimmed }
         if character.focusProgress != sync.progress { character.focusProgress = sync.progress }
         if character.countdown != sync.countdown { character.countdown = sync.countdown }
-    }
-
-    /// "24:59", or "1:04:59" for long sessions. Rounds up so a fresh 25-minute timer reads 25:00.
-    static func clock(_ seconds: TimeInterval) -> String {
-        let total = Int(seconds.rounded(.up))
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        let s = total % 60
-        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%02d:%02d", m, s)
     }
 }

@@ -242,8 +242,7 @@ private struct CompletionConfirmCard: View {
             }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.confirm))
+        .skyCard(rim: Sky.confirm, style: .continuous)
     }
 }
 
@@ -267,8 +266,7 @@ private struct Starters: View {
             }
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.well))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
+        .skyCard(fill: Sky.well, rim: Sky.ink, style: .continuous)
     }
 }
 

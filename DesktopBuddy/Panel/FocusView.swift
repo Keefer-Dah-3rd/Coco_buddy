@@ -27,7 +27,7 @@ struct FocusView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 SkySegment(selection: quickLengthBinding,
-                           items: Self.quickLengths.map { .init($0, TodayView.duration($0)) },
+                           items: Self.quickLengths.map { .init($0, DurationText.short($0)) },
                            height: 30)
                 .disabled(timer.isActive)
                 .opacity(timer.isActive ? 0.5 : 1)
@@ -45,7 +45,7 @@ struct FocusView: View {
                 if timer.isFinished {
                     CompletionCard(model: model)
                 } else {
-                    meetingHeadsUp
+                    MeetingHeadsUp(model: model)
                     controls
                 }
 
@@ -114,12 +114,11 @@ struct FocusView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.navy))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
+        .skyCard(fill: Sky.navy, rim: Sky.ink, style: .continuous)
     }
 
     private var clock: some View {
-        Text(AppModel.clock(focus.remaining))
+        Text(DurationText.clock(focus.remaining))
             .skyType(.displayCountdown)
             .monospacedDigit()
             .foregroundStyle(timer.isPaused ? Color.white.opacity(0.6) : Color.white)
@@ -149,7 +148,7 @@ struct FocusView: View {
     /// The clock as a text field: same type and place, with the time selected so typing replaces it.
     private var lengthField: some View {
         // Hidden, it holds the clock's time, so Tab onto it selects the right text.
-        TextField("Length", text: Binding(get: { typingLength ? lengthDraft : AppModel.clock(focus.remaining) },
+        TextField("Length", text: Binding(get: { typingLength ? lengthDraft : DurationText.clock(focus.remaining) },
                                           set: { lengthDraft = $0 }),
                   prompt: Text("45"))
             .textFieldStyle(.plain)
@@ -191,7 +190,7 @@ struct FocusView: View {
     private var lengthHint: String {
         guard let minutes = typedMinutes else { return "Type minutes, like 45 or 1h 30m" }
         let range = FocusSettings.minuteRange
-        let length = TodayView.duration(min(max(minutes, range.lowerBound), range.upperBound))
+        let length = DurationText.short(min(max(minutes, range.lowerBound), range.upperBound))
         let note = minutes > range.upperBound ? ", the longest" : ""
         return "Return sets \(length)\(note) · Esc cancels"
     }
@@ -200,7 +199,7 @@ struct FocusView: View {
 
     private func beginTypingLength() {
         guard canTypeLength, !typingLength else { return }
-        lengthDraft = AppModel.clock(focus.remaining)
+        lengthDraft = DurationText.clock(focus.remaining)
         refusedTries = 0
         typingLength = true
         // AppKit selects the field's text as it takes focus, so typing replaces the time.
@@ -314,25 +313,6 @@ struct FocusView: View {
         }
     }
 
-    /// If a meeting would interrupt the session, say so before it starts.
-    @ViewBuilder
-    private var meetingHeadsUp: some View {
-        if model.agenda.isConnected, !timer.isActive,
-           let next = model.agenda.schedule.next(after: .now),
-           next.start.timeIntervalSinceNow < focus.remaining {
-            let minutes = max(1, Int(next.start.timeIntervalSinceNow / 60))
-            HStack(spacing: 6) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Sky.accentText)
-                Text("“\(BuddyVoice.short(next.title))” starts in \(minutes)m — before this session would end.")
-                    .font(Sky.text(11))
-                    .foregroundStyle(Sky.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
     // MARK: - Footer
 
     private var footer: some View {
@@ -394,8 +374,7 @@ private struct CompletionCard: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.accentSoft, lineWidth: 1))
+        .skyCard(rim: Sky.accentSoft, style: .continuous)
     }
 }
 

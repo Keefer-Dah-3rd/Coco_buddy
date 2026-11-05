@@ -64,8 +64,8 @@ struct SplitMix64: RandomNumberGenerator {
 /// Morning, daytime, evening or night by the local clock.
 ///
 /// Boundaries (local time): morning 5:00–11:00, daytime 11:00–17:00, evening 17:00–21:00,
-/// night 21:00–5:00. They follow the Make file's four lights and Coco's greetings, and don't
-/// need a location, so the light is right even with weather off.
+/// night 21:00–5:00. They follow the Make file's four lights, and don't need a location, so
+/// the light is right even with weather off.
 public enum BannerClock {
     /// The hour each light starts, in order through the day.
     public static let starts: [(hour: Int, time: BannerTimeOfDay)] = [

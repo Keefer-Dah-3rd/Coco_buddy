@@ -14,6 +14,12 @@ public enum TaskPriority: Int, Codable, CaseIterable, Comparable, Sendable {
         case .urgent: "Urgent"
         }
     }
+
+    /// The priority by its lower-case name ("high"), as the chat's tools say it.
+    public init?(name: String) {
+        guard let match = Self.allCases.first(where: { $0.label.lowercased() == name }) else { return nil }
+        self = match
+    }
 }
 
 /// Where a task lives. `.personal` tasks persist until done or removed;

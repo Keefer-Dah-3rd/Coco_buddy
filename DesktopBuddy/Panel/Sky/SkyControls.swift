@@ -70,12 +70,18 @@ extension View {
             }
     }
 
-    /// A white card with the hairline rim.
-    func skyCard(radius: CGFloat = Sky.Radius.card) -> some View {
-        background(RoundedRectangle(cornerRadius: radius, style: .circular).fill(Sky.paper))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .circular).strokeBorder(Sky.line))
+    /// A card: a fill and, unless `rim` is nil, a 1 pt rim. The default is the white card with
+    /// the hairline rim on circular corners, as Figma draws it; the navy, well and receipt cards
+    /// pass their own colours and the continuous corners the screens use for them.
+    func skyCard(fill: Color = Sky.paper, rim: Color? = Sky.line, lineWidth: CGFloat = 1,
+                 radius: CGFloat = Sky.Radius.card, style: RoundedCornerStyle = .circular) -> some View {
+        background(RoundedRectangle(cornerRadius: radius, style: style).fill(fill))
+            .overlay {
+                if let rim {
+                    RoundedRectangle(cornerRadius: radius, style: style).strokeBorder(rim, lineWidth: lineWidth)
+                }
+            }
     }
-
 }
 
 /// The pill button. `.accent` is the main action (white on orange with a black rim), `.ink`
@@ -165,22 +171,26 @@ struct SkyRoundStyle: ButtonStyle {
     }
 }
 
-/// A row of pill segments on a black-rimmed well: the selected one fills orange with white
-/// text. Figma: UI/Segment. Same items, shortcuts and bindings as the old key segments.
-struct SkySegment<Value: Hashable>: View {
-    struct Item {
-        var value: Value
-        var title: String
-        var trailing: String?
-        var shortcut: KeyEquivalent?
+/// One choice in a segmented control (`SkySegment` in the panel, `KeySegment` in Settings):
+/// its value, title, an optional trailing count and an optional ⌘ shortcut.
+struct SegmentItem<Value: Hashable> {
+    var value: Value
+    var title: String
+    var trailing: String?
+    var shortcut: KeyEquivalent?
 
-        init(_ value: Value, _ title: String, trailing: String? = nil, shortcut: KeyEquivalent? = nil) {
-            self.value = value
-            self.title = title
-            self.trailing = trailing
-            self.shortcut = shortcut
-        }
+    init(_ value: Value, _ title: String, trailing: String? = nil, shortcut: KeyEquivalent? = nil) {
+        self.value = value
+        self.title = title
+        self.trailing = trailing
+        self.shortcut = shortcut
     }
+}
+
+/// A row of pill segments on a black-rimmed well: the selected one fills orange with white
+/// text. Figma: UI/Segment.
+struct SkySegment<Value: Hashable>: View {
+    typealias Item = SegmentItem<Value>
 
     @Binding var selection: Value
     let items: [Item]

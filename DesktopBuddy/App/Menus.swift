@@ -17,7 +17,7 @@ struct MenuBarMenu: View {
         Divider()
 
         if timer.isActive {
-            Text("\(timer.phase.label) · \(AppModel.clock(model.focus.remaining)) left")
+            Text("\(timer.phase.label) · \(DurationText.clock(model.focus.remaining)) left")
             if timer.isRunning {
                 Button("Pause") { model.focus.pause() }
             } else {
@@ -68,7 +68,7 @@ struct MenuBarLabel: View {
         let timer = model.focus.timer
         if timer.isActive {
             Image(nsImage: BuddyGlyph.menuBar)
-            Text(AppModel.clock(model.focus.remaining))
+            Text(DurationText.clock(model.focus.remaining))
                 .monospacedDigit()
         } else {
             Image(nsImage: BuddyGlyph.menuBar)

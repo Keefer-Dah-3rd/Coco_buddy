@@ -104,23 +104,6 @@ public enum SVGPath {
         return out
     }
 
-    /// The box the path's points and control points fall in (a slight overestimate for curves).
-    public static func controlBounds(_ elements: [Element]) -> (minX: Double, minY: Double, maxX: Double, maxY: Double)? {
-        var points: [Point] = []
-        for element in elements {
-            switch element {
-            case .move(let p), .line(let p): points.append(p)
-            case .quad(let c, let p): points += [c, p]
-            case .cubic(let c1, let c2, let p): points += [c1, c2, p]
-            case .close: break
-            }
-        }
-        guard let first = points.first else { return nil }
-        return points.reduce((first.x, first.y, first.x, first.y)) { box, p in
-            (min(box.0, p.x), min(box.1, p.y), max(box.2, p.x), max(box.3, p.y))
-        }
-    }
-
     // MARK: Arcs (SVG 1.1 appendix F.6)
 
     static func arc(from p0: Point, to p1: Point, rx: Double, ry: Double, rotation: Double,

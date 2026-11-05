@@ -36,6 +36,12 @@ extension Color {
     init(hex: UInt32) {
         self.init(nsColor: NSColor(hex: hex))
     }
+
+    /// "#RRGGBB" (an Apple calendar's colour, say), or nil for anything else.
+    init?(hex text: String) {
+        guard text.hasPrefix("#"), text.count == 7, let value = UInt32(text.dropFirst(), radix: 16) else { return nil }
+        self.init(hex: value)
+    }
 }
 
 /// A named text style: a font plus the tracking and case that go with it.
@@ -140,6 +146,64 @@ struct KeyButtonStyle: ButtonStyle {
             case .secondary: hovering ? Theme.well : Theme.paper
             case .quiet: hovering || configuration.isPressed ? Theme.well : .clear
             }
+        }
+    }
+}
+
+/// A row of square-shouldered keys acting as a segmented control (Settings).
+struct KeySegment<Value: Hashable>: View {
+    typealias Item = SegmentItem<Value>
+
+    @Binding var selection: Value
+    let items: [Item]
+    var height: CGFloat = 28
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                if index > 0 {
+                    Rectangle().fill(Theme.hairline).frame(width: 1)
+                }
+                key(item)
+            }
+        }
+        .frame(height: height)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Theme.hairline))
+    }
+
+    @ViewBuilder
+    private func key(_ item: Item) -> some View {
+        let selected = item.value == selection
+        let button = Button {
+            selection = item.value
+        } label: {
+            HStack(spacing: Space.xs) {
+                Text(item.title.uppercased())
+                    .font(.style(.monoLabel))
+                    .tracking(TypeStyle.monoLabel.tracking)
+                if let trailing = item.trailing {
+                    Spacer(minLength: 2)
+                    Text(trailing)
+                        .font(.style(.monoValue))
+                        .monospacedDigit()
+                        .opacity(0.7)
+                }
+            }
+            .foregroundStyle(selected ? Theme.paper : Theme.ink)
+            .padding(.horizontal, Space.md)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(selected ? Theme.ink : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.trailing.map { "\(item.title), \($0)" } ?? item.title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+
+        if let shortcut = item.shortcut {
+            button.keyboardShortcut(shortcut, modifiers: .command)
+        } else {
+            button
         }
     }
 }

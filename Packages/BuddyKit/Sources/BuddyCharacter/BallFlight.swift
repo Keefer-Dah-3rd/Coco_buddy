@@ -34,8 +34,6 @@ public struct BallFlight: Sendable, Equatable {
     /// The first time it touches the ground.
     public let landTime: TimeInterval
     public let restTime: TimeInterval
-    /// Where it first lands.
-    public let landing: SIMD2<Double>
 
     /// How a thrown thing flies, bounces and comes to rest.
     public struct Material: Sendable, Equatable {
@@ -124,7 +122,6 @@ public struct BallFlight: Sendable, Equatable {
         startTime = time
         self.segments = segments
         rest = position
-        self.landing = landing
         landTime = time + airTime
         restTime = time + clock
     }
@@ -154,8 +151,6 @@ public struct BallFlight: Sendable, Equatable {
         }
         return segment.spin + rollSpin(segment, dt)
     }
-
-    public func isResting(at t: TimeInterval) -> Bool { t >= restTime }
 
     /// Times it hits the floor: the first landing and every bounce.
     public var impacts: [TimeInterval] {

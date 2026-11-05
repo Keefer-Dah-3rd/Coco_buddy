@@ -31,18 +31,7 @@ final class PartifulFeedService {
     @ObservationIgnored private let cache: JSONFileStore<Cached>?
     @ObservationIgnored private let persistent: Bool
     @ObservationIgnored private let log = Logger(subsystem: "com.keefer.DesktopBuddy", category: "partiful")
-    @ObservationIgnored private let session: URLSession = {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 20
-        configuration.waitsForConnectivity = false
-        configuration.httpShouldSetCookies = false
-        configuration.httpCookieAcceptPolicy = .never
-        configuration.urlCache = nil
-        #if DEBUG
-        if let stand = HTTP.standIn { configuration.protocolClasses = [stand] }
-        #endif
-        return URLSession(configuration: configuration)
-    }()
+    @ObservationIgnored private let session = HTTP.makeSession(cookies: false)
 
     private static let keychainAccount = "partiful.calendarLink"
     private static let maxBytes = 5_000_000

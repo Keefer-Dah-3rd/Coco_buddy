@@ -66,8 +66,7 @@ struct SkyFocusBanner: View {
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.navy))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.ink, lineWidth: 1))
+        .skyCard(fill: Sky.navy, rim: Sky.ink, style: .continuous)
         .animation(Sky.Motion.enter, value: timer.isActive)
         .animation(Sky.Motion.enter, value: timer.isFinished)
     }
@@ -77,7 +76,7 @@ struct SkyFocusBanner: View {
     private var minutesSetting: Int { model.preferences.focusSettings.minutes(for: timer.phase) }
 
     private var lead: String {
-        if timer.isActive || timer.isFinished { return AppModel.clock(focus.remaining) }
+        if timer.isActive || timer.isFinished { return DurationText.clock(focus.remaining) }
         return "\(minutesSetting) min"
     }
 
@@ -129,18 +128,33 @@ struct SkyFocusBanner: View {
             }
             .padding(.top, 10)
             .transition(.opacity)
-        } else if model.agenda.isConnected, !timer.isActive, let next = model.agenda.schedule.next(after: .now),
-                  next.start.timeIntervalSinceNow < focus.remaining {
+        } else {
+            MeetingHeadsUp(model: model, topPadding: 8)
+        }
+    }
+}
+
+/// If a meeting would interrupt a session started now, say so before it starts. Under Today's
+/// focus banner and on the Focus tab, while nothing is running.
+struct MeetingHeadsUp: View {
+    let model: AppModel
+    var topPadding: CGFloat = 0
+
+    var body: some View {
+        if model.agenda.isConnected, !model.focus.timer.isActive,
+           let next = model.agenda.schedule.next(after: .now),
+           next.start.timeIntervalSinceNow < model.focus.remaining {
+            let minutes = max(1, Int(next.start.timeIntervalSinceNow / 60))
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 10))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(Sky.accentText)
-                Text("“\(BuddyVoice.short(next.title))” starts in \(max(1, Int(next.start.timeIntervalSinceNow / 60)))m — before this session would end.")
-                    .font(Sky.text(10.5))
+                Text("“\(BuddyVoice.short(next.title))” starts in \(minutes)m — before this session would end.")
+                    .font(Sky.text(11))
                     .foregroundStyle(Sky.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 8)
+            .padding(.top, topPadding)
         }
     }
 }
@@ -178,7 +192,7 @@ struct SkyHelpRows: View {
             SkyActionRow(title: "Talk it through", help: "Open the chat", action: openChat)
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.well))
+        .skyCard(fill: Sky.well, rim: nil, style: .continuous)
     }
 }
 

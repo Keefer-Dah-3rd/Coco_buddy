@@ -139,17 +139,15 @@ public struct NotionTask: Equatable, Identifiable, Sendable {
     public var isDone: Bool
     public var due: Date?
     public var priority: TaskPriority
-    public var statusName: String?
 
     public init(id: String, title: String, url: URL? = nil, isDone: Bool, due: Date? = nil,
-                priority: TaskPriority = .none, statusName: String? = nil) {
+                priority: TaskPriority = .none) {
         self.id = id
         self.title = title
         self.url = url
         self.isDone = isDone
         self.due = due
         self.priority = priority
-        self.statusName = statusName
     }
 
     public var ref: ExternalTaskRef { ExternalTaskRef(source: .notion, id: id, url: url) }
@@ -276,13 +274,12 @@ public enum NotionAPI {
         guard !title.isEmpty else { return nil }
 
         var isDone = false
-        var statusName: String?
         if let name = mapping.statusProperty, let property = properties[name], let kind = mapping.statusKind {
             switch kind {
             case .checkbox:
                 isDone = property["checkbox"] as? Bool ?? false
             case .status, .select:
-                statusName = (property[kind.rawValue] as? [String: Any])?["name"] as? String
+                let statusName = (property[kind.rawValue] as? [String: Any])?["name"] as? String
                 isDone = statusName.map(mapping.doneValues.contains) ?? false
             }
         }
@@ -295,7 +292,7 @@ public enum NotionAPI {
         }.map(priority(from:)) ?? TaskPriority.none
 
         return NotionTask(id: id, title: title, url: (page["url"] as? String).flatMap(URL.init(string:)),
-                          isDone: isDone, due: due, priority: priority, statusName: statusName)
+                          isDone: isDone, due: due, priority: priority)
     }
 
     /// Reads common priority labels: "High", "P1", "Urgent", "Low", …
@@ -333,14 +330,6 @@ public enum NotionAPI {
 
     /// "2026-10-12" (all day, local midnight) or a full ISO-8601 date-time.
     static func date(from text: String) -> Date? {
-        if text.count == 10 {
-            let parts = text.split(separator: "-").compactMap { Int($0) }
-            guard parts.count == 3 else { return nil }
-            return Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
-        }
-        let formatter = ISO8601DateFormatter()
-        if let date = formatter.date(from: text) { return date }
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: text)
+        text.count == 10 ? DateText.day(text, calendar: .current) : DateText.timestamp(text)
     }
 }

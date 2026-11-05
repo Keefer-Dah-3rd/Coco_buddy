@@ -225,8 +225,7 @@ private struct AppleCalendarSection: View {
     }
 
     private func color(_ hex: String?) -> Color {
-        guard let hex, hex.hasPrefix("#"), let value = UInt32(hex.dropFirst(), radix: 16) else { return Sky.faint }
-        return Color(hex: value)
+        hex.flatMap { Color(hex: $0) } ?? Sky.faint
     }
 }
 
@@ -640,8 +639,7 @@ private struct Card<Content: View>: View {
             content
         }
         .padding(21) // 20 inside the 1 pt rim
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.accentSoft))
+        .skyCard(rim: Sky.accentSoft, style: .continuous)
     }
 }
 

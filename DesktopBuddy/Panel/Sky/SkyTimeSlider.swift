@@ -1,12 +1,13 @@
 import SwiftUI
+import BuddyCore
 
 /// The time slider from Coco Nook's "One little plan": ticks along a track, an orange thumb,
 /// and the time in big figures above. The extra motion stays small: each tick lights up as
 /// the thumb passes it, the thumb stretches with how fast you drag and rings out when you
 /// let go, and the figure rolls. Reduce Motion keeps every state and drops the stretch and ring.
 ///
-/// The value snaps to `step` minutes, the same step the old +/- buttons used. The thumb sits
-/// at the real value, so an off-step value (from voice, say) still shows where it is.
+/// The value snaps to `step` minutes. The thumb sits at the real value, so an off-step value
+/// (from voice, say) still shows where it is.
 struct SkyTimeSlider: View {
     /// What the slider is for, read aloud ("Estimate", "Focus length").
     let title: String
@@ -53,7 +54,7 @@ struct SkyTimeSlider: View {
 
     private var label: String {
         if let noneLabel, minutes <= range.lowerBound { return noneLabel }
-        return TodayView.duration(minutes)
+        return DurationText.short(minutes)
     }
 
     var body: some View {

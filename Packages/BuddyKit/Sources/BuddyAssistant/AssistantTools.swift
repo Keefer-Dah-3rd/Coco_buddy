@@ -333,14 +333,10 @@ public enum AssistantTools {
                 }
                 var priority = TaskPriority.none
                 if let value = fields["priority"] {
-                    switch value.string {
-                    case "none": priority = .none
-                    case "low": priority = .low
-                    case "medium": priority = .medium
-                    case "high": priority = .high
-                    case "urgent": priority = .urgent
-                    default: return .failure(.invalid("priority must be none, low, medium, high or urgent"))
+                    guard let name = value.string, let named = TaskPriority(name: name) else {
+                        return .failure(.invalid("priority must be none, low, medium, high or urgent"))
                     }
+                    priority = named
                 }
                 results.append(QuickAddParser.Result(title: String(title.prefix(200)), priority: priority, estimateMinutes: minutes))
             }
@@ -576,7 +572,7 @@ public enum AssistantPrompt {
     // MARK: Calendar
 
     /// What get_schedule returns: each day's events with ids, the open stretches within working
-    /// hours, and totals — all computed from the events Google returned.
+    /// hours, and totals — all computed from the connected calendars' events.
     public static func schedule(days: [Date], events: [CalendarEvent], hours: WorkingHours, now: Date,
                                 calendar: Calendar = .current) -> String {
         var lines: [String] = []
@@ -601,15 +597,15 @@ public enum AssistantPrompt {
             }
             let clashes = Availability.overlapping(timed)
             if !clashes.isEmpty { lines.append("Overlapping: " + clashes.map(\.title).joined(separator: ", ")) }
-            lines.append("Total: \(timed.count) timed event\(timed.count == 1 ? "" : "s"), \(length(minutes)) booked.")
+            lines.append("Total: \(timed.count) timed event\(timed.count == 1 ? "" : "s"), \(DurationText.short(minutes)) booked.")
         }
         if totals.count > 1 {
             let count = totals.reduce(0) { $0 + $1.count }
             let minutes = totals.reduce(0) { $0 + $1.minutes }
-            lines.append("Range total: \(count) timed events, \(length(minutes)) booked.")
+            lines.append("Range total: \(count) timed events, \(DurationText.short(minutes)) booked.")
             if let busiest = totals.max(by: { $0.minutes < $1.minutes }), let lightest = totals.min(by: { $0.minutes < $1.minutes }) {
-                lines.append("Busiest: \(dayLabel(busiest.day, calendar: calendar)) (\(length(busiest.minutes))). "
-                             + "Lightest: \(dayLabel(lightest.day, calendar: calendar)) (\(length(lightest.minutes))).")
+                lines.append("Busiest: \(dayLabel(busiest.day, calendar: calendar)) (\(DurationText.short(busiest.minutes))). "
+                             + "Lightest: \(dayLabel(lightest.day, calendar: calendar)) (\(DurationText.short(lightest.minutes))).")
             }
         }
         return lines.joined(separator: "\n")
@@ -620,20 +616,15 @@ public enum AssistantPrompt {
                                 calendar: Calendar = .current) -> String {
         let range = "\(dayLabel(from, calendar: calendar)) to \(dayLabel(to, calendar: calendar)), \(clock(hours.start))–\(clock(hours.end))"
         guard !slots.isEmpty else {
-            return "No opening of \(length(durationMinutes)) between \(range). Suggest widening the days or hours."
+            return "No opening of \(DurationText.short(durationMinutes)) between \(range). Suggest widening the days or hours."
         }
-        return "Openings of \(length(durationMinutes)) between \(range) (earliest start in each free stretch; any later start "
+        return "Openings of \(DurationText.short(durationMinutes)) between \(range) (earliest start in each free stretch; any later start "
             + "inside the same stretch also works):\n"
             + slots.map { "- \(dayLabel($0.start, calendar: calendar)) \(span($0, calendar: calendar))" }.joined(separator: "\n")
     }
 
     public static func dayLabel(_ day: Date, calendar: Calendar) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "EEEE yyyy-MM-dd"
-        return formatter.string(from: day)
+        DateFormatter.fixed("EEEE yyyy-MM-dd", calendar: calendar).string(from: day)
     }
 
     static func describe(_ event: CalendarEvent, on day: DateInterval, calendar: Calendar) -> String {
@@ -643,7 +634,7 @@ public enum AssistantPrompt {
         } else {
             let from = event.start < day.start ? "(from \(dayLabel(event.start, calendar: calendar)) \(time(event.start, calendar)))" : time(event.start, calendar)
             let until = event.end > day.end ? "(until \(dayLabel(event.end, calendar: calendar)) \(time(event.end, calendar)))" : time(event.end, calendar)
-            text = "\(from)–\(until) (\(length(Int(event.duration / 60)))) \(event.title)"
+            text = "\(from)–\(until) (\(DurationText.short(Int(event.duration / 60)))) \(event.title)"
         }
         if let location = event.location { text += " @ \(location.prefix(80))" }
         var tags = ["id \(event.id)"]
@@ -660,7 +651,7 @@ public enum AssistantPrompt {
     }
 
     static func span(_ interval: DateInterval, calendar: Calendar) -> String {
-        "\(time(interval.start, calendar))–\(time(interval.end, calendar)) (\(length(Int(interval.duration / 60))))"
+        "\(time(interval.start, calendar))–\(time(interval.end, calendar)) (\(DurationText.short(Int(interval.duration / 60))))"
     }
 
     static func time(_ date: Date, _ calendar: Calendar) -> String {
@@ -670,11 +661,6 @@ public enum AssistantPrompt {
 
     static func clock(_ minutes: Int) -> String {
         String(format: "%02d:%02d", minutes / 60, minutes % 60)
-    }
-
-    static func length(_ minutes: Int) -> String {
-        if minutes < 60 { return "\(minutes)m" }
-        return minutes % 60 == 0 ? "\(minutes / 60)h" : "\(minutes / 60)h \(minutes % 60)m"
     }
 
     public struct FocusSnapshot: Sendable {
@@ -736,7 +722,7 @@ public enum AssistantPrompt {
         } else {
             let total = Int(free.reduce(0) { $0 + $1.duration } / 60)
             lines.append("Free stretches (20+ min) before end of day: "
-                         + free.map { "\(time($0.start))–\(time($0.end))" }.joined(separator: ", ") + " (\(length(total)) in all)")
+                         + free.map { "\(time($0.start))–\(time($0.end))" }.joined(separator: ", ") + " (\(DurationText.short(total)) in all)")
         }
         if !upcoming.isEmpty {
             lines.append("Next after today:")

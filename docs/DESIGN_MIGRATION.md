@@ -73,7 +73,7 @@ The screens keep their structure; the system underneath them moved:
 | UI/Switch | `Toggle` tint | [x] confirm green |
 | UI/Toast | `TodayView.undoBar` | [x] |
 | UI/TextButton | plain buttons | [x] |
-| Today/WinsCard | `SkyWinsCard` | [x] green card, ink rim, no note line |
+| Today/WinsCard | — | retired 2026-11-04: `Banner/Card` → `IllustratedBannerView` (docs/BANNERS.md) |
 | Today/FocusBanner | `SkyFocusBanner` | [x] navy card, no sun disc |
 | Today/QuickAdd, UpNextCard, LeftoversBanner, EmptyState | `TodayView` | [x] |
 | Task/TaskRow (+ subtask parts) | `TaskRow` | [x] done = orange (top level) / green (subtask) |

@@ -131,20 +131,11 @@ struct TaskEditor: View {
         }
     }
 
-    /// Moves this task under another one. The task itself and anything already below it aren't
-    /// offered, so the list can never loop.
+    /// Moves this task under another one (or back to the top level).
     private var parentMenu: some View {
-        let blocked = model.tasks.list.descendantIDs(of: task.id).union([task.id])
-        let candidates = model.tasks.outline(collapsed: []).filter { !$0.task.isCompleted && !blocked.contains($0.id) }
         let current = model.tasks.task(model.tasks.task(task.id)?.parentID)
         return Menu {
-            Button("Top level") { model.tasks.setParent(nil, for: task.id) }
-            if !candidates.isEmpty { Divider() }
-            ForEach(candidates.prefix(40)) { row in
-                Button(String(repeating: "    ", count: min(row.depth, 3)) + BuddyVoice.short(row.task.title, limit: 40)) {
-                    model.tasks.setParent(row.id, for: task.id)
-                }
-            }
+            ParentTaskMenuItems(candidates: model.tasks.parentCandidates(excluding: task.id)) { model.tasks.setParent($0, for: task.id) }
         } label: {
             HStack(spacing: 5) {
                 Text(current.map { BuddyVoice.short($0.title, limit: 22) } ?? "Top level")
@@ -196,14 +187,14 @@ struct TaskEditor: View {
                 .font(Sky.text(10))
                 .foregroundStyle(Sky.receiptInk)
                 .padding(.bottom, 6)
-            receiptLine("Estimate", draft.estimateMinutes.map(TodayView.duration) ?? "—")
-            receiptLine("Focused on this", TodayView.duration(task.focusMinutes))
+            receiptLine("Estimate", draft.estimateMinutes.map(DurationText.short) ?? "—")
+            receiptLine("Focused on this", DurationText.short(task.focusMinutes))
             HStack(alignment: .lastTextBaseline) {
                 Text("Total time, well spent")
                     .font(Sky.text(11))
                     .foregroundStyle(Sky.receiptInk)
                 Spacer()
-                Text(TodayView.duration(task.focusMinutes))
+                Text(DurationText.short(task.focusMinutes))
                     .font(Sky.text(18, .black))
                     .monospacedDigit()
                     .foregroundStyle(Sky.receiptOrange)
@@ -222,7 +213,7 @@ struct TaskEditor: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.receiptCard))
+        .skyCard(fill: Sky.receiptCard, rim: nil, style: .continuous)
         .accessibilityElement(children: .combine)
     }
 

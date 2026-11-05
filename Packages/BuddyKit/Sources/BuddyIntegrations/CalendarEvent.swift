@@ -132,7 +132,6 @@ public struct CalendarEvent: Codable, Equatable, Identifiable, Sendable {
     }
 
     public var duration: TimeInterval { end.timeIntervalSince(start) }
-    public var interval: DateInterval { DateInterval(start: start, end: max(start, end)) }
 
     /// This record, as a reference.
     public var reference: EventReference {

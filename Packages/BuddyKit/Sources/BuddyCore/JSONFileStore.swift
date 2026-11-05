@@ -1,6 +1,7 @@
 import Foundation
 
-/// Reads and writes one Codable value as a JSON file in Application Support.
+/// Reads and writes one Codable value as a JSON file: in Application Support by name, or at
+/// any URL (the tasks self-test uses a throwaway one).
 /// Writes are atomic, so a crash mid-save can't leave a half-written file.
 public struct JSONFileStore<Value: Codable>: Sendable {
     public let url: URL

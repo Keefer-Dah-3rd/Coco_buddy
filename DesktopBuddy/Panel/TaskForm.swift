@@ -154,15 +154,15 @@ struct TaskFormView: View {
         FlowLayout(spacing: 6) {
             ForEach(Self.estimatePresets, id: \.self) { minutes in
                 let selected = !customEstimate && draft.estimateMinutes == minutes
-                Button(TodayView.duration(minutes)) {
+                Button(DurationText.short(minutes)) {
                     customEstimate = false
                     draft.estimateMinutes = selected ? nil : minutes
                 }
                 .buttonStyle(SkyChipStyle(selected: selected))
-                .accessibilityLabel(Self.spoken(minutes))
+                .accessibilityLabel(DurationText.spoken(minutes))
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
-            Button(customEstimate ? (draft.estimateMinutes.map(TodayView.duration) ?? "Custom") : "Custom…") {
+            Button(customEstimate ? (draft.estimateMinutes.map(DurationText.short) ?? "Custom") : "Custom…") {
                 customEstimate.toggle()
                 if customEstimate, draft.estimateMinutes.map(Self.estimatePresets.contains) ?? true {
                     draft.estimateMinutes = 90
@@ -214,16 +214,9 @@ struct TaskFormView: View {
 
     /// Any open task can hold the new one; the list is shown as an outline.
     private var parentPicker: some View {
-        let candidates = model.tasks.outline(collapsed: []).filter { !$0.task.isCompleted }
         let current = model.tasks.task(draft.parentID)
         return Menu {
-            Button("Top level") { draft.parentID = nil }
-            if !candidates.isEmpty { Divider() }
-            ForEach(candidates.prefix(40)) { row in
-                Button(String(repeating: "    ", count: min(row.depth, 3)) + BuddyVoice.short(row.task.title, limit: 40)) {
-                    draft.parentID = row.task.id
-                }
-            }
+            ParentTaskMenuItems(candidates: model.tasks.parentCandidates()) { draft.parentID = $0 }
         } label: {
             HStack(spacing: 6) {
                 Text(current == nil ? "≡" : "↳")
@@ -322,9 +315,23 @@ struct TaskFormView: View {
             saving = false
         }
     }
+}
 
-    private static func spoken(_ minutes: Int) -> String {
-        minutes < 60 ? "\(minutes) minutes" : minutes == 60 ? "1 hour" : "\(minutes / 60) hours"
+/// The choices of a "put this under…" menu: the top level, then every open task as an outline,
+/// indented by depth. Shared by the new-task form and the editor.
+struct ParentTaskMenuItems: View {
+    let candidates: [TaskOutlineRow]
+    let choose: (BuddyTask.ID?) -> Void
+
+    @ViewBuilder
+    var body: some View {
+        Button("Top level") { choose(nil) }
+        if !candidates.isEmpty { Divider() }
+        ForEach(candidates.prefix(40)) { row in
+            Button(String(repeating: "    ", count: min(row.depth, 3)) + BuddyVoice.short(row.task.title, limit: 40)) {
+                choose(row.id)
+            }
+        }
     }
 }
 

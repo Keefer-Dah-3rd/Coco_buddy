@@ -269,13 +269,4 @@ final class WeatherStore {
         cached?.placeName = name
         try? cached.map { try file?.save($0) }
     }
-
-    #if DEBUG
-    /// Snapshots and `--banner-weather`: a fixed reading, no network or location.
-    func useForPreview(_ reading: WeatherSnapshot?, status: Status = .ready, place: String? = "Brooklyn") {
-        snapshot = reading
-        self.status = status
-        placeName = place
-    }
-    #endif
 }

@@ -98,12 +98,16 @@ struct TaskRow: View {
         .accessibilityHidden(true)
     }
 
+    /// Whether the row has anything to say under its title.
+    private var hasMeta: Bool {
+        task.focusMinutes > 0 || task.estimateMinutes != nil || isInFocus || TaskLabels.due(task) != nil || task.scope == .today
+            || !task.notes.isEmpty || task.external != nil || row.hasSubtasks || (task.priority != .none && !task.isCompleted)
+    }
+
     @ViewBuilder
     private var meta: some View {
-        let parts = metaParts
-        let due = TaskLabels.due(task)
-        if !parts.isEmpty || task.estimateMinutes != nil || isInFocus || due != nil || task.scope == .today || !task.notes.isEmpty
-            || task.external != nil || row.hasSubtasks || (task.priority != .none && !task.isCompleted) {
+        if hasMeta {
+            let due = TaskLabels.due(task)
             HStack(spacing: 8) {
                 if row.hasSubtasks { subtaskToggle }
                 if isInFocus {
@@ -125,9 +129,11 @@ struct TaskRow: View {
                 }
                 if let estimate = task.estimateMinutes {
                     // Faint while open; ink once the task is done.
-                    SkyKicker("Est \(TodayView.duration(estimate))", tone: task.isCompleted ? .ink : .faint)
+                    SkyKicker("Est \(DurationText.short(estimate))", tone: task.isCompleted ? .ink : .faint)
                 }
-                ForEach(parts, id: \.self) { SkyKicker($0, tone: .faint) }
+                if task.focusMinutes > 0 {
+                    SkyKicker("Focused \(DurationText.short(task.focusMinutes))", tone: .faint)
+                }
                 if !task.notes.isEmpty {
                     Image(systemName: "text.alignleft")
                         .font(.system(size: 10, weight: .semibold))
@@ -179,10 +185,6 @@ struct TaskRow: View {
                 .foregroundStyle(Sky.accentText)
                 .accessibilityLabel("\(task.priority.label) priority")
         }
-    }
-
-    private var metaParts: [String] {
-        task.focusMinutes > 0 ? ["Focused \(TodayView.duration(task.focusMinutes))"] : []
     }
 
     @ViewBuilder

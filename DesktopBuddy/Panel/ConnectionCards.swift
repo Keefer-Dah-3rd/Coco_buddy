@@ -78,7 +78,7 @@ struct ScheduleStrip: View {
                 Spacer(minLength: 6)
                 if !schedule.events.isEmpty {
                     SkyKicker(remaining.isEmpty ? "done" : "\(remaining.count) left"
-                              + (open.isEmpty ? "" : " · \(TodayView.duration(Int(open.reduce(0) { $0 + $1.duration } / 60))) open"))
+                              + (open.isEmpty ? "" : " · \(DurationText.short(Int(open.reduce(0) { $0 + $1.duration } / 60))) open"))
                 }
             }
             if loaded == nil {
@@ -271,6 +271,6 @@ struct NotionCompletionCard: View {
             }
         }
         .padding(12)
-        .background(Sky.well, in: RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous))
+        .skyCard(fill: Sky.well, rim: nil, style: .continuous)
     }
 }

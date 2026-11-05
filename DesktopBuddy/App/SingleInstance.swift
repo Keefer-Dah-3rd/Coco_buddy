@@ -20,11 +20,7 @@ enum SingleInstance {
     /// Call first thing at a normal launch. Returns false when this copy should stop.
     static func claim(onReopen: @escaping @MainActor @Sendable () -> Void) -> Bool {
         #if DEBUG
-        // Design experiments are meant to run next to the real app.
-        let experiment = ["--editorial-orange", "--tactile-orange", "--plush-toybox"].contains { CommandLine.arguments.contains($0) }
-        if !experiment {
-            for app in others { app.terminate() }
-        }
+        for app in others { app.terminate() }
         #else
         if let running = others.first {
             DistributedNotificationCenter.default().postNotificationName(reopen, object: nil, deliverImmediately: true)

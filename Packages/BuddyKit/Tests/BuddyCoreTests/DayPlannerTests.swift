@@ -51,7 +51,7 @@ import Testing
         log.record(.init(taskID: nil, endedAt: now, seconds: 10 * 60, finished: false))
         log.record(.init(taskID: nil, endedAt: now, seconds: 20, finished: false))
         log.record(.init(taskID: nil, endedAt: now.addingTimeInterval(-86_400 * 2), seconds: 3600, finished: true))
-        #expect(log.summary(on: now) == .init(minutes: 35, sessions: 2))
+        #expect(log.summary(on: now) == .init(minutes: 35))
     }
 
     @Test func forgetsOldSessions() {

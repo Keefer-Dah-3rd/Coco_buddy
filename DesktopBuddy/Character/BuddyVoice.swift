@@ -90,10 +90,6 @@ enum BuddyVoice {
              "Break's done. Tail's ready. Are you?")
     }
 
-    static func endedWhileAway(_ phase: String) -> String {
-        "Your \(phase.lowercased()) ended while I was napping."
-    }
-
     // MARK: Planning
 
     static func upNext(_ title: String, reason: DayPlanner.Reason) -> String {
@@ -117,10 +113,6 @@ enum BuddyVoice {
         minutes <= 1 ? "“\(short(title))” is starting now." : "“\(short(title))” starts in \(minutes) minutes."
     }
 
-    static func addedFromNotion(_ count: Int) -> String {
-        count == 1 ? "Brought it over from Notion." : "Brought \(count) over from Notion."
-    }
-
     static let askNotionCompletion = "Want me to mark it done in Notion too?"
     static let notionUpdated = "Marked done in Notion."
 
@@ -130,7 +122,6 @@ enum BuddyVoice {
 
     // MARK: Voice
 
-    static let listening = "Ears up. I'm listening."
     static let heardNothing = "I didn't catch that. Ears were up, though. Try again?"
     static let micUnavailable = "I can't hear you — microphone access is off."
 

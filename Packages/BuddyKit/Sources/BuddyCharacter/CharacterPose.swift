@@ -34,8 +34,8 @@ public enum CharacterReaction: Sendable, Equatable {
 /// Every visual parameter an artwork needs, as plain numbers.
 ///
 /// This is the contract between animation and art: the animator never draws,
-/// the artwork never decides behaviour. Every field interpolates linearly, so
-/// any two poses can be blended for smooth state transitions.
+/// the artwork never decides behaviour. Every field but the `carry` and `clock` flags
+/// interpolates linearly, so any two poses can be blended for smooth state transitions.
 public struct CharacterPose: Equatable, Sendable {
     // Body
     /// Points the body is raised off the ground (hops).

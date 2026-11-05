@@ -862,10 +862,7 @@ extension CharacterAnimator {
     }
 
     /// Smoothstep, clamped to 0…1.
-    static func ease(_ x: Double) -> Double {
-        let k = min(1, max(0, x))
-        return k * k * (3 - 2 * k)
-    }
+    static func ease(_ x: Double) -> Double { smoothstep(x) }
 
     /// Cheap deterministic noise in 0..<1.
     static func hash(_ x: Double) -> Double {

@@ -323,9 +323,9 @@ struct SpeedProfile: Sendable, Equatable {
     func speed(at t: Double) -> Double {
         if t <= 0 { return startSpeed }
         if t >= duration { return 0 }
-        if t < rampUp { return startSpeed + (peak - startSpeed) * Self.smoothstep(t / rampUp) }
+        if t < rampUp { return startSpeed + (peak - startSpeed) * smoothstep(t / rampUp) }
         if t < rampUp + cruise { return peak }
-        return peak * (1 - Self.smoothstep((t - rampUp - cruise) / rampDown))
+        return peak * (1 - smoothstep((t - rampUp - cruise) / rampDown))
     }
 
     func distance(at t: Double) -> Double {
@@ -341,10 +341,6 @@ struct SpeedProfile: Sendable, Equatable {
         return afterRampUp + peak * cruise + rampDown * peak * (y - Self.smoothstepIntegral(y))
     }
 
-    private static func smoothstep(_ x: Double) -> Double {
-        let k = min(1, max(0, x))
-        return k * k * (3 - 2 * k)
-    }
 
     /// ∫₀ˣ smoothstep.
     private static func smoothstepIntegral(_ x: Double) -> Double {
@@ -359,4 +355,11 @@ extension SIMD2 where Scalar == Double {
         let l = length
         return l > 1e-9 ? self / l : nil
     }
+}
+
+/// Hermite smoothstep: 0 → 1 with zero slope at both ends. A run's speed ramps and every ease
+/// in the animator use it.
+func smoothstep(_ x: Double) -> Double {
+    let k = min(1, max(0, x))
+    return k * k * (3 - 2 * k)
 }

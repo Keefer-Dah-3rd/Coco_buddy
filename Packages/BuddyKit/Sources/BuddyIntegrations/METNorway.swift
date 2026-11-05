@@ -4,7 +4,7 @@ import BuddyCore
 /// The Norwegian Meteorological Institute's Locationforecast 2.0 (api.met.no): free worldwide
 /// forecasts, no account or key, licensed CC BY 4.0 (credit “MET Norway”). Their terms ask for
 /// an identifying User-Agent, at most four decimals of latitude/longitude, and no request before
-/// the previous answer's `Expires` — `WeatherService` keeps all three.
+/// the previous answer's `Expires` — `WeatherStore` keeps all three.
 /// https://api.met.no/doc/TermsOfService · https://api.met.no/weatherapi/locationforecast/2.0/documentation
 public enum METNorway {
     public static let attribution = "Weather data from MET Norway (CC BY 4.0)"

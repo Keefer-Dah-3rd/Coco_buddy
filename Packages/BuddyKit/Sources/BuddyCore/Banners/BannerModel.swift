@@ -14,18 +14,6 @@ public enum BannerID: String, CaseIterable, Codable, Sendable, Identifiable {
 
     public var id: Self { self }
 
-    /// The concept number in the Make file.
-    public var number: String {
-        switch self {
-        case .tidalPool: "03"
-        case .windowNook: "04"
-        case .slowFerry: "06"
-        case .cornerBookshop: "07"
-        case .laundryInTheSky: "08"
-        case .quietCarriage: "09"
-        }
-    }
-
     public var title: String {
         switch self {
         case .tidalPool: "A Little Tidal Pool"
@@ -34,18 +22,6 @@ public enum BannerID: String, CaseIterable, Codable, Sendable, Identifiable {
         case .cornerBookshop: "The Corner Bookshop"
         case .laundryInTheSky: "Laundry in the Sky"
         case .quietCarriage: "The Quiet Carriage"
-        }
-    }
-
-    /// The Make source's `ConceptKey`, which names the scene in `IllustratedScene.tsx`.
-    public var makeKey: String {
-        switch self {
-        case .tidalPool: "atmospheric"
-        case .windowNook: "coco"
-        case .slowFerry: "ferry"
-        case .cornerBookshop: "bookshop"
-        case .laundryInTheSky: "rooftop"
-        case .quietCarriage: "train"
         }
     }
 
@@ -129,7 +105,6 @@ public struct BannerProgress: Equatable, Sendable {
 
     public var fraction: Double { total == 0 ? 0 : Double(done) / Double(total) }
     public var isEmpty: Bool { total == 0 }
-    public var isComplete: Bool { total > 0 && done == total }
     public var remaining: Int { total - done }
 
     /// `span · done / total`, multiplied first so five tasks give the prototype's whole numbers.
@@ -156,6 +131,6 @@ public struct BannerProgress: Equatable, Sendable {
     /// The small line under the light and weather.
     public var remainingLabel: String {
         if total == 0 { return "Add a task to begin" }
-        return done == total ? "All complete" : "\(total - done) remaining"
+        return done == total ? "All complete" : "\(remaining) remaining"
     }
 }

@@ -106,12 +106,13 @@ Permissions are asked for only on first use: notifications when you first start 
 
 ```
 DesktopBuddy/                    App target: AppKit windows + SwiftUI views only
-  App/        AppModel (composition root: events → behaviour, voice intents), menus, snapshot renderer
+  App/        AppModel (composition root: events → behaviour, voice intents), menus, debug launch flags, snapshot renderer + self-tests
+  Banner/     Today's illustrated banner: Core Animation layers, motion, day/light manager, weather offer (docs/BANNERS.md)
   Windows/    CharacterPanel (floating, non-activating), BubbleWindow, InteractionPanel, hosted windows
   Character/  CocoLayerView (artwork), CharacterRenderLoop, CharacterModel, BuddyVoice (lines)
   Panel/      Today (+ voice review), Focus, Chat, Connections, Settings, Welcome, design tokens
-  Services/   TaskStore, FocusController, VoiceInput/Output, calendar, assistant, notifications, sounds,
-              presence, global shortcut, preferences
+  Services/   TaskStore, FocusController, VoiceInput, calendars + Agenda, weather, assistant, notifications, sounds,
+              presence, global shortcut, held-key monitor, preferences
 Packages/BuddyKit/               Pure Swift package, no UI, unit-tested
   BuddyCore         Coco's dialogue pools + line picker, tasks, quick-add parser, day planner (Up next), focus log, voice parsing, focus timer, persistence
   BuddyCharacter    States, pose model, animator (blinks, idle life, reactions, frame scheduling)

@@ -1,4 +1,5 @@
 import Foundation
+import BuddyCore
 import BuddyIntegrations
 
 extension AssistantPrompt {
@@ -67,10 +68,6 @@ extension AssistantPrompt {
 
     /// "Sat 25 Oct 2026, 2:00 PM" in a given time zone.
     private static func stamp(_ date: Date, in zone: TimeZone) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = zone
-        formatter.dateFormat = "EEE d MMM yyyy, h:mm a"
-        return formatter.string(from: date)
+        DateFormatter.fixed("EEE d MMM yyyy, h:mm a", timeZone: zone).string(from: date)
     }
 }

@@ -28,8 +28,8 @@ public struct WorkingHours: Equatable, Sendable {
     }
 }
 
-/// Which events fall on which day, and where the open time is. Pure arithmetic on events
-/// Google returned — nothing here guesses.
+/// Which events fall on which day, and where the open time is. Pure arithmetic on the
+/// calendars' events — nothing here guesses.
 public enum Availability {
     /// The local day's bounds (23 or 25 hours long on daylight-saving days).
     public static func dayInterval(_ day: Date, calendar: Calendar) -> DateInterval {

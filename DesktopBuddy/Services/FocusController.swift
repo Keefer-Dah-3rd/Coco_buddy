@@ -121,14 +121,6 @@ final class FocusController {
         prepare(.focus)
     }
 
-    func adjustLength(by minutes: Int) {
-        guard !timer.isActive else { return }
-        var settings = preferences.focusSettings
-        settings.setMinutes(settings.minutes(for: timer.phase) + minutes, for: timer.phase)
-        preferences.focusSettings = settings
-        prepare(timer.phase)
-    }
-
     /// Clears any session and its saved state (part of "Delete all my data").
     func eraseAll() {
         timer = FocusTimer()

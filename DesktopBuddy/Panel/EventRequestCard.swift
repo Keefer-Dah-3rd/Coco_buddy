@@ -25,8 +25,7 @@ struct EventRequestCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.paper))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.accentSoft))
+        .skyCard(rim: Sky.accentSoft, style: .continuous)
         .accessibilityElement(children: .contain)
     }
 

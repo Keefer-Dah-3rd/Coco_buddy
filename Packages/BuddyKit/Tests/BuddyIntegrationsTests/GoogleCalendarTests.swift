@@ -98,7 +98,8 @@ import Testing
 
     @Test func requestCoversExactlyOneLocalDay() {
         let day = calendar.date(from: DateComponents(year: 2026, month: 10, day: 12, hour: 15))!
-        let request = GoogleCalendarAPI.eventsRequest(for: day, calendar: calendar, accessToken: "t")
+        let bounds = Availability.dayInterval(day, calendar: calendar)
+        let request = GoogleCalendarAPI.eventsRequest(from: bounds.start, to: bounds.end, calendar: calendar, accessToken: "t")
         let query = request.url!.query!
         #expect(query.contains("timeMin=2026-10-12T00:00:00-04:00"))
         #expect(query.contains("timeMax=2026-10-13T00:00:00-04:00"))
@@ -120,8 +121,6 @@ import Testing
         #expect(blocks[1].duration == 4.5 * 3600)
 
         let nineFiftySix = nine.addingTimeInterval(56 * 60)
-        #expect(schedule.reminderDue(at: nineFiftySix, lead: 5 * 60, alreadyReminded: [])?.id == "a")
-        #expect(schedule.reminderDue(at: nineFiftySix, lead: 5 * 60, alreadyReminded: ["a"]) == nil)
         #expect(schedule.current(at: nineFiftySix.addingTimeInterval(10 * 60))?.id == "a")
     }
 

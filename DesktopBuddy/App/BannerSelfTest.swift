@@ -136,14 +136,15 @@ enum BannerSelfTest {
         model.preferences.reset()
         model.banner.override = .init(banner: .cornerBookshop, time: .daytime, weather: .rainy)
         let noon = calendar.date(bySettingHour: 12, minute: 30, second: 0, of: .now)!
-        check(model.remarkForSelfTest(noon), "a remark is due at first")
-        let said = model.buddyLine
-        check(!["sun", "Sunny", "Bright"].contains { said.contains($0) }, "a rainy banner gets no sunshine talk (\(said))")
-        check(!model.remarkForSelfTest(noon.addingTimeInterval(30 * 60)), "not again in the same part of the day")
-        check(!model.remarkForSelfTest(noon.addingTimeInterval(80 * 60)), "not again within 90 minutes")
+        let said = model.remarkForSelfTest(noon)
+        check(said != nil, "a remark is due at first")
+        check(!["sun", "Sunny", "Bright"].contains { said?.contains($0) ?? false }, "a rainy banner gets no sunshine talk (\(said ?? ""))")
+        check(model.remarkForSelfTest(noon.addingTimeInterval(30 * 60)) == nil, "not again in the same part of the day")
+        check(model.remarkForSelfTest(noon.addingTimeInterval(80 * 60)) == nil, "not again within 90 minutes")
         model.banner.override = .init(banner: .cornerBookshop, time: .evening, weather: .rainy)
-        check(model.remarkForSelfTest(noon.addingTimeInterval(5 * 3600)), "a new part of the day can have one")
-        check(model.buddyLine != said, "and it's a different line")
+        let again = model.remarkForSelfTest(noon.addingTimeInterval(5 * 3600))
+        check(again != nil, "a new part of the day can have one")
+        check(again != said, "and it's a different line")
 
         // MARK: One real forecast.
         if CommandLine.arguments.contains("--live") {

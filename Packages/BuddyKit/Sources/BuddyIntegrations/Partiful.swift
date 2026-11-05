@@ -225,10 +225,7 @@ public enum Partiful {
     }
 
     private static func date(_ value: Any?) -> Date? {
-        guard let text = value as? String else { return nil }
-        let precise = ISO8601DateFormatter()
-        precise.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return precise.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+        (value as? String).flatMap(DateText.timestamp)
     }
 
     private static func clean(_ text: String?) -> String? {

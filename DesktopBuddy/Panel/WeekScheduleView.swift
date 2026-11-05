@@ -1,4 +1,5 @@
 import SwiftUI
+import BuddyCore
 import BuddyIntegrations
 
 /// The Today card's calendar, opened out: a week of days you can click or drag across, the
@@ -187,7 +188,7 @@ private struct WeekSummary: View {
             let lightest = (workdays.isEmpty ? perDay : workdays).min { $0.2 < $1.2 }
             HStack(spacing: 6) {
                 SkyKicker("\(count) event\(count == 1 ? "" : "s")")
-                SkyKicker("· \(TodayView.duration(minutes)) booked")
+                SkyKicker("· \(DurationText.short(minutes)) booked")
                 if let lightest, count > 0 {
                     SkyKicker("· lightest \(lightest.0.formatted(.dateTime.weekday(.abbreviated)))")
                 }
@@ -214,7 +215,7 @@ struct DayAgenda: View {
                 if let events = service.events(on: day) {
                     let timed = events.filter { !$0.isAllDay }
                     let minutes = Availability.bookedMinutes(timed, within: Availability.dayInterval(day, calendar: .current))
-                    SkyKicker(timed.isEmpty ? "free" : "\(timed.count) · \(TodayView.duration(minutes))")
+                    SkyKicker(timed.isEmpty ? "free" : "\(timed.count) · \(DurationText.short(minutes))")
                 }
             }
             if let events = service.events(on: day) {
@@ -333,7 +334,7 @@ struct EventRow: View {
                         .font(Sky.text(10.5, .medium))
                         .monospacedDigit()
                         .foregroundStyle(Sky.muted)
-                    SkyKicker(TodayView.duration(Int(event.duration / 60)))
+                    SkyKicker(DurationText.short(Int(event.duration / 60)))
                     if event.isRecurring { Image(systemName: "repeat").font(.system(size: 8, weight: .semibold)).foregroundStyle(Sky.faint) }
                     if !event.isBusy { SkyKicker("free") }
                     if let note, !past { SkyKicker(note.text, tone: note.urgent ? .ink : .muted) }
@@ -381,7 +382,7 @@ struct OpenRow: View {
                 .font(Sky.text(10.5, .medium))
                 .monospacedDigit()
                 .foregroundStyle(Sky.muted)
-            SkyKicker(TodayView.duration(Int(interval.duration / 60)))
+            SkyKicker(DurationText.short(Int(interval.duration / 60)))
             Spacer()
         }
         .padding(.horizontal, 10)
@@ -398,9 +399,7 @@ struct OpenRow: View {
 /// ("#RRGGBB"). Events without one use the panel's indigo.
 enum EventColor {
     static func color(for id: String?) -> Color {
-        if let id, id.hasPrefix("#"), id.count == 7, let value = Int(id.dropFirst(), radix: 16) {
-            return Color(hex: UInt32(value))
-        }
+        if let id, let own = Color(hex: id) { return own }
         return switch id {
         case "1": Color(hex: 0x7986CB)
         case "2": Color(hex: 0x33B679)

@@ -217,10 +217,6 @@ public struct TaskList: Codable, Equatable, Sendable {
         }
     }
 
-    public func linkedTask(_ ref: ExternalTaskRef) -> BuddyTask? {
-        tasks.first { $0.external?.source == ref.source && $0.external?.id == ref.id }
-    }
-
     /// Unfinished "today only" tasks from earlier days — waiting for the user to carry
     /// them over or let them go. Never dropped silently.
     public func leftovers(now: Date, calendar: Calendar = .current) -> [BuddyTask] {

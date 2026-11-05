@@ -60,7 +60,6 @@ public struct EventChanges: Equatable, Sendable {
         self.location = location
     }
 
-    public var isEmpty: Bool { title == nil && start == nil && end == nil && location == nil }
 }
 
 /// Google Calendar API v3, primary calendar: reading any date range, and — once the user
@@ -76,12 +75,6 @@ public enum GoogleCalendarAPI {
         + "recurringEventId,guestsCanModify,organizer(self),attendees(self,responseStatus),conferenceData(entryPoints(entryPointType,uri)),"
         + "iCalUID,originalStartTime,updated,extendedProperties/private/\(sourceProperty)"
     static let fields = "summary,nextPageToken,items(\(eventFields))"
-
-    public static func eventsRequest(for day: Date, calendar: Calendar = .current, accessToken: String) -> URLRequest {
-        let start = calendar.startOfDay(for: day)
-        let end = calendar.date(byAdding: .day, value: 1, to: start)!
-        return eventsRequest(from: start, to: end, calendar: calendar, accessToken: accessToken)
-    }
 
     /// Every event overlapping `start..<end`, repeating events expanded into their occurrences.
     public static func eventsRequest(from start: Date, to end: Date, calendar: Calendar = .current,
@@ -261,33 +254,15 @@ public enum GoogleCalendarAPI {
             occurrenceStart: seriesID == nil ? nil : moment(item["originalStartTime"], calendar: calendar)?.date,
             seriesID: seriesID,
             timeZone: (item["start"] as? [String: Any])?["timeZone"] as? String,
-            lastModified: (item["updated"] as? String).flatMap(timestamp)
+            lastModified: (item["updated"] as? String).flatMap(DateText.timestamp)
         )
-    }
-
-    /// An RFC 3339 time, with or without fractional seconds.
-    private static func timestamp(_ text: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        if let date = formatter.date(from: text) { return date }
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: text)
     }
 
     /// `{"dateTime": "2026-10-10T09:30:00-04:00"}` or, for all-day events, `{"date": "2026-10-10"}`.
     private static func moment(_ value: Any?, calendar: Calendar) -> (date: Date, allDay: Bool)? {
         guard let object = value as? [String: Any] else { return nil }
-        if let text = object["dateTime"] as? String {
-            let formatter = ISO8601DateFormatter()
-            if let date = formatter.date(from: text) { return (date, false) }
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            return formatter.date(from: text).map { ($0, false) }
-        }
-        if let text = object["date"] as? String {
-            let parts = text.split(separator: "-").compactMap { Int($0) }
-            guard parts.count == 3,
-                  let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return nil }
-            return (date, true)
-        }
+        if let text = object["dateTime"] as? String { return DateText.timestamp(text).map { ($0, false) } }
+        if let text = object["date"] as? String { return DateText.day(text, calendar: calendar).map { ($0, true) } }
         return nil
     }
 }
@@ -310,14 +285,6 @@ public struct DaySchedule: Equatable, Sendable {
     /// The next event that hasn't started yet.
     public func next(after now: Date) -> CalendarEvent? {
         events.first { $0.start > now }
-    }
-
-    /// The meeting to remind about: one starting within `lead` that hasn't been reminded yet.
-    public func reminderDue(at now: Date, lead: TimeInterval, alreadyReminded: Set<String>) -> CalendarEvent? {
-        events.first { event in
-            let until = event.start.timeIntervalSince(now)
-            return until > 0 && until <= lead && !alreadyReminded.contains(event.id)
-        }
     }
 
     /// Open stretches between `from` and `until` at least `minimum` long — time for focused work.

@@ -99,12 +99,11 @@ public struct FocusLog: Codable, Equatable, Sendable {
 
     public struct DaySummary: Equatable, Sendable {
         public var minutes: Int
-        public var sessions: Int
     }
 
     public func summary(on day: Date, calendar: Calendar = .current) -> DaySummary {
         let todays = sessions.filter { calendar.isDate($0.endedAt, inSameDayAs: day) }
         let seconds = todays.reduce(0) { $0 + $1.seconds }
-        return DaySummary(minutes: Int((seconds / 60).rounded()), sessions: todays.count)
+        return DaySummary(minutes: Int((seconds / 60).rounded()))
     }
 }

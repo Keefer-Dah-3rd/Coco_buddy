@@ -58,18 +58,7 @@ final class EventLinkReader {
 
     private var cache: [URL: Cached] = [:]
     private let log = Logger(subsystem: "com.keefer.DesktopBuddy", category: "links")
-    private let session: URLSession = {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 15
-        configuration.waitsForConnectivity = false
-        configuration.httpShouldSetCookies = false
-        configuration.httpCookieAcceptPolicy = .never
-        configuration.urlCache = nil
-        #if DEBUG
-        if let stand = HTTP.standIn { configuration.protocolClasses = [stand] }
-        #endif
-        return URLSession(configuration: configuration)
-    }()
+    private let session = HTTP.makeSession(timeout: 15, cookies: false)
     private static let userAgent: String = {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         return "DesktopBuddy/\(version) (macOS; reads an invitation link its user shared)"

@@ -31,7 +31,7 @@ final class Preferences {
     var isBuddyVisible: Bool { didSet { defaults.set(isBuddyVisible, forKey: Key.visible) } }
     var alwaysOnTop: Bool { didSet { defaults.set(alwaysOnTop, forKey: Key.onTop) } }
     var soundsMuted: Bool { didSet { defaults.set(soundsMuted, forKey: Key.muted) } }
-    /// The buddy speaks her lines aloud as well as showing them.
+    /// How much of herself she shows: full size and chatty, or compact and quiet.
     var presence: Presence { didSet { defaults.set(presence.rawValue, forKey: Key.presence) } }
     var focusPresentation: FocusPresentation {
         didSet { defaults.set(focusPresentation.rawValue, forKey: Key.focusPresentation) }

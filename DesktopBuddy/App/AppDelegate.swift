@@ -5,7 +5,7 @@ import SwiftUI
 /// about both AppKit window controllers and app state.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     // Snapshot runs (Debug only) use in-memory stores so they never touch real data.
-    let model = AppModel(preview: CommandLine.arguments.contains("--snapshots") || AppDelegate.isExperimentSnapshotRun)
+    let model = AppModel(preview: AppDelegate.isSnapshotRun)
 
     private var character: CharacterWindowController!
     private var bubble: BubbleWindowController!
@@ -20,84 +20,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let callOverlay = CallOverlayController()
     private var isOccluded = false
     #if DEBUG
-    /// Design experiment, only with `--editorial-orange` (see DesktopBuddy/Experiments).
-    private var editorialOrange: EditorialOrangeWindowController?
-    private var tactileOrange: TactileOrangeWindowController?
-    private static let isExperimentSnapshotRun = CommandLine.arguments.contains("--editorial-orange-snapshots")
-        || CommandLine.arguments.contains("--tactile-orange-snapshots")
-        || CommandLine.arguments.contains("--banner-snapshots")
+    private static let isSnapshotRun = ["--snapshots", "--banner-snapshots"].contains { CommandLine.arguments.contains($0) }
     #else
-    private static let isExperimentSnapshotRun = false
+    private static let isSnapshotRun = CommandLine.arguments.contains("--snapshots")
     #endif
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
-        if CommandLine.arguments.contains("--keychain-selftest") {
-            let saved = Keychain.set(Data("selftest".utf8), for: "selftest")
-            let read = Keychain.string(for: "selftest")
-            Keychain.remove("selftest")
-            print("keychain selftest: saved=\(saved) readBack=\(read == "selftest") status=\(Keychain.lastStatus)")
-            exit(0)
-        }
-        if let index = CommandLine.arguments.firstIndex(of: "--run-preview"), index + 1 < CommandLine.arguments.count {
-            RunPreview.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--fetch-selftest") {
-            FetchSelfTest.run()
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--consent-selftest") {
-            ConsentSelfTest.run()
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--partiful-selftest") {
-            PartifulSelfTest.run()
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--calendar-selftest") {
-            CalendarSelfTest.run()
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--apple-calendar-selftest") {
-            AppleCalendarSelfTest.run()
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--tasks-selftest") {
-            TasksSelfTest.run()
-            exit(0)
-        }
-        if let index = CommandLine.arguments.firstIndex(of: "--focus-length-selftest") {
-            let folder = index + 1 < CommandLine.arguments.count ? URL(fileURLWithPath: CommandLine.arguments[index + 1]) : nil
-            FocusLengthSelfTest.run(pngFolder: folder)
-        }
-        if CommandLine.arguments.contains("--dash-selftest") {
-            DashSelfTest.run()
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--voice-selftest") {
-            VoiceSelfTest.run()
-            exit(0)
-        }
-        if CommandLine.arguments.contains("--banner-selftest") {
-            BannerSelfTest.run()
-        }
-        if let index = CommandLine.arguments.firstIndex(of: "--banner-snapshots"), index + 1 < CommandLine.arguments.count {
-            BannerSnapshots.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
-            exit(0)
-        }
-        if let index = CommandLine.arguments.firstIndex(of: "--snapshots"), index + 1 < CommandLine.arguments.count {
-            SnapshotRenderer.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
-            exit(0)
-        }
-        if let index = CommandLine.arguments.firstIndex(of: "--editorial-orange-snapshots"), index + 1 < CommandLine.arguments.count {
-            EditorialOrangeSnapshots.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
-            exit(0)
-        }
-        if let index = CommandLine.arguments.firstIndex(of: "--tactile-orange-snapshots"), index + 1 < CommandLine.arguments.count {
-            TactileOrangeSnapshots.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
-            exit(0)
-        }
+        DebugLaunch.run()  // self-tests and snapshot renders; most exit here
         #endif
         // A second copy hands over to the one already running (see SingleInstance).
         guard SingleInstance.claim(onReopen: { [weak self] in self?.reopened() }) else {
@@ -136,16 +66,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.start()
         character.place(at: model.preferences.buddyOrigin)
         observeModel()
-        #if DEBUG
-        if CommandLine.arguments.contains("--editorial-orange") {
-            editorialOrange = EditorialOrangeWindowController(model: model)
-            editorialOrange?.show()
-        }
-        if CommandLine.arguments.contains("--tactile-orange") {
-            tactileOrange = TactileOrangeWindowController(model: model)
-            tactileOrange?.show()
-        }
-        #endif
         if !model.preferences.onboardingCompleted {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.onboarding.show() }
         }

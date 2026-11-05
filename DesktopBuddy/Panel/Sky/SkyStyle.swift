@@ -68,9 +68,6 @@ struct SkyType: Sendable {
 
     /// PostScript names of every font this Mac can use, read once.
     private static let installed = Set(NSFontManager.shared.availableFonts)
-
-    /// Whether the Owners faces are available here (false means the system fallback is showing).
-    static var ownersInstalled: Bool { installed.contains("Owners-Medium") }
 }
 
 extension View {
@@ -79,13 +76,5 @@ extension View {
         font(style.font)
             .tracking(style.tracking)
             .textCase(style.uppercase ? .uppercase : nil)
-    }
-}
-
-extension Text {
-    /// `skyType` for Text that gets concatenated (`Text + Text`): font and tracking only, so
-    /// upper-case the string yourself. A different name so it never shadows the View version.
-    func skyStyled(_ style: SkyType) -> Text {
-        font(style.font).tracking(style.tracking)
     }
 }

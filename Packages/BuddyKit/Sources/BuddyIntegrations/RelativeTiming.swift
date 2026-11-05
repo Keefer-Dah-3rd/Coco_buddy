@@ -1,4 +1,5 @@
 import Foundation
+import BuddyCore
 
 /// "in 15m", "later today", "tomorrow" — how far off an event is, for the schedule card.
 /// Days are counted on the calendar (midnight to midnight), so a daylight-saving change
@@ -8,8 +9,7 @@ public enum RelativeTiming {
     public static func untilStart(of start: Date, now: Date) -> String {
         let minutes = Int((start.timeIntervalSince(now) / 60).rounded(.up))
         if minutes <= 0 { return "now" }
-        if minutes < 60 { return "in \(minutes)m" }
-        if minutes < 180 { return minutes % 60 == 0 ? "in \(minutes / 60)h" : "in \(minutes / 60)h \(minutes % 60)m" }
+        if minutes < 180 { return "in " + DurationText.short(minutes) }
         return "later today"
     }
 
@@ -20,33 +20,14 @@ public enum RelativeTiming {
         switch days {
         case 0: return "Today"
         case 1: return "Tomorrow"
-        case 2..<7: return weekday(date, calendar: calendar)
-        default: return monthDay(date, calendar: calendar)
+        case 2..<7: return DateFormatter.fixed("EEE", calendar: calendar).string(from: date)
+        default: return DateFormatter.fixed("MMM d", calendar: calendar).string(from: date)
         }
     }
 
     /// Minutes left in an event that's happening: "20m left", "1h 5m left".
     public static func remaining(until end: Date, now: Date) -> String {
         let minutes = max(1, Int((end.timeIntervalSince(now) / 60).rounded(.up)))
-        if minutes < 60 { return "\(minutes)m left" }
-        return minutes % 60 == 0 ? "\(minutes / 60)h left" : "\(minutes / 60)h \(minutes % 60)m left"
-    }
-
-    private static func weekday(_ date: Date, calendar: Calendar) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "EEE"
-        return formatter.string(from: date)
-    }
-
-    private static func monthDay(_ date: Date, calendar: Calendar) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
+        return DurationText.short(minutes) + " left"
     }
 }

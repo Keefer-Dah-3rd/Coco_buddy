@@ -125,11 +125,11 @@ struct TodayView: View {
             if focused.minutes > 0 || remainingMinutes > 0 {
                 HStack {
                     if focused.minutes > 0 {
-                        SkyKicker("Focused \(Self.duration(focused.minutes)) today", tone: .ink)
+                        SkyKicker("Focused \(DurationText.short(focused.minutes)) today", tone: .ink)
                     }
                     Spacer()
                     if remainingMinutes > 0 {
-                        SkyKicker("≈ \(Self.duration(remainingMinutes)) left")
+                        SkyKicker("≈ \(DurationText.short(remainingMinutes)) left")
                     }
                 }
             }
@@ -206,7 +206,7 @@ struct TodayView: View {
             // Live read-back of the shorthand, so the syntax teaches itself.
             if !voice.isListening, let parsed, parsed.priority != .none || parsed.estimateMinutes != nil {
                 HStack(spacing: 12) {
-                    if let minutes = parsed.estimateMinutes { SkyKicker("Est. \(Self.duration(minutes))") }
+                    if let minutes = parsed.estimateMinutes { SkyKicker("Est. \(DurationText.short(minutes))") }
                     if parsed.priority != .none { SkyKicker("\(parsed.priority.label) priority", color: Sky.accentText) }
                 }
                 .padding(.leading, 4)
@@ -295,10 +295,6 @@ struct TodayView: View {
 
     private func submit() {
         if model.addTask(draft) { draft = "" }
-    }
-
-    static func duration(_ minutes: Int) -> String {
-        minutes < 60 ? "\(minutes)m" : minutes % 60 == 0 ? "\(minutes / 60)h" : "\(minutes / 60)h \(minutes % 60)m"
     }
 }
 
@@ -412,7 +408,7 @@ struct TaskDraftReviewCard: View {
                             .foregroundStyle(Sky.accentText)
                     }
                     if let minutes = draft.estimateMinutes {
-                        SkyKicker(TodayView.duration(minutes), color: Sky.faint)
+                        SkyKicker(DurationText.short(minutes), color: Sky.faint)
                     }
                     Button {
                         model.taskDrafts.removeAll { $0.id == draft.id }
@@ -438,8 +434,7 @@ struct TaskDraftReviewCard: View {
             }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.well))
-        .overlay(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).strokeBorder(Sky.accentSoft, lineWidth: 1))
+        .skyCard(fill: Sky.well, rim: Sky.accentSoft, style: .continuous)
     }
 }
 
@@ -495,6 +490,6 @@ private struct LeftoversBanner: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: Sky.Radius.card, style: .continuous).fill(Sky.well))
+        .skyCard(fill: Sky.well, rim: nil, style: .continuous)
     }
 }

@@ -142,7 +142,7 @@ public struct BannerCommentEngine: Sendable {
 /// - Sooner (after `changeGap`) only for a real change worth hearing about: rain or snow
 ///   starting, or a storm.
 /// The caller adds the usual manners: never during focus, a meeting, while the panel is open
-/// or while the user is away (see `AppModel.environmentTick`).
+/// or while the user is away (see `AppModel.remarkOnTheDay`).
 public struct BannerCommentPacing: Codable, Equatable, Sendable {
     public var lastCommentAt: Date?
     /// "2026-11-04 evening": the part of the day last remarked on.

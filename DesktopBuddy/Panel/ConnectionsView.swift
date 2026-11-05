@@ -145,7 +145,7 @@ private struct AppleCalendarSection: View {
                 switch service.access {
                 case .notDetermined, .granted:
                     if service.access == .notDetermined {
-                        Text("macOS will ask whether Desktop Buddy may see your calendars. Choose Allow Full Access.")
+                        Text("macOS will ask whether Coco may see your calendars. Choose Allow Full Access.")
                             .bodyStyle()
                     }
                     HStack {
@@ -157,8 +157,8 @@ private struct AppleCalendarSection: View {
                     }
                 case .denied, .writeOnly:
                     Text(service.access == .denied
-                         ? "Calendar access is turned off for Desktop Buddy, so \(Buddy.name) can't see Apple Calendar. Everything else keeps working. To allow it: System Settings › Privacy & Security › Calendars › Desktop Buddy › Full Access, then click Check again."
-                         : "Desktop Buddy can only add events, not read them. To show your schedule, choose Full Access in System Settings › Privacy & Security › Calendars, then click Check again.")
+                         ? "Calendar access is turned off for Coco, so she can't see Apple Calendar. Everything else keeps working. To allow it: System Settings › Privacy & Security › Calendars › Coco › Full Access, then click Check again."
+                         : "Coco can only add events, not read them. To show your schedule, choose Full Access in System Settings › Privacy & Security › Calendars, then click Check again.")
                         .bodyStyle()
                     HStack {
                         Spacer()

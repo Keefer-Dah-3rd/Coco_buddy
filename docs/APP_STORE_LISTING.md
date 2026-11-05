@@ -8,8 +8,8 @@ Text to paste into App Store Connect. Character limits are Apple's; counts are g
 
 | Option | Characters |
 | --- | --- |
-| Desktop Buddy: Coco | 19 |
-| Coco: Desktop Buddy | 19 |
+| Coco | 4 (likely taken; the app can still be called Coco on the Mac) |
+| Coco: Desktop Corgi | 19 |
 | Coco – Desktop Corgi Planner | 28 |
 
 **Subtitle** (30 max):
@@ -65,7 +65,7 @@ Text to paste into App Store Connect. Character limits are Apple's; counts are g
 > GOOD TO KNOW
 > • The chat uses Claude by Anthropic with your own Anthropic API key. Usage is billed by Anthropic to your account. Everything else works without a key.
 > • Works with Notion: pick tasks from a Notion database (paste a token from a Notion connection you create).
-> • Google Calendar, Partiful and Notion are trademarks of their owners; Desktop Buddy isn't made or endorsed by them.
+> • Google Calendar, Partiful and Notion are trademarks of their owners; Coco isn't made or endorsed by them.
 >
 > Requires macOS 14 or later.
 
@@ -95,7 +95,7 @@ Live on GitHub Pages since 2026-10-19 (repository Settings › Pages › `main`,
 
 ## App Review information: notes
 
-> Desktop Buddy has no Dock icon. After launch, Coco (a corgi) appears on the desktop. Click her, or press Control-Option-C, to open her panel. Right-click her for the menu, which includes Settings and Quit.
+> The app has no Dock icon. After launch, Coco (a corgi) appears on the desktop. Click her, or press Control-Option-C, to open her panel. Right-click her for the menu, which includes Settings and Quit.
 >
 > Hidden features (no permissions needed):
 > • Hold the right-hand Option key and click anywhere: Coco runs there.

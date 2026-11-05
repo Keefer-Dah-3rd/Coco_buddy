@@ -5,7 +5,7 @@ import BuddyCore
 /// Drives the real model through the new-task form, subtasks and "Focus on this now", and
 /// checks a restart keeps the hierarchy. Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --tasks-selftest
+///     Coco.app/Contents/MacOS/Coco --tasks-selftest
 enum TasksSelfTest {
     @MainActor
     static func run() {

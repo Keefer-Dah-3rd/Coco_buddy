@@ -4,7 +4,7 @@ import AVFoundation
 /// Checks the microphone facts voice input relies on and the silence rule, without opening
 /// the mic. Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --voice-selftest
+///     Coco.app/Contents/MacOS/Coco --voice-selftest
 enum VoiceSelfTest {
     static func run() {
         var failures = 0

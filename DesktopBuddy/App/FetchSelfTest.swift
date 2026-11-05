@@ -6,7 +6,7 @@ import BuddyCharacter
 /// fully transparent (nothing shows, clicks pass through), and checks what happened.
 /// Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --fetch-selftest
+///     Coco.app/Contents/MacOS/Coco --fetch-selftest
 enum FetchSelfTest {
     nonisolated(unsafe) private static var passed = 0
     nonisolated(unsafe) private static var failed = 0

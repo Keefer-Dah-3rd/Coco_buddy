@@ -5,7 +5,7 @@ import SwiftUI
 /// Checks that nothing reaches Anthropic before the user allows it, that turning it off
 /// stops and forgets the chat, and renders the consent screen. Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --consent-selftest [<folder for the snapshot>]
+///     Coco.app/Contents/MacOS/Coco --consent-selftest [<folder for the snapshot>]
 enum ConsentSelfTest {
     @MainActor
     static func run() {

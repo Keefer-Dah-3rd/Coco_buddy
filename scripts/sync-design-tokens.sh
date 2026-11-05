@@ -16,7 +16,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 EXPORT="${1:?usage: scripts/sync-design-tokens.sh path/to/coco-tokens.json}"
 OUT=build/design-sync
-APP="$OUT/derived/Build/Products/Debug/DesktopBuddy.app/Contents/MacOS/DesktopBuddy"
+APP="$OUT/derived/Build/Products/Debug/Coco.app/Contents/MacOS/Coco"
 
 build_and_render() {
   # An unsandboxed, ad-hoc signed Debug build — only for rendering snapshots.

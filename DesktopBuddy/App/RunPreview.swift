@@ -7,7 +7,7 @@ import BuddyCharacter
 /// Renders the running Coco for review: every facing, the gallop, and animations of her
 /// running, turning and dashing. Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --run-preview ~/Desktop/coco-run
+///     Coco.app/Contents/MacOS/Coco --run-preview ~/Desktop/coco-run
 enum RunPreview {
     static func run(into folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

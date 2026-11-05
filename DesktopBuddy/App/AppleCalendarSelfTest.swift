@@ -10,7 +10,7 @@ import BuddyIntegrations
 /// access revoked. Debug builds only — build without the sandbox so it can't touch the
 /// app's real data:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --apple-calendar-selftest
+///     Coco.app/Contents/MacOS/Coco --apple-calendar-selftest
 enum AppleCalendarSelfTest {
     static func run() {
         HTTP.standIn = FakeGoogle.self

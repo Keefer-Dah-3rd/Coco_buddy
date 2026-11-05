@@ -1,6 +1,6 @@
 # Coco design system
 
-How Desktop Buddy's design system is organized, how Figma and the Swift code stay in sync, and what still needs a human.
+How Coco's design system is organized, how Figma and the Swift code stay in sync, and what still needs a human.
 
 - **Figma file:** [Coco](https://www.figma.com/design/FcDvsetj6U55hFCvRnIf5f/Coco)
 - **Coco-2** (`3y1ZhdqAPVIYPJf2bTuOsY`): the redesign. It has every collection above plus the “Sky” collection and “Sky/…” text styles (see [The panel's Sky tokens](#the-panels-sky-tokens)).

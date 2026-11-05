@@ -1,6 +1,6 @@
 # Mac App Store checklist
 
-Everything needed to get Desktop Buddy onto the Mac App Store, in order. Items marked **✓ done** were checked against the project on 2026-10-17 (a Release build, its entitlements and its Info.plist). Rules quoted are from Apple's [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) and [upcoming requirements](https://developer.apple.com/news/upcoming-requirements/); re-check both before submitting, since they change.
+Everything needed to get Coco onto the Mac App Store, in order. Items marked **✓ done** were checked against the project on 2026-10-17 (a Release build, its entitlements and its Info.plist). Rules quoted are from Apple's [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) and [upcoming requirements](https://developer.apple.com/news/upcoming-requirements/); re-check both before submitting, since they change.
 
 ## 1. Blockers: fix in the app first
 
@@ -83,7 +83,7 @@ These would likely get the app rejected or make it unusable for people who downl
 
 ## 6. App Store Connect listing
 
-- [ ] **Name** (30 characters max), e.g. "Desktop Buddy: Coco". Check it isn't taken.
+- [ ] **Name** (30 characters max), e.g. "Coco: Desktop Corgi". Check it isn't taken ("Coco" on its own probably is).
 - [ ] **Subtitle** (30 max), e.g. "A corgi who plans your day".
 - [ ] **✓ drafted (2026-10-19)** in [APP_STORE_LISTING.md](APP_STORE_LISTING.md), checked against the app (2,288 of 4,000 characters). **Description**: say clearly that the chat needs your own Anthropic API key and that usage is billed by Anthropic. Say which features work without it (Coco, tasks, focus timer, voice, calendars).
 - [ ] **Keywords** (100 characters, comma-separated): e.g. desktop pet, focus timer, pomodoro, planner, corgi, calendar.
@@ -103,7 +103,7 @@ These would likely get the app rejected or make it unusable for people who downl
 App Review can't guess how a dock-less floating corgi works. Put this in **App Review Information**:
 
 - [ ] Contact name, phone and email.
-- [ ] **How to use it:** "Desktop Buddy has no Dock icon. Coco appears on the desktop after launch. Click her for the panel, or press ⌃⌥C. Right-click her for the menu, which includes Quit."
+- [ ] **How to use it:** "The app has no Dock icon. Coco appears on the desktop after launch. Click her for the panel, or press ⌃⌥C. Right-click her for the menu, which includes Quit."
 - [ ] **Hidden features:** "Hold the right-hand Option key and click to call her over; Right Command + click throws a ball; Right Shift + click tosses a treat. No permissions are needed."
 - [ ] **A Claude API key for testing**, from an Anthropic account you control with a low spending limit. Rotate it after review. Without one, reviewers can't see the chat.
 - [ ] **Google:** either a test Google account (if you ship your own verified client) or "Google Calendar is optional; Apple Calendar shows the same events".
@@ -120,7 +120,7 @@ App Review can't guess how a dock-less floating corgi works. Put this in **App R
 
 ## 9. Notion
 
-Notion's own guidance is a public OAuth integration for an app many people install. But Notion's OAuth needs a **client secret** for every token exchange and refresh, and a Mac app can't keep that secret. So Desktop Buddy asks for a token instead: an **internal integration** secret, or a **personal access token**. That's fine for the App Store; it just needs clear steps and its own test material.
+Notion's own guidance is a public OAuth integration for an app many people install. But Notion's OAuth needs a **client secret** for every token exchange and refresh, and a Mac app can't keep that secret. So Coco asks for a token instead: an **internal integration** secret, or a **personal access token**. That's fine for the App Store; it just needs clear steps and its own test material.
 
 ### For version 1 (paste-a-token, no server)
 
@@ -136,7 +136,7 @@ To do:
 - [x] **✓ done** **Explain the two kinds of token in one line each** (Connections › Notion). An internal integration sees only the databases you share with it, which is least access and recommended. A personal access token sees everything you can see, **expires** after 7 days to 1 year (one year by default), and on Free and Business plans may be limited to workspace owners. Say that when a token expires, Coco asks you to reconnect.
 - [x] **✓ done** **Cover the people who can't make a token**: a 403 now says to ask the workspace owner; an expired token gets its own "needs reconnecting" note. Members of a workspace someone else owns may not be allowed to create integrations or tokens. Make sure the error text says to ask the workspace owner, or to use a personal workspace.
 - [x] **✓ done** The AI consent screen names tasks picked from Notion.
-- [x] **✓ done (2026-10-19)** **Listing wording:** the description says "Works with Notion", uses no logos, and says Desktop Buddy isn't made or endorsed by Notion, Partiful or Google ([APP_STORE_LISTING.md](APP_STORE_LISTING.md)). Keep Notion's logo out of the screenshots too.
+- [x] **✓ done (2026-10-19)** **Listing wording:** the description says "Works with Notion", uses no logos, and says Coco isn't made or endorsed by Notion, Partiful or Google ([APP_STORE_LISTING.md](APP_STORE_LISTING.md)). Keep Notion's logo out of the screenshots too.
 - [ ] **TestFlight check** (section 5):
   - [ ] Connect with an internal connection's API token.
   - [ ] Pick the database and map its fields.

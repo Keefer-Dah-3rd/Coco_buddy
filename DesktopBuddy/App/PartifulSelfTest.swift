@@ -8,7 +8,7 @@ import BuddyIntegrations
 /// propose_event tools, the link reader, the event card and Google Calendar — against
 /// stand-in Partiful pages and a stand-in Google Calendar. Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --partiful-selftest
+///     Coco.app/Contents/MacOS/Coco --partiful-selftest
 ///
 /// With `--live <link>` it instead reads one real Partiful page over the network (one request,
 /// the way a link preview would) and prints what the chat would see.

@@ -32,7 +32,7 @@ How it works: Coco reads the calendars in the Calendar app (iCloud, Google or Ex
 
 If your Google account is also added to Calendar.app, the same meetings arrive from both sides. Coco shows each once: synced copies share an iCalendar UID with the Google event, and separate copies are matched by identical times and (nearly) identical titles — anything less certain stays as two rows. Edits from the chat still go only to Google Calendar.
 
-- **Denied by mistake?** *System Settings › Privacy & Security › Calendars › Desktop Buddy* → **Full Access**, then **Check again** on the card. ("Add Only" isn't enough to read.)
+- **Denied by mistake?** *System Settings › Privacy & Security › Calendars › Coco* → **Full Access**, then **Check again** on the card. ("Add Only" isn't enough to read.)
 - **Revoke:** turn it off in that same System Settings pane. *Stop using Apple Calendar* in Connections stops Coco reading it without changing the permission.
 - Apple events are read when shown and re-read whenever Calendar.app reports a change; Coco keeps no copy of them on disk.
 

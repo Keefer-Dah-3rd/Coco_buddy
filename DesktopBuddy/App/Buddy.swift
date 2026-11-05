@@ -19,7 +19,7 @@ enum Support {
         components.path = email
         components.queryItems = [
             URLQueryItem(name: "subject", value: subject),
-            URLQueryItem(name: "body", value: body + "\n\n—\nDesktop Buddy \(version) (\(build)), macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"),
+            URLQueryItem(name: "body", value: body + "\n\n—\nCoco \(version) (\(build)), macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"),
         ]
         return components.url
     }

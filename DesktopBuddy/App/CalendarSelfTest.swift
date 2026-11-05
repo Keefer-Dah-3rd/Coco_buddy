@@ -7,7 +7,7 @@ import BuddyIntegrations
 /// Calendar answering inside the process — paging, caching, shared fetches, creating, moving
 /// and deleting, failures and expired access. Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --calendar-selftest
+///     Coco.app/Contents/MacOS/Coco --calendar-selftest
 enum CalendarSelfTest {
     static func run() {
         HTTP.standIn = FakeGoogle.self

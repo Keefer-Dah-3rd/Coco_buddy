@@ -330,7 +330,7 @@ struct FocusView: View {
                 .help("How \(Buddy.name) looks while you focus: full size, smaller, or dimmed and still")
             }
             if model.notifications.authorization == .denied {
-                Text("Notifications are off for Desktop Buddy in System Settings — \(Buddy.name) will still let you know.")
+                Text("Notifications are off for Coco in System Settings — she'll still let you know.")
                     .font(Sky.text(11))
                     .foregroundStyle(Sky.muted)
                     .fixedSize(horizontal: false, vertical: true)

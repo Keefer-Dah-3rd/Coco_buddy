@@ -55,7 +55,7 @@ struct MenuBarMenu: View {
 
         Divider()
 
-        Button("Quit Desktop Buddy") { NSApp.terminate(nil) }
+        Button("Quit Coco") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
 }
@@ -111,7 +111,7 @@ enum BuddyGlyph {
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "Desktop Buddy"
+        image.accessibilityDescription = "Coco"
         return image
     }()
 }
@@ -169,7 +169,7 @@ enum BuddyContextMenu {
         menu.addItem(NSMenuItem.action("Settings…") { model.openSettings() })
         menu.addItem(NSMenuItem.action("Connections…") { model.openConnections() })
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem.action("Quit Desktop Buddy") { NSApp.terminate(nil) })
+        menu.addItem(NSMenuItem.action("Quit Coco") { NSApp.terminate(nil) })
         return menu
     }
 }

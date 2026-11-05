@@ -9,7 +9,7 @@ import BuddyCore
 /// focus for a few seconds (exits 2, skipped, if macOS won't give it). Debug builds only; pass a
 /// folder to also save what the card looks like:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --focus-length-selftest [png folder]
+///     Coco.app/Contents/MacOS/Coco --focus-length-selftest [png folder]
 enum FocusLengthSelfTest {
     @MainActor
     static func run(pngFolder: URL?) {

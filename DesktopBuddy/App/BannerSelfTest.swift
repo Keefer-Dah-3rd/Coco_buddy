@@ -6,7 +6,7 @@ import BuddyIntegrations
 
 /// Drives the real banner view, banner manager, weather store and Coco's remarks. Debug only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --banner-selftest [--live]
+///     Coco.app/Contents/MacOS/Coco --banner-selftest [--live]
 ///
 /// `--live` also downloads one real forecast from MET Norway (for Oslo) and reads it.
 /// Run an unsandboxed build: it uses throwaway defaults and never asks for location.

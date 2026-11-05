@@ -84,11 +84,11 @@ final class VoiceInput {
         transcript = ""
 
         guard await Self.speechRecognitionAllowed() else {
-            fail(.speechPermission, .denied("Speech recognition is off for Desktop Buddy. Turn it on in System Settings › Privacy & Security › Speech Recognition."))
+            fail(.speechPermission, .denied("Speech recognition is off for Coco. Turn it on in System Settings › Privacy & Security › Speech Recognition."))
             return
         }
         guard await Self.microphoneAllowed() else {
-            fail(.microphonePermission, .denied("Microphone access is off for Desktop Buddy. Turn it on in System Settings › Privacy & Security › Microphone."))
+            fail(.microphonePermission, .denied("Microphone access is off for Coco. Turn it on in System Settings › Privacy & Security › Microphone."))
             return
         }
         guard let microphone = MicrophoneCheck.defaultInput() else {

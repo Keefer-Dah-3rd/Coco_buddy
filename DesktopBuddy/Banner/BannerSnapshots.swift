@@ -5,7 +5,7 @@ import BuddyCore
 
 /// Stills of the illustrated banners for design QA and the Figma library (Debug only):
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --banner-snapshots ~/Desktop/coco-banners
+///     Coco.app/Contents/MacOS/Coco --banner-snapshots ~/Desktop/coco-banners
 ///
 /// Writes, per banner: every light × weather as the finished card (`cards/<banner>/…png`) and
 /// as a contact sheet (`sheet-<banner>.png`); the bare art at 640 × 304 px for comparing with

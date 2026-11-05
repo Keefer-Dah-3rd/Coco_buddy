@@ -6,7 +6,7 @@ import BuddyCharacter
 /// transparent (nothing shows, clicks pass through) and reports what happened.
 /// Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --dash-selftest
+///     Coco.app/Contents/MacOS/Coco --dash-selftest
 enum DashSelfTest {
     static func run() {
         let model = CharacterModel()

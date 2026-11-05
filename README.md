@@ -1,6 +1,6 @@
-<img src="docs/images/app-icon.png" width="96" alt="Desktop Buddy icon" align="left">
+<img src="docs/images/app-icon.png" width="96" alt="Coco icon" align="left">
 
-# Desktop Buddy
+# Coco
 
 A native macOS desktop companion. **Coco** is a black-and-white corgi with a white blaze, giant ears and a collar tag. She sits on your desktop, keeps your daily list, runs focus sessions, listens when you talk to her, chats about your day and reacts to what you do. She's part Clippy, part virtual pet and part productivity tool, built to stay open all day without getting in the way.
 
@@ -228,7 +228,7 @@ How it works, what syncs and what doesn't: [docs/DESIGN_SYSTEM.md](docs/DESIGN_S
   ```
 
   ```bash
-  build-snap/Build/Products/Debug/DesktopBuddy.app/Contents/MacOS/DesktopBuddy --snapshots ~/Desktop/coco-snapshots
+  build-snap/Build/Products/Debug/Coco.app/Contents/MacOS/Coco --snapshots ~/Desktop/coco-snapshots
   ```
 
 - Debug builds log the render frame rate every 10 s:

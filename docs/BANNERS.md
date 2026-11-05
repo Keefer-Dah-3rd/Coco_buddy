@@ -218,9 +218,9 @@ the window server (`BannerMotion`):
 |---|---|
 | Port fidelity, 156 states | `swift test --filter BannerArtPortTests` (Packages/BuddyKit) |
 | Rotation, clock, progress, weather mapping, remarks, pacing, MET parsing | `swift test` (Packages/BuddyKit) |
-| Live view: slides, crossfades, rapid changes, day rollover, weather states, remark pacing (36 checks) | `DesktopBuddy --banner-selftest` (unsandboxed Debug); add `--live` for one real MET forecast |
-| Every state as cards, sheets, task counts, widths, captions; art PNGs; SVG; Figma SVG | `DesktopBuddy --banner-snapshots <dir>` |
-| The panel | `SNAPSHOT_ONLY=panel-today DesktopBuddy --snapshots <dir>` |
+| Live view: slides, crossfades, rapid changes, day rollover, weather states, remark pacing (36 checks) | `Coco --banner-selftest` (unsandboxed Debug); add `--live` for one real MET forecast |
+| Every state as cards, sheets, task counts, widths, captions; art PNGs; SVG; Figma SVG | `Coco --banner-snapshots <dir>` |
+| The panel | `SNAPSHOT_ONLY=panel-today Coco --snapshots <dir>` |
 | Energy | `scripts/energy-check.sh` (instructions at its top) |
 
 ## Figma

@@ -8,7 +8,7 @@ import BuddyIntegrations
 /// Renders the character in every state, plus the panel, to PNG files — a visual
 /// regression sheet and design QA tool. Debug builds only:
 ///
-///     DesktopBuddy.app/Contents/MacOS/DesktopBuddy --snapshots ~/Desktop/coco-snapshots
+///     Coco.app/Contents/MacOS/Coco --snapshots ~/Desktop/coco-snapshots
 ///
 /// (Run an unsandboxed build, or pass a folder inside the app's container.) Set
 /// `SNAPSHOT_ONLY=panel-chat,welcome` to write only the files whose names start with those.

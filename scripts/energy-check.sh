@@ -6,7 +6,7 @@
 #   xcodebuild -project DesktopBuddy.xcodeproj -scheme DesktopBuddy -configuration Release \
 #     -derivedDataPath build/energy build CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
 #     ENABLE_APP_SANDBOX=NO PRODUCT_BUNDLE_IDENTIFIER=com.keefer.DesktopBuddy.energy
-#   scripts/energy-check.sh build/energy/Build/Products/Release/DesktopBuddy.app hidden idle panel focus
+#   scripts/energy-check.sh build/energy/Build/Products/Release/Coco.app hidden idle panel focus
 #
 # To see what the Today banner's ambient motion costs, build a second copy with
 # 'OTHER_SWIFT_FLAGS=$(inherited) -DBANNER_STATIC' (no ambient loops) and compare the two.
@@ -15,7 +15,7 @@
 # smoothed %CPU). Don't use the Mac while it runs: moving the mouse near Coco makes her look
 # at it, and the last column says how long the Mac had no input when the window ended.
 set -u
-APP="$1/Contents/MacOS/DesktopBuddy"; shift
+APP="$1/Contents/MacOS/Coco"; shift
 D=com.keefer.DesktopBuddy.energy
 cpu() { ps -o time= -p "$1" | awk -F'[:.]' '{ if (NF==3) print $1*60+$2+$3/100; else print $1*3600+$2*60+$3+$4/100 }'; }
 hid() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ {print int($NF/1000000000); exit}'; }

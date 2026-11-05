@@ -12,7 +12,7 @@ A screen recording for a portfolio page or a LinkedIn post. It shows Coco as a c
   ```
 
   Turn them back on afterwards with `true`.
-- **Notifications:** turn on Do Not Disturb, except for Desktop Buddy (System Settings › Focus › Do Not Disturb › Allowed Apps).
+- **Notifications:** turn on Do Not Disturb, except for Coco (System Settings › Focus › Do Not Disturb › Allowed Apps).
 - **Data:** start from Settings › *Delete all my data* so the welcome shows. Have the Claude key and Google Calendar connected *after* the welcome (or keep a second user account set up for demos). Put one real meeting on today's calendar about 40 minutes out.
 - **Focus length:** Settings › Focus › 5 min. You'll speed up the wait in the edit.
 - **Sound:** barks on, system volume at about 60%. Record system audio with QuickTime or a tool like Audio Hijack. The barks sell it.
@@ -31,7 +31,7 @@ A screen recording for a portfolio page or a LinkedIn post. It shows Coco as a c
 | 0:38–0:46 | Focus | Coco on guard, the progress ring filling around her tag, the countdown in the menu bar. **Speed-ramp** this stretch to 8×. The chime and celebration play at the end | Quiet while you work. About 1% CPU at idle |
 | 0:46–0:51 | The "Did you finish?" card | Click **Yes, done**. The task ticks; she hops and barks | She never marks anything done by herself |
 | 0:51–0:56 | Global shortcut | Switch to a browser, press ⌃⌥C, and the panel pops up over it; press Esc | ⌃⌥C from anywhere · fully keyboard- and VoiceOver-friendly |
-| 0:56–1:00 | Coco dozing | Cut to her napping (airplane ears, Zs), then fade out on the app icon | **Desktop Buddy** · github.com/Keefer-Dah-3rd/Coco_buddy |
+| 0:56–1:00 | Coco dozing | Cut to her napping (airplane ears, Zs), then fade out on the app icon | **Coco** · github.com/Keefer-Dah-3rd/Coco_buddy |
 
 ## Notes
 

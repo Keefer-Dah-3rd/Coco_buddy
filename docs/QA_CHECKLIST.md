@@ -25,7 +25,7 @@ Tick each box as you go. If a check fails, note the macOS version and what you s
 - [ ] Switch Spaces (⌃→). Coco is on every Space, in the same place.
 - [ ] Put an app in full screen. Coco is visible over it (unless *Keep above other windows* is off), and the panel opens over it.
 - [ ] Mission Control (F3). Coco doesn't appear as a window to pick.
-- [ ] ⌘Tab. Desktop Buddy isn't in the app switcher; the panel never steals focus from the app you're typing in.
+- [ ] ⌘Tab. Coco isn't in the app switcher; the panel never steals focus from the app you're typing in.
 
 ## Sleep and wake
 
@@ -117,7 +117,7 @@ Details and the rules behind these: [BANNERS.md](BANNERS.md). Debug builds can p
 
 ## Apple Calendar and one schedule
 
-- [ ] Fresh install (or reset with `tccutil reset Calendar com.keefer.DesktopBuddy`): launching never asks for calendar access. Connections › Apple Calendar › **Connect**: macOS asks once, naming Desktop Buddy and the reason.
+- [ ] Fresh install (or reset with `tccutil reset Calendar com.keefer.DesktopBuddy`): launching never asks for calendar access. Connections › Apple Calendar › **Connect**: macOS asks once, naming Coco and the reason.
 - [ ] Choose **Don't Allow**: the card says access is off and how to turn it on; Google Calendar, tasks and the chat keep working; the chat says it can't see Apple Calendar rather than guessing.
 - [ ] Allow it in System Settings › Privacy & Security › Calendars, then **Check again**: Connected, today's count and your calendars with switches (birthdays and holidays off).
 - [ ] With your Google account in Calendar.app too: every Google meeting shows **once** on the Today card and in the week, and the day's count matches Google Calendar. Hover a row: the tooltip lists both calendars.
@@ -168,7 +168,7 @@ Details and the rules behind these: [BANNERS.md](BANNERS.md). Debug builds can p
 - [ ] ⌃⌥C from another app opens the panel; pressing it again closes the panel.
 - [ ] Hide Coco from the menu, press ⌃⌥C. She reappears with the panel open.
 - [ ] Settings: switch the shortcut off. ⌃⌥C does nothing. Switch it on again; it works.
-- [ ] Give ⌃⌥C to another app (e.g. a Shortcuts keyboard shortcut) and relaunch Desktop Buddy. Settings explains the shortcut is taken.
+- [ ] Give ⌃⌥C to another app (e.g. a Shortcuts keyboard shortcut) and relaunch Coco. Settings explains the shortcut is taken.
 
 ## Calling Coco (hold Right ⌥, click)
 
@@ -218,7 +218,7 @@ Quit any Xcode-launched copy first so only one Coco is running.
 - [ ] Launch the Release build, leave it idle with the panel closed for 2 minutes, then sample for 30 s:
 
   ```bash
-  top -l 7 -s 5 -stats pid,command,cpu,mem | grep DesktopBuddy
+  top -l 7 -s 5 -stats pid,command,cpu,mem | grep Coco
   ```
 
   Expect about 1% CPU or less, and under 60 MB.

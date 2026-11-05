@@ -12,11 +12,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-DEST=/Applications/DesktopBuddy.app
-BUILT=build/install/Build/Products/Release/DesktopBuddy.app
+DEST=/Applications/Coco.app
+BUILT=build/install/Build/Products/Release/Coco.app
+OLD=/Applications/DesktopBuddy.app   # what this script installed before the app was named Coco
 
-if pgrep -f "^$DEST/Contents/MacOS/DesktopBuddy" >/dev/null; then
-    echo "The installed Coco is running. Quit it first (right-click Coco → Quit Desktop Buddy), then rerun." >&2
+if pgrep -f "^($DEST/Contents/MacOS/Coco|$OLD/Contents/MacOS/DesktopBuddy)" >/dev/null; then
+    echo "The installed Coco is running. Quit it first (right-click Coco → Quit), then rerun." >&2
     exit 1
 fi
 
@@ -30,6 +31,6 @@ xcodebuild -project DesktopBuddy.xcodeproj -scheme DesktopBuddy -configuration R
     -derivedDataPath build/install -quiet build
 
 codesign --verify --strict "$BUILT"
-rm -rf "$DEST"
+rm -rf "$DEST" "$OLD"
 ditto "$BUILT" "$DEST"
-echo "Installed $DEST — open it with Spotlight (\"Desktop Buddy\") or from Launchpad."
+echo "Installed $DEST — open it with Spotlight (\"Coco\") or from Launchpad."

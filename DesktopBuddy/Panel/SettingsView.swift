@@ -109,7 +109,7 @@ struct SettingsView: View {
                     HStack {
                         Button("Show welcome again") { model.showOnboarding() }
                             .buttonStyle(KeyButtonStyle(kind: .secondary, compact: true))
-                        Button("Contact support") { if let url = Support.mail(subject: "Desktop Buddy") { NSWorkspace.shared.open(url) } }
+                        Button("Contact support") { if let url = Support.mail(subject: "Coco") { NSWorkspace.shared.open(url) } }
                             .buttonStyle(KeyButtonStyle(kind: .quiet, compact: true))
                             .help("Email \(Support.email)")
                         Spacer()
@@ -119,7 +119,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Text("Desktop Buddy \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
+                Text("Coco \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
                     .font(Theme.mono(10))
                     .foregroundStyle(Theme.inkTertiary)
             }

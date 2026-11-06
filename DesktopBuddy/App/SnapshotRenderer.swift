@@ -261,7 +261,7 @@ enum SnapshotRenderer {
     // MARK: - App icon
 
     /// Renders the 1024 px app icon (Figma `Brand/AppIcon`, drawn there at ¼ scale): Coco, large
-    /// and cropped by the macOS icon shape, on a Sky orange tile with a navy floor band.
+    /// and cropped by the macOS icon shape, on a plain Sky orange tile.
     static func renderIcon(to url: URL) {
         let art = CocoLayerView(frame: NSRect(x: 0, y: 0, width: 330, height: 392))
         let window = NSWindow(contentRect: NSRect(x: -20_000, y: -20_000, width: 330, height: 392),
@@ -297,12 +297,6 @@ enum SnapshotRenderer {
             shadow.set()
             NSColor(Sky.accent).setFill()
             shape.fill()
-            NSGraphicsContext.restoreGraphicsState()
-            // A navy floor band across the bottom third.
-            NSGraphicsContext.saveGraphicsState()
-            shape.addClip()
-            NSColor(Sky.navy).setFill()
-            NSRect(x: 100, y: 100, width: 824, height: 272).fill()
             NSGraphicsContext.restoreGraphicsState()
             BrandPalette.iconStroke.setStroke()
             shape.lineWidth = 3

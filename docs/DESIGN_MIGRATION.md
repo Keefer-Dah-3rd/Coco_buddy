@@ -116,6 +116,9 @@ colours and 50+ timings match the code. Open items:
   band over the bottom third, Coco scaled ×1.46 and cropped by the tile (crop frame 2282:6658).
   `renderIcon` now draws the same Panting pose as Figma; Brand `icon/tile` and `icon/floor` are
   no longer used by the icon
+- [x] App icon, floor dropped (2026-11-05, later the same day): Figma's Tile/Floor now sits
+  below the tile (y 206, 1 pt) so nothing of it shows; the icon is Coco on the plain
+  `color/accent` tile and `renderIcon` no longer draws the navy band
 - Documented differences, not changed: `dash/settle` brake share (Figma text 64%, code 0.45)
   and the treat sparkle fade-in (80 ms vs ≈108 ms) — the code values are the tuned ones the
   Figma notes were written from.

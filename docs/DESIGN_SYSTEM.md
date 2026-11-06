@@ -153,7 +153,7 @@ Coco is drawn in code (`DesktopBuddy/Character/CocoLayerView.swift`) and animate
 4. Swap them into `Mascot / Coco` and re-bind colors to the Brand variables. Claude's import script matched colors by hex and bound 564 paints automatically.
 5. Pure black (ground shadow) and white (eye shine) are literals in the code too, so they stay unbound.
 
-The app icon (`Brand / App Icon`, `AppIcon.appiconset`) is rendered by `SnapshotRenderer.renderIcon` from Coco's artwork (the Panting pose), the Sky `color/accent` and `color/blue2` colors and the Brand `icon/stroke` outline. Regenerate it (`SNAPSHOT_ONLY=icon` writes just `icon-1024.png`), then scale it into the ten `AppIcon.appiconset` sizes; don't edit it by hand.
+The app icon (`Brand / App Icon`, `AppIcon.appiconset`) is rendered by `SnapshotRenderer.renderIcon` from Coco's artwork (the Panting pose), the Sky `color/accent` tile color and the Brand `icon/stroke` outline. Regenerate it (`SNAPSHOT_ONLY=icon` writes just `icon-1024.png`), then scale it into the ten `AppIcon.appiconset` sizes; don't edit it by hand.
 
 ## 6. Syncing Figma → code
 

@@ -33,4 +33,7 @@ xcodebuild -project DesktopBuddy.xcodeproj -scheme DesktopBuddy -configuration R
 codesign --verify --strict "$BUILT"
 rm -rf "$DEST" "$OLD"
 ditto "$BUILT" "$DEST"
+# ditto keeps the bundle's old date, and the Dock keys a pinned tile's cached icon on it —
+# a fresh date makes the Dock pick up a changed app icon.
+touch "$DEST"
 echo "Installed $DEST — open it with Spotlight (\"Coco\") or from Launchpad."
